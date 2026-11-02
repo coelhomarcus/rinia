@@ -255,7 +255,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                 onDragCancel={handleDragCancel}
             >
                 <div className="flex h-full min-w-0 gap-3">
-                <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
+                <div className="scrollbar-hide flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
                     {shownColumns.map((column) => (
                         <Column
                             key={column.id}

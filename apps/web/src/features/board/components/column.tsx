@@ -160,7 +160,7 @@ export const Column = ({ column, statuses, issues, projectId, categoriesById, me
 
             {error && <p className="px-3 pb-2 text-xs text-danger-primary">{error}</p>}
 
-            <div ref={setDropRef} className={cx("flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2", isOver && "bg-accent-subtle/40")}>
+            <div ref={setDropRef} className={cx("scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2", isOver && "bg-accent-subtle/40")}>
                 <SortableContext items={issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
                     {issues.map((issue) => (
                         <IssueCard
