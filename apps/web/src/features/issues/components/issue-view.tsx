@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ActionSource, EntityIcon, TiptapDocument, UpdateIssueInput } from "@rinia/shared";
 import { ArrowDown, ArrowUp, Ban, CalendarDays, Check, History, ChevronRight, Copy, GitBranch, Link2, Pencil, Plus, ShieldOff, Sparkles, Trash2 } from "lucide-react";
 import { Link, useBeforeUnload, useLocation, useNavigate, useParams } from "react-router";
@@ -33,7 +33,7 @@ import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { useProject } from "@/features/projects/hooks/use-project";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
 import { urls } from "@/lib/urls";
-import { PRIORITY_OPTIONS, priorityLabelKey } from "@/features/issues/lib/priority";
+import { priorityLabelKey } from "@/features/issues/lib/priority";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useClipboard } from "@/hooks/use-clipboard";
@@ -64,6 +64,8 @@ import { fetchIssueClipboardContent } from "../lib/issue-clipboard";
 import { issueDescriptionDrafts, issueDraftKey } from "../lib/issue-description-drafts";
 import { formatDistanceToNow, formatFullIssueDate } from "../lib/relative-time";
 import { DueDatePopover } from "./due-date-picker";
+import { numberedOptions, optionForKeyEvent, type NumberingMode } from "../lib/numbered-options";
+import { OptionNumber, assigneeOptions, estimateOptions, priorityOptions, statusOptions, type PropertyOption } from "./property-options";
 import { LabelChip, LabelsPicker, resolveLabels, useLabelToggle } from "./labels-picker";
 import { EMPTY_TIPTAP_DOCUMENT, RichTextEditor, type MentionItem } from "./rich-text-editor";
 import { TimelineActivity, type ActivityEntry, type TimelineLookups } from "./timeline-activity";
@@ -122,6 +124,7 @@ export const IssueView = () => {
     useHotkeys("s", () => setOpenMenu("state"), propertyHotkey);
     useHotkeys("p", () => setOpenMenu("priority"), propertyHotkey);
     useHotkeys("a", () => setOpenMenu("assignee"), propertyHotkey);
+    useHotkeys("e", () => setOpenMenu("estimate"), propertyHotkey);
     useHotkeys("l", () => setOpenMenu("label"), propertyHotkey);
     useHotkeys("shift+d", () => setOpenMenu("due"), propertyHotkey);
 
@@ -850,16 +853,11 @@ function IssueQuickActions({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, i
     );
 }
 
-interface PropertyOption {
-    value: string;
-    label: string;
-    icon: ReactNode;
-}
-
 /**
- * A property row that opens a searchable list. Arrow keys move, Enter picks, and 1–9 pick directly while the search is empty.
+ * A property row that opens a searchable list. Arrow keys move, Enter picks, and the number keys pick directly
+ * while the search is empty: 0 clears, 1-9 pick the options in order (estimates: the value itself).
  */
-function PropertyMenu({
+function PropertyMenu<V>({
     open,
     onOpenChange,
     label,
@@ -867,6 +865,7 @@ function PropertyMenu({
     shortcut,
     value,
     options,
+    mode = "positional",
     onSelect,
     disabled,
     children,
@@ -875,18 +874,22 @@ function PropertyMenu({
     onOpenChange: (open: boolean) => void;
     label: string;
     placeholder: string;
+    /** The letter that opens this menu from the issue screen, announced to assistive technology. */
     shortcut?: string;
-    value: string;
-    options: PropertyOption[];
-    onSelect: (value: string) => void;
+    value: V;
+    options: PropertyOption<V>[];
+    mode?: NumberingMode;
+    onSelect: (value: V) => void;
     disabled?: boolean;
     children: ReactNode;
 }) {
     const { t } = useTranslation();
+    const listId = useId();
     const [query, setQuery] = useState("");
     const [active, setActive] = useState(0);
     const normalized = query.trim().toLowerCase();
     const filtered = normalized ? options.filter((option) => option.label.toLowerCase().includes(normalized)) : options;
+    const numbered = numberedOptions(options, mode);
     useEffect(() => {
         if (!open) return;
         setQuery("");
@@ -895,7 +898,7 @@ function PropertyMenu({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
-    function choose(option: PropertyOption | undefined) {
+    function choose(option: PropertyOption<V> | undefined) {
         if (!option) return;
         if (option.value !== value) onSelect(option.value);
         onOpenChange(false);
@@ -903,7 +906,7 @@ function PropertyMenu({
 
     return (
         <Popover.Root open={open} onOpenChange={onOpenChange}>
-            <Popover.Trigger aria-label={label} disabled={disabled} className={propertyButton}>
+            <Popover.Trigger aria-label={label} aria-keyshortcuts={shortcut} disabled={disabled} className={propertyButton}>
                 {children}
             </Popover.Trigger>
             <Popover.Portal>
@@ -916,6 +919,11 @@ function PropertyMenu({
                                 value={query}
                                 placeholder={placeholder}
                                 aria-label={placeholder}
+                                role="combobox"
+                                aria-expanded="true"
+                                aria-autocomplete="list"
+                                aria-controls={listId}
+                                aria-activedescendant={filtered[active] ? `${listId}-${active}` : undefined}
                                 onChange={(event) => {
                                     setQuery(event.target.value);
                                     setActive(0);
@@ -927,23 +935,29 @@ function PropertyMenu({
                                         setActive((current) => (current + step + filtered.length) % Math.max(filtered.length, 1));
                                     } else if (event.key === "Enter") {
                                         event.preventDefault();
-                                        choose(filtered[active]);
-                                    } else if (!query && /^[1-9]$/.test(event.key)) {
-                                        event.preventDefault();
-                                        choose(options[Number(event.key) - 1]);
+                                        if (!event.nativeEvent.isComposing) choose(filtered[active]);
+                                    } else {
+                                        const option = optionForKeyEvent(numbered, event, query);
+                                        if (option) {
+                                            event.preventDefault();
+                                            choose(option);
+                                        }
                                     }
                                 }}
                                 className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-primary outline-none placeholder:text-placeholder"
                             />
-                            {shortcut && <kbd className="rounded border border-subtle px-1.5 font-sans text-[11px] text-tertiary">{shortcut}</kbd>}
+                            {numbered.hint && !query && <span className="shrink-0 text-[11px] text-placeholder tabular-nums">{numbered.hint}</span>}
                         </div>
-                        <div role="listbox" aria-label={label} className="max-h-72 overflow-y-auto">
+                        <div id={listId} role="listbox" aria-label={label} className="max-h-72 overflow-y-auto">
                             {filtered.map((option, index) => (
                                 <button
-                                    key={option.value || "none"}
+                                    key={option.key}
+                                    id={`${listId}-${index}`}
                                     type="button"
                                     role="option"
+                                    tabIndex={-1}
                                     aria-selected={option.value === value}
+                                    aria-keyshortcuts={!query && numbered.numberFor(option) !== null ? String(numbered.numberFor(option)) : undefined}
                                     onMouseEnter={() => setActive(index)}
                                     onClick={() => choose(option)}
                                     className={cx("flex h-8 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] text-secondary transition-colors duration-100", index === active && "bg-layer-2-hover text-primary")}
@@ -951,7 +965,7 @@ function PropertyMenu({
                                     <span className="grid size-4 shrink-0 place-items-center">{option.icon}</span>
                                     <span className="min-w-0 flex-1 truncate">{option.label}</span>
                                     {option.value === value && <Check className="size-3.5 shrink-0 text-secondary" />}
-                                    <span className="w-3 shrink-0 text-right text-[11px] text-placeholder tabular-nums">{!query && index < 9 ? index + 1 : ""}</span>
+                                    <OptionNumber value={query ? null : numbered.numberFor(option)} />
                                 </button>
                             ))}
                             {filtered.length === 0 && <p className="px-2 py-2 text-[13px] text-placeholder">{t("common.noResults")}</p>}
@@ -1015,6 +1029,12 @@ function IssueProperties({
     const menu = (id: PropertyMenuId) => ({ open: openMenu === id, onOpenChange: (open: boolean) => onOpenMenuChange(open ? id : null), disabled: isPending });
     const avatar = (person: { name: string; avatarUrl: string | null }) => <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} className="size-4 text-[9px]" />;
     const created = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(issue.createdAt));
+    const parentIcon = <ParentOutline className="size-4 text-tertiary" />;
+    // A long searchable list: only 0 clears, so digits stay free for searching "RIN-12".
+    const parentOptions: PropertyOption<string>[] = [
+        { key: "none", value: "", label: t("issue.noParent"), icon: parentIcon, clears: true },
+        ...projectIssues.filter((candidate) => candidate.id !== issue.id).map((candidate) => ({ key: candidate.id, value: candidate.id, label: `${candidate.identifier} ${candidate.title}`, icon: parentIcon })),
+    ];
     const dueState = getDueState(issue.dueDate, columnBucket(column?.name ?? "") === "closed");
 
     return (
@@ -1026,10 +1046,10 @@ function IssueProperties({
                     placeholder={t("issue.changeStatus")}
                     shortcut="S"
                     value={issue.columnId}
-                    options={columns.map((candidate) => ({ value: candidate.id, label: translateStatusName(candidate.name, t), icon: <StateIcon name={candidate.name} color={candidate.color} /> }))}
-                    onSelect={(value) => save({ columnId: value })}
+                    options={statusOptions(columns, t)}
+                    onSelect={(columnId) => save({ columnId })}
                 >
-                    <PropertyIcon><StateIcon name={column?.name ?? ""} color={column?.color} /></PropertyIcon>
+                    <PropertyIcon><StateIcon name={column?.name ?? ""} color={column?.color} className="size-4" /></PropertyIcon>
                     <span className="truncate">{column ? translateStatusName(column.name, t) : t("issue.unknownStatus")}</span>
                 </PropertyMenu>
                 <PropertyMenu
@@ -1038,10 +1058,10 @@ function IssueProperties({
                     placeholder={t("issue.setPriority")}
                     shortcut="P"
                     value={issue.priority}
-                    options={PRIORITY_OPTIONS.map((priority) => ({ value: priority, label: t(priorityLabelKey(priority)), icon: <PriorityIcon priority={priority} /> }))}
-                    onSelect={(value) => save({ priority: value as UpdateIssueInput["priority"] })}
+                    options={priorityOptions(t)}
+                    onSelect={(priority) => save({ priority })}
                 >
-                    <PropertyIcon><PriorityIcon priority={issue.priority} /></PropertyIcon>
+                    <PropertyIcon><PriorityIcon priority={issue.priority} className="size-4" /></PropertyIcon>
                     <span className={cx("truncate", issue.priority === "none" && "text-tertiary")}>{issue.priority === "none" ? t("issue.setPriorityAction") : t(priorityLabelKey(issue.priority))}</span>
                 </PropertyMenu>
                 <PropertyMenu
@@ -1049,9 +1069,9 @@ function IssueProperties({
                     label={t("issue.assignee")}
                     placeholder={t("issue.assignTo")}
                     shortcut="A"
-                    value={issue.assigneeId ?? ""}
-                    options={[{ value: "", label: t("issue.unassigned"), icon: <EmptyAvatar /> }, ...members.map((member) => ({ value: member.id, label: member.name, icon: avatar(member) }))]}
-                    onSelect={(value) => save({ assigneeId: value || null })}
+                    value={issue.assigneeId ?? null}
+                    options={assigneeOptions(members, t)}
+                    onSelect={(assigneeId) => save({ assigneeId })}
                 >
                     <PropertyIcon>{assignee ? avatar(assignee) : <EmptyAvatar />}</PropertyIcon>
                     <span className={cx("truncate", !assignee && "text-tertiary")}>{assignee?.name ?? t("issue.assign")}</span>
@@ -1060,9 +1080,11 @@ function IssueProperties({
                     {...menu("estimate")}
                     label={t("issue.estimate")}
                     placeholder={t("issue.setEstimate")}
-                    value={String(issue.estimate ?? "")}
-                    options={[{ value: "", label: t("issue.noEstimate"), icon: <EstimateOutline className="size-3.5 text-tertiary" /> }, ...[1, 2, 3, 5, 8].map((points) => ({ value: String(points), label: t("projects.points", { count: points }), icon: <EstimateOutline className="size-3.5 text-tertiary" /> }))]}
-                    onSelect={(value) => save({ estimate: value ? Number(value) : null })}
+                    shortcut="E"
+                    value={issue.estimate ?? null}
+                    options={estimateOptions(t)}
+                    mode="value"
+                    onSelect={(estimate) => save({ estimate })}
                 >
                     <PropertyIcon><EstimateOutline className="size-3.5 text-tertiary" /></PropertyIcon>
                     <span className={cx("truncate", issue.estimate == null && "text-tertiary")}>{issue.estimate != null ? t("projects.points", { count: issue.estimate }) : t("issue.estimateAction")}</span>
@@ -1086,7 +1108,8 @@ function IssueProperties({
                     label={t("issue.parent")}
                     placeholder={t("issue.setParent")}
                     value={issue.parent?.id ?? ""}
-                    options={[{ value: "", label: t("issue.noParent"), icon: <ParentOutline className="size-3.5 text-tertiary" /> }, ...projectIssues.filter((candidate) => candidate.id !== issue.id).map((candidate) => ({ value: candidate.id, label: `${candidate.identifier} ${candidate.title}`, icon: <ParentOutline className="size-3.5 text-tertiary" /> }))]}
+                    options={parentOptions}
+                    mode="none"
                     onSelect={(value) => save({ parentIssueId: value || null })}
                 >
                     <PropertyIcon><ParentOutline className="size-3.5 text-tertiary" /></PropertyIcon>
