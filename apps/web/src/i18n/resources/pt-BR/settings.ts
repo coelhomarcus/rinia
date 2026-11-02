@@ -23,6 +23,17 @@ const settings = {
         descriptionHint: "Um resumo curto exibido na página do projeto", descriptionPlaceholder: "ex.: App web para clientes e sua API",
         dangerZone: "Zona de perigo", administrationDescription: "Configurações que valem para toda a instância.", interfaceAndTheme: "Interface e tema",
         adminProjects: "Projetos", adminProjectsDescription: "Todos os projetos da instância: quem participa e o tamanho de cada um. O conteúdo fica visível só para os membros.", couldNotLoadAdminProjects: "Não foi possível carregar os projetos.", noOwner: "Sem proprietário", adminProjectSummary: "{{owner}} · {{members}}", documentCount_one: "{{count}} documento", documentCount_other: "{{count}} documentos", adminIssueCount_one: "{{count}} tarefa", adminIssueCount_other: "{{count}} tarefas", projectKey: "Chave", createdBy: "Criado por", createdOn: "Criado em", lastChanged: "Última alteração", size: "Tamanho", issues: "Tarefas", documents: "Documentos", adminContentNote: "Tarefas, documentos e comentários deste projeto só são visíveis para os membros.", couldNotLoadAdminProject: "Não foi possível carregar este projeto.",
+        labelPresets: "Predefinições de etiquetas", labelPresetsDescription: "Escolha etiquetas prontas em vez de criar uma por uma.", labelPresetExists: "Adicionada", couldNotAddPresets: "Não foi possível adicionar as etiquetas.",
+        addSelectedLabels_one: "Adicionar {{count}} etiqueta", addSelectedLabels_other: "Adicionar {{count}} etiquetas", addNoLabels: "Adicionar etiquetas", useLabelPresets: "Usar predefinições",
+        labelPresetGroups: { type: "Tipo de tarefa", area: "Área do projeto", technical: "Características técnicas" },
+        labelPresetHints: {
+            bug: "Corrigir comportamento incorreto", feature: "Implementar nova funcionalidade", improvement: "Melhorar funcionalidade existente", design: "Criar ou modificar interfaces", refactor: "Melhorar código sem alterar comportamento",
+            chore: "Manutenção e tarefas internas", docs: "Criar ou atualizar documentação", test: "Criar ou melhorar testes", research: "Investigações e estudos técnicos",
+            frontend: "Interface e lógica do cliente", backend: "Serviços e lógica de servidor", ui: "Componentes visuais", ux: "Experiência e fluxo do usuário", api: "APIs e comunicação",
+            database: "Persistência e banco de dados", firmware: "Código de dispositivos", integration: "Integrações externas", devops: "Build, deploy e infraestrutura",
+            performance: "Otimização e desempenho", security: "Segurança", accessibility: "Acessibilidade", regression: "Problema que voltou a ocorrer", "breaking-change": "Alteração que quebra compatibilidade",
+            "technical-debt": "Débito técnico", dependencies: "Atualizações de dependências",
+        },
     } as const;
 
 export default settings;

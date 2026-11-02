@@ -23,6 +23,17 @@ const settings = {
         descriptionHint: "A short summary shown on the project page", descriptionPlaceholder: "e.g. Customer-facing web app and its API",
         dangerZone: "Danger zone", administrationDescription: "Settings that apply to the whole instance.", interfaceAndTheme: "Interface and theme",
         adminProjects: "Projects", adminProjectsDescription: "Every project on this instance: who is in it and how big it is. Its content is visible to its members only.", couldNotLoadAdminProjects: "Could not load the projects.", noOwner: "No owner", adminProjectSummary: "{{owner}} · {{members}}", documentCount_one: "{{count}} document", documentCount_other: "{{count}} documents", adminIssueCount_one: "{{count}} issue", adminIssueCount_other: "{{count}} issues", projectKey: "Key", createdBy: "Created by", createdOn: "Created on", lastChanged: "Last changed", size: "Size", issues: "Issues", documents: "Documents", adminContentNote: "Issues, documents and comments in this project are visible to its members only.", couldNotLoadAdminProject: "Could not load this project.",
+        labelPresets: "Label presets", labelPresetsDescription: "Pick ready-made labels instead of creating them one by one.", labelPresetExists: "Added", couldNotAddPresets: "Could not add the labels.",
+        addSelectedLabels_one: "Add {{count}} label", addSelectedLabels_other: "Add {{count}} labels", addNoLabels: "Add labels", useLabelPresets: "Use presets",
+        labelPresetGroups: { type: "Task type", area: "Project area", technical: "Technical traits" },
+        labelPresetHints: {
+            bug: "Fix incorrect behavior", feature: "Implement a new feature", improvement: "Improve an existing feature", design: "Create or change interfaces", refactor: "Improve code without changing behavior",
+            chore: "Maintenance and internal tasks", docs: "Create or update documentation", test: "Create or improve tests", research: "Technical investigations and studies",
+            frontend: "Interface and client logic", backend: "Services and server logic", ui: "Visual components", ux: "User experience and flow", api: "APIs and communication",
+            database: "Persistence and databases", firmware: "Device code", integration: "External integrations", devops: "Build, deploy and infrastructure",
+            performance: "Optimization and speed", security: "Security", accessibility: "Accessibility", regression: "A problem that came back", "breaking-change": "A change that breaks compatibility",
+            "technical-debt": "Technical debt", dependencies: "Dependency updates",
+        },
     } as const;
 
 export default settings;
