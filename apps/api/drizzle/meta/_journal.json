@@ -218,6 +218,13 @@
       "when": 1790200000000,
       "tag": "0030_remove_project_cover",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1790300000000,
+      "tag": "0031_mcp_access",
+      "breakpoints": true
     }
   ]
 }

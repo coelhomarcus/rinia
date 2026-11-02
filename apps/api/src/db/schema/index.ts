@@ -11,6 +11,7 @@ import { issueLabels } from "./issue-labels";
 import { issueRelations } from "./issue-relations";
 import { issues } from "./issues";
 import { issueSubscriptions, notifications } from "./notifications";
+import { oauthClients } from "./oauth";
 import { projectDocuments } from "./project-documents";
 import { projectKeyAliases } from "./project-key-aliases";
 import { projectMembers } from "./project-members";
@@ -30,6 +31,7 @@ export * from "./issue-labels";
 export * from "./issue-relations";
 export * from "./issues";
 export * from "./notifications";
+export * from "./oauth";
 export * from "./project-documents";
 export * from "./project-key-aliases";
 export * from "./project-members";
@@ -51,6 +53,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
     user: one(users, { fields: [apiTokens.userId], references: [users.id] }),
+    oauthClient: one(oauthClients, { fields: [apiTokens.oauthClientId], references: [oauthClients.clientId] }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({

@@ -2,17 +2,19 @@ import { type LoginInput, loginSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { ControlledInput } from "@/components/form/controlled-input";
 import { AUTH_QUERY_KEY, login } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { returnPath } from "@/features/auth/return-path";
 import { ApiError } from "@/lib/api-client";
 import { useTranslation } from "react-i18next";
 
 export const LoginPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const queryClient = useQueryClient();
     const { t } = useTranslation();
 
@@ -25,7 +27,7 @@ export const LoginPage = () => {
         mutationFn: login,
         onSuccess: (authUser) => {
             queryClient.setQueryData(AUTH_QUERY_KEY, authUser);
-            navigate("/", { replace: true });
+            navigate(returnPath(location), { replace: true });
         },
         onError: (error) => {
             setError("root", { message: error instanceof ApiError ? error.message : t("auth.unableToSignIn") });
@@ -33,7 +35,7 @@ export const LoginPage = () => {
     });
 
     if (user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to={returnPath(location)} replace />;
     }
 
     return (
@@ -56,7 +58,7 @@ export const LoginPage = () => {
 
             <p className="text-center text-[13px] text-tertiary">
                 {t("auth.noAccount")}{" "}
-                <Link to="/register" className="font-semibold text-accent-primary hover:underline">
+                <Link to="/register" state={location.state} className="font-semibold text-accent-primary hover:underline">
                     {t("auth.createAccount")}
                 </Link>
             </p>

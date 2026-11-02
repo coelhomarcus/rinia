@@ -20,11 +20,17 @@ interface IntegrationBase {
     tagline: IntegrationText;
 }
 
-/** A tool that connects through Rinia's MCP server today. */
+/**
+ * A tool that connects through Rinia's MCP server today. Most can do it two ways: sign in with Rinia (OAuth), where
+ * the person allows the tool in the browser and nothing is copied, or an API token for machines without a browser.
+ */
 export interface McpIntegration extends IntegrationBase {
     available: true;
     website: string;
-    steps: SetupStep[];
+    /** Steps when the tool signs in with Rinia. */
+    signInSteps?: SetupStep[];
+    /** Steps with an API token, which the page offers to create first. */
+    tokenSteps?: SetupStep[];
     note?: IntegrationText;
 }
 
@@ -38,7 +44,7 @@ export const TOKEN_PLACEHOLDER = "rinia_...";
 
 /**
  * Every integration, in the order the catalog shows them. The setup formats follow each client's documentation for a
- * remote HTTP server with a static bearer header.
+ * remote HTTP server: its OAuth sign-in, or a static bearer header.
  */
 export const integrations: Integration[] = [
     {
@@ -49,7 +55,11 @@ export const integrations: Integration[] = [
         tagline: "integrations.claudeCodeTagline",
         available: true,
         website: "https://claude.com/product/claude-code",
-        steps: [
+        signInSteps: [
+            { text: "integrations.claudeCodeStep1", snippet: { language: "bash", code: ({ url }) => `claude mcp add --transport http rinia ${url}` } },
+            { text: "integrations.claudeCodeSignIn" },
+        ],
+        tokenSteps: [
             {
                 text: "integrations.claudeCodeStep1",
                 snippet: {
@@ -68,10 +78,11 @@ export const integrations: Integration[] = [
         tagline: "integrations.claudeTagline",
         available: true,
         website: "https://claude.ai",
-        steps: [
+        // Claude connects from Anthropic's cloud and signs in on its own; it has no place for a token.
+        signInSteps: [
             { text: "integrations.claudeStep1" },
             { text: "integrations.claudeStep2", snippet: { language: "text", code: ({ url }) => url } },
-            { text: "integrations.claudeStep3", snippet: { language: "text", code: ({ token }) => `Bearer ${token}` } },
+            { text: "integrations.claudeStep3" },
         ],
         note: "integrations.claudeNote",
     },
@@ -83,7 +94,11 @@ export const integrations: Integration[] = [
         tagline: "integrations.copilotTagline",
         available: true,
         website: "https://code.visualstudio.com/docs/copilot/chat/mcp-servers",
-        steps: [
+        signInSteps: [
+            { text: "integrations.copilotStep1", snippet: { language: "json", code: ({ url }) => JSON.stringify({ servers: { rinia: { type: "http", url } } }, null, 2) } },
+            { text: "integrations.copilotSignIn" },
+        ],
+        tokenSteps: [
             {
                 text: "integrations.copilotStep1",
                 // The token is asked for when the server starts, so it never sits in a file that may be committed.
@@ -111,7 +126,11 @@ export const integrations: Integration[] = [
         tagline: "integrations.codexTagline",
         available: true,
         website: "https://developers.openai.com/codex",
-        steps: [
+        signInSteps: [
+            { text: "integrations.codexStep2", snippet: { language: "toml", code: ({ url }) => [`[mcp_servers.rinia]`, `url = "${url}"`].join("\n") } },
+            { text: "integrations.codexSignIn", snippet: { language: "bash", code: () => "codex mcp login rinia" } },
+        ],
+        tokenSteps: [
             { text: "integrations.codexStep1", snippet: { language: "bash", code: ({ token }) => `export RINIA_TOKEN="${token}"` } },
             {
                 text: "integrations.codexStep2",
@@ -128,7 +147,11 @@ export const integrations: Integration[] = [
         tagline: "integrations.geminiTagline",
         available: true,
         website: "https://github.com/google-gemini/gemini-cli",
-        steps: [
+        signInSteps: [
+            { text: "integrations.geminiStep1", snippet: { language: "json", code: ({ url }) => JSON.stringify({ mcpServers: { rinia: { httpUrl: url } } }, null, 2) } },
+            { text: "integrations.geminiSignIn" },
+        ],
+        tokenSteps: [
             {
                 text: "integrations.geminiStep1",
                 snippet: { language: "json", code: ({ url, token }) => JSON.stringify({ mcpServers: { rinia: { httpUrl: url, headers: { Authorization: `Bearer ${token}` } } } }, null, 2) },
@@ -144,11 +167,14 @@ export const integrations: Integration[] = [
         tagline: "integrations.mcpTagline",
         available: true,
         website: "https://modelcontextprotocol.io",
-        steps: [
+        signInSteps: [
+            { text: "integrations.mcpStep1", snippet: { language: "text", code: ({ url }) => url } },
+            { text: "integrations.mcpSignIn" },
+        ],
+        tokenSteps: [
             { text: "integrations.mcpStep1", snippet: { language: "text", code: ({ url }) => url } },
             { text: "integrations.mcpStep2", snippet: { language: "text", code: ({ token }) => `Authorization: Bearer ${token}` } },
         ],
-        note: "integrations.mcpNote",
     },
     { slug: "github", name: "GitHub", category: "engineering", logo: logos.github, tagline: "integrations.githubTagline", available: false },
     { slug: "slack", name: "Slack", category: "communication", logo: logos.slack, tagline: "integrations.slackTagline", available: false },

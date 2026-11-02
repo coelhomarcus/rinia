@@ -9,6 +9,7 @@ import { favoritesRouter } from "./features/favorites/favorites.routes";
 import { issueCommentsRouter, issueRelationsRouter, issuesRouter } from "./features/issues/issues.routes";
 import { mcpRouter } from "./features/mcp/mcp.routes";
 import { myIssuesRouter, notificationsRouter } from "./features/notifications/notifications.routes";
+import { oauthMetadataRouter, oauthRouter } from "./features/oauth/oauth.routes";
 import { projectsRouter } from "./features/projects/projects.routes";
 import { usersRouter } from "./features/users/users.routes";
 import { assignRequestId, requestContext } from "./lib/request-context";
@@ -54,6 +55,9 @@ app.use("/api/my-issues", myIssuesRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/api-tokens", apiTokensRouter);
 app.use("/api/mcp", mcpRouter);
+app.use("/api/oauth", oauthRouter);
+// OAuth discovery for MCP clients, at the well-known paths the standards put at the root.
+app.use("/.well-known", oauthMetadataRouter);
 
 // Any /api/* route not mapped above -> JSON 404, before the static fallback below
 // (otherwise the SPA catch-all would swallow misspelled or unknown API calls).

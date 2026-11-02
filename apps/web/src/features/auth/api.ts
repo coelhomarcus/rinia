@@ -1,4 +1,4 @@
-import type { CreateApiTokenInput, LoginInput, RegisterInput, UpdateLocaleInput, UpdateProfileInput } from "@rinia/shared";
+import type { ApiTokenAccess, CreateApiTokenInput, LoginInput, RegisterInput, UpdateLocaleInput, UpdateProfileInput } from "@rinia/shared";
 import { apiClient } from "@/lib/api-client";
 
 export interface AuthUser {
@@ -49,6 +49,9 @@ export interface ApiToken {
     name: string;
     /** The token's first characters, enough to tell tokens apart. */
     prefix: string;
+    access: ApiTokenAccess;
+    /** Handed to an app when someone signed in to it with Rinia, rather than made on this page. */
+    oauth: boolean;
     lastUsedAt: string | null;
     createdAt: string;
 }

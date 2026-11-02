@@ -11,22 +11,32 @@ export function bearerToken(header: string | undefined): string | undefined {
     return match ? (match[1] ?? "").trim() : undefined;
 }
 
+/** Methods that only read. A read-only token may send these and nothing else. */
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 /**
  * Accepts the session cookie or an API token. A request that sends a token is judged by the token alone, so a
- * revoked token fails even from a browser that also holds a session.
+ * revoked token fails even from a browser that also holds a session. A read-only token is refused anything but
+ * reading; the MCP endpoint, where every call is a POST, sorts its tools by `req.tokenAccess` instead.
  */
 export const requireAuth = asyncHandler(async (req, res, next) => {
     const apiToken = bearerToken(req.get("authorization"));
     if (apiToken !== undefined) {
-        const user = apiToken ? await authenticateApiToken(apiToken) : null;
-        if (!user) {
+        const authenticated = apiToken ? await authenticateApiToken(apiToken) : null;
+        if (!authenticated) {
             logFor("auth").warn({ event: "auth.token_rejected", ip: req.ip, empty: !apiToken }, "invalid or revoked API token used");
             res.status(401).json({ error: "Invalid or revoked API token", code: "errors.invalidSession" });
             return;
         }
-        req.user = user;
+        req.user = authenticated.user;
         req.authMethod = "token";
+        req.tokenAccess = authenticated.access;
         identifyRequest(req);
+        if (authenticated.access === "read" && !READ_METHODS.has(req.method) && !req.baseUrl.startsWith("/api/mcp")) {
+            logFor("audit").warn({ event: "permission.denied", reason: "read_only_token", method: req.method }, "read-only API token used to change something");
+            res.status(403).json({ error: "This API token can only read", code: "errors.permissionDenied" });
+            return;
+        }
         next();
         return;
     }

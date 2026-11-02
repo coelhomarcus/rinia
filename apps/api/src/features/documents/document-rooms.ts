@@ -1,6 +1,6 @@
 import { DOCUMENT_FRAGMENT, documentSchema } from "@rinia/shared/src/rich-text-schema";
 import { isAllowedImageSource, type PresenceViewer, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
-import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
+import { prosemirrorJSONToYDoc, updateYFragment, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import * as decoding from "lib0/decoding";
 import * as encoding from "lib0/encoding";
@@ -119,6 +119,23 @@ class DocumentRoom {
 
     json(): TiptapDocument {
         return yDocToProsemirrorJSON(this.doc, DOCUMENT_FRAGMENT) as unknown as TiptapDocument;
+    }
+
+    /**
+     * Makes the page match `content` the way an editor would: only the blocks that differ change, so everyone in the
+     * room sees the edit arrive and keeps their place, and what they type meanwhile merges with it.
+     */
+    replace(content: TiptapDocument) {
+        const node = documentSchema.nodeFromJSON(content);
+        this.doc.transact(() => updateYFragment(this.doc, this.doc.getXmlFragment(DOCUMENT_FRAGMENT), node, { mapping: new Map(), isOMark: new Map() }), SERVER);
+    }
+
+    /** Lets a room that the server opened by itself, with nobody in it, close once it has been idle for a while. */
+    release() {
+        if (this.connections.size > 0 || this.closed) return;
+        clearTimeout(this.idleTimer);
+        this.idleTimer = setTimeout(() => this.onIdle(this), IDLE_MS);
+        this.idleTimer.unref?.();
     }
 
     add(connection: RoomConnection) {
@@ -321,7 +338,27 @@ export class DocumentRooms {
 
     /** Puts a connection into a page's room, loading the page first if nobody has it open. */
     async join(connection: RoomConnection, documentId: string) {
-        const channel = channelOf(documentId);
+        const room = await this.open(documentId);
+        // The tab may have left while the page loaded.
+        if (connection.channels.has(channelOf(documentId))) room.add(connection);
+    }
+
+    /**
+     * Rewrites a page's content as a collaborator would, opening the page if nobody has it open, and saves it. Returns
+     * the page as it stands afterwards, which includes anything people typed while the change was being made.
+     */
+    async replace(documentId: string, content: TiptapDocument): Promise<TiptapDocument> {
+        const room = await this.open(documentId);
+        try {
+            room.replace(content);
+            await room.flush();
+            return room.json();
+        } finally {
+            room.release();
+        }
+    }
+
+    private open(documentId: string): Promise<DocumentRoom> {
         let pending = this.rooms.get(documentId);
         if (!pending) {
             const room = new DocumentRoom(documentId, (idle) => void this.drop(idle));
@@ -339,9 +376,7 @@ export class DocumentRooms {
             this.rooms.set(documentId, pending);
             pending.catch(() => this.rooms.get(documentId) === pending && this.rooms.delete(documentId));
         }
-        const room = await pending;
-        // The tab may have left while the page loaded.
-        if (connection.channels.has(channel)) room.add(connection);
+        return pending;
     }
 
     leave(connection: RoomConnection, channel: RealtimeChannel) {

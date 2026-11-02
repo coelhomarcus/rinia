@@ -21,6 +21,7 @@ import views from "./views";
 import realtime from "./realtime";
 import agent from "./agent";
 import integrations from "./integrations";
+import oauth from "./oauth";
 
 export const ptBR = {
     common,
@@ -46,4 +47,5 @@ export const ptBR = {
     realtime,
     agent,
     integrations,
+    oauth,
 } as const;

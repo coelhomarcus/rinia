@@ -3,6 +3,7 @@ import { createApiTokenSchema } from "@rinia/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
+import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { settingsWideFieldClass } from "@/components/settings/settings-layout";
 import { API_TOKENS_QUERY_KEY, createApiToken, type ApiToken } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
@@ -14,20 +15,25 @@ export interface CreatedToken {
     secret: string;
 }
 
-/** A token name and the button that creates it, the same height side by side. The list of tokens updates on its own. */
+/**
+ * A token name and the button that creates it, the same height side by side, and whether the token may only read.
+ * The list of tokens updates on its own.
+ */
 export function CreateTokenForm({ onCreated, placeholder }: { onCreated: (created: CreatedToken) => void; placeholder?: string }) {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [name, setName] = useState("");
+    const [readOnly, setReadOnly] = useState(false);
     const create = useMutation({
         mutationFn: createApiToken,
         onSuccess: (created) => {
             setName("");
+            setReadOnly(false);
             queryClient.setQueryData<ApiToken[]>(API_TOKENS_QUERY_KEY, (current) => [created.token, ...(current ?? [])]);
             onCreated(created);
         },
     });
-    const parsed = createApiTokenSchema.safeParse({ name });
+    const parsed = createApiTokenSchema.safeParse({ name, access: readOnly ? "read" : "write" });
     const submit = (event: FormEvent) => {
         event.preventDefault();
         if (parsed.success) create.mutate(parsed.data);
@@ -48,6 +54,7 @@ export function CreateTokenForm({ onCreated, placeholder }: { onCreated: (create
                     {t("agent.createToken")}
                 </Button>
             </div>
+            <Checkbox isSelected={readOnly} onChange={setReadOnly} isDisabled={create.isPending} label={t("agent.readOnly")} hint={t("agent.readOnlyHint")} />
             {create.isError && <Alert tone="error">{create.error instanceof ApiError ? create.error.message : t("agent.couldNotCreateToken")}</Alert>}
         </form>
     );
