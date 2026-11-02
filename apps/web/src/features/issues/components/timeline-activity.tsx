@@ -4,7 +4,7 @@ import { IssueAvatarGroup, PriorityIcon, StateIcon, sourceLabel } from "@/featur
 import { formatDueDate } from "@/features/issues/lib/due-date";
 import { translateStatusName } from "@/i18n/status-label";
 import type { TranslationKey } from "@/i18n/resources";
-import { activityEventIcon } from "../lib/activity-event-icon";
+import { activityEventIcon, type ActivityEventIcon } from "../lib/activity-event-icon";
 import { formatDistanceToNow, formatFullIssueDate } from "../lib/relative-time";
 import { LabelChip } from "./labels-picker";
 
@@ -35,12 +35,15 @@ const activityLabelKeys: Record<string, TranslationKey> = {
 
 /**
  * One line of the issue feed: the person who did it first (grouped with the tool when a tool did the work), so every
- * row starts the same way, then what changed. The event icon closes the change, after the from → to, and the avatar
- * shares the first line of text, so a long row that wraps keeps it at the top.
+ * row starts the same way, then what changed. Status and priority changes put their icon before each side of the
+ * from → to. The avatar shares the first line of text, so a long row that wraps keeps it at the top.
  */
 export function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; lookups: TimelineLookups }) {
     const { t, i18n } = useTranslation();
-    const eventIcon = activityEventIcon(entry, lookups);
+    const fromIcon = activityEventIcon(entry, lookups, "from");
+    const toIcon = activityEventIcon(entry, lookups, "to");
+    const columns = lookups.columns.map((column) => ({ ...column, name: translateStatusName(column.name, t) }));
+    const change = activityChangeValues(entry.payload, { ...lookups, columns }, t("issue.noneValue"), i18n.language);
     const label = entry.type === "label_added" || entry.type === "label_removed" ? lookups.categories.find((category) => category.id === entry.payload.categoryId) : undefined;
     return (
         <li className="animate-enter flex items-start gap-2.5 py-1.5 pl-1 text-[13px] leading-5 text-tertiary">
@@ -50,9 +53,12 @@ export function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; loo
             <p className="min-w-0 flex-1">
                 <span className="font-medium text-secondary">{entry.actor.name}</span>{" "}{activityLabelKeys[entry.type] ? t(activityLabelKeys[entry.type]) : entry.type}
                 {label && <> <LabelChip label={label} className="inline-flex max-w-40 align-middle" /></>}
-                {formatActivityChange(entry.payload, { ...lookups, columns: lookups.columns.map((column) => ({ ...column, name: translateStatusName(column.name, t) })) }, t("issue.noneValue"), i18n.language)}
-                {eventIcon?.kind === "state" && <StateIcon name={eventIcon.name} color={eventIcon.color} className="ml-1.5 inline-block size-4 shrink-0 align-text-bottom" />}
-                {eventIcon?.kind === "priority" && <PriorityIcon priority={eventIcon.priority} className="ml-1.5 inline-block size-4 align-text-bottom" />}
+                {change && <>
+                    <span> · </span>
+                    <EventIcon icon={fromIcon} />{change.from}
+                    <span> → </span>
+                    <EventIcon icon={toIcon} />{change.to}
+                </>}
                 <span className="text-placeholder"> · </span>
                 <time className="text-placeholder" title={formatFullIssueDate(entry.createdAt, i18n.language)} dateTime={entry.createdAt}>{formatDistanceToNow(entry.createdAt, i18n.language)}</time>
                 {entry.source && <span className="sr-only"> {t("issue.viaSource", { client: sourceLabel(entry.source) })}</span>}
@@ -61,13 +67,13 @@ export function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; loo
     );
 }
 
-function formatActivityChange(payload: Record<string, unknown>, lookups: {
+function activityChangeValues(payload: Record<string, unknown>, lookups: {
     columns: Array<{ id: string; name: string }>;
     members: Array<{ id: string; name: string }>;
     categories: Array<{ id: string; name: string }>;
     projectIssues: Array<{ id: string; identifier: string; title: string }>;
-}, noneLabel: string, locale: string) {
-    if (!("from" in payload) && !("to" in payload)) return "";
+}, noneLabel: string, locale: string): { from: string; to: string } | null {
+    if (!("from" in payload) && !("to" in payload)) return null;
     const field = String(payload.field ?? "");
     const resolve = (value: unknown) => {
         if (value === null || value === undefined || value === "") return noneLabel;
@@ -78,5 +84,12 @@ function formatActivityChange(payload: Record<string, unknown>, lookups: {
         if (match) return match.name;
         return String(value);
     };
-    return ` · ${resolve(payload.from)} → ${resolve(payload.to)}`;
+    return { from: resolve(payload.from), to: resolve(payload.to) };
+}
+
+function EventIcon({ icon }: { icon: ActivityEventIcon | null }) {
+    const className = "mr-1 inline-block size-4 shrink-0 align-text-bottom";
+    if (icon?.kind === "state") return <StateIcon name={icon.name} color={icon.color} className={className} />;
+    if (icon?.kind === "priority") return <PriorityIcon priority={icon.priority} className={className} />;
+    return null;
 }

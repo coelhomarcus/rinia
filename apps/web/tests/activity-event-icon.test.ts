@@ -9,6 +9,12 @@ describe("activityEventIcon", () => {
         expect(activityEventIcon({ type: "status_changed", payload: { to: "col-2" } }, lookups)).toEqual({ kind: "state", name: "Done", color: undefined });
     });
 
+    test("shows the state the issue left on the from side", () => {
+        expect(activityEventIcon({ type: "status_changed", payload: { from: "col-2", to: "col-1" } }, lookups, "from")).toEqual({ kind: "state", name: "Done", color: undefined });
+        expect(activityEventIcon({ type: "priority_changed", payload: { from: "low", to: "high" } }, lookups, "from")).toEqual({ kind: "priority", priority: "low" });
+        expect(activityEventIcon({ type: "status_changed", payload: { from: null, to: "col-1" } }, lookups, "from")).toBeNull();
+    });
+
     test("shows no icon when the target state is unknown", () => {
         expect(activityEventIcon({ type: "status_changed", payload: { to: "gone" } }, lookups)).toBeNull();
         expect(activityEventIcon({ type: "status_changed", payload: { to: null } }, lookups)).toBeNull();
