@@ -70,7 +70,7 @@ export function PriorityIcon({ priority, className = "size-3.5" }: { priority: s
 }
 
 export function IssueAvatar({ name, avatarUrl, className }: { name: string; avatarUrl?: string | null; className?: string }) {
-    return <span title={name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white", className)} style={{ backgroundColor: "#92346f" }}>
+    return <span title={name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
         {avatarUrl ? <img src={avatarUrl} alt={name} className="size-full object-cover" /> : name.charAt(0).toUpperCase()}
     </span>;
 }
