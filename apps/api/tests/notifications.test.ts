@@ -143,15 +143,16 @@ test("the inbox needs a session", async () => {
     assert.equal((await call("GET", "/notifications/unread-count", null)).status, 401);
 });
 
-test("the unread count skips projects the user has left, and admins see every project", async () => {
+test("the unread count skips projects the user has left, for site admins too", async () => {
     const dialect = new PgDialect();
-    const wheres = stubSelects([{ value: 3 }], [{ value: 5 }]);
+    const wheres = stubSelects([{ value: 3 }], [{ value: 3 }]);
     assert.deepEqual(await (await call("GET", "/notifications/unread-count", ana)).json(), { count: 3 });
-    assert.deepEqual(await (await call("GET", "/notifications/unread-count", ana, undefined, true)).json(), { count: 5 });
-    const [member, admin] = wheres.map((where) => dialect.sqlToQuery(where).sql);
-    assert.match(member, /"read_at" is null/);
-    assert.match(member, /"project_members"/);
-    assert.doesNotMatch(admin, /"project_members"/);
+    assert.deepEqual(await (await call("GET", "/notifications/unread-count", ana, undefined, true)).json(), { count: 3 });
+    for (const where of wheres) {
+        const sql = dialect.sqlToQuery(where).sql;
+        assert.match(sql, /"read_at" is null/);
+        assert.match(sql, /"project_members"/);
+    }
 });
 
 test("people cannot read or unread someone else's notification", async () => {

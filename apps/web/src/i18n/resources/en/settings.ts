@@ -21,7 +21,8 @@ const settings = {
         labelsSummary: "Labels available to this project's issues", labelCount_one: "{{count}} label", labelCount_other: "{{count}} labels",
         identifier: "Identifier", identifierHint: "Used in issue IDs", repositoryHint: "Linked from the project header", bannerHint: "Shown on the project card",
         descriptionHint: "A short summary shown on the project page", descriptionPlaceholder: "e.g. Customer-facing web app and its API",
-        dangerZone: "Danger zone", administrationDescription: "Settings that apply to the whole instance.", data: "Data", interfaceAndTheme: "Interface and theme",
+        dangerZone: "Danger zone", administrationDescription: "Settings that apply to the whole instance.", interfaceAndTheme: "Interface and theme",
+        adminProjects: "Projects", adminProjectsDescription: "Every project on this instance: who is in it and how big it is. Its content is visible to its members only.", couldNotLoadAdminProjects: "Could not load the projects.", noOwner: "No owner", adminProjectSummary: "{{owner}} · {{members}}", documentCount_one: "{{count}} document", documentCount_other: "{{count}} documents", adminIssueCount_one: "{{count}} issue", adminIssueCount_other: "{{count}} issues", projectKey: "Key", createdBy: "Created by", createdOn: "Created on", lastChanged: "Last changed", size: "Size", issues: "Issues", documents: "Documents", adminContentNote: "Issues, documents and comments in this project are visible to its members only.", couldNotLoadAdminProject: "Could not load this project.",
     } as const;
 
 export default settings;

@@ -40,11 +40,11 @@ test("an event reaches each listening tab once, and no one outside its channels"
     const both = fakeSocket();
     const projectOnly = fakeSocket();
     const elsewhere = fakeSocket();
-    const first = hub.connect(both, ana, false);
+    const first = hub.connect(both, ana);
     hub.subscribe(first, `project:${projectId}`, projectId);
     hub.subscribe(first, `issue:${issueId}`, projectId);
-    hub.subscribe(hub.connect(projectOnly, bruno, false), `project:${projectId}`, projectId);
-    hub.subscribe(hub.connect(elsewhere, bruno, false), "project:7a1c0e55-0000-4000-8000-0000000000ff", "7a1c0e55-0000-4000-8000-0000000000ff");
+    hub.subscribe(hub.connect(projectOnly, bruno), `project:${projectId}`, projectId);
+    hub.subscribe(hub.connect(elsewhere, bruno), "project:7a1c0e55-0000-4000-8000-0000000000ff", "7a1c0e55-0000-4000-8000-0000000000ff");
 
     const event = { type: "issue.updated" as const, projectId, id: issueId, actorId: ana.id, clientId: "tab-a" };
     hub.publish(event, channelsFor(event));
@@ -65,11 +65,11 @@ test("presence lists each person once, editing if any of their tabs is, and only
     const hub = new RealtimeHub();
     const channel = `document:${documentId}` as const;
     const watcher = fakeSocket();
-    const watching = hub.connect(watcher, bruno, false);
+    const watching = hub.connect(watcher, bruno);
     hub.subscribe(watching, channel, projectId);
-    const tabs = [hub.connect(fakeSocket(), ana, false), hub.connect(fakeSocket(), ana, false)];
+    const tabs = [hub.connect(fakeSocket(), ana), hub.connect(fakeSocket(), ana)];
     for (const tab of tabs) hub.subscribe(tab, channel, projectId);
-    const stranger = hub.connect(fakeSocket(), bruno, false);
+    const stranger = hub.connect(fakeSocket(), bruno);
 
     hub.heartbeat(tabs[0], channel, false, 0);
     hub.heartbeat(tabs[1], channel, true, 0);
@@ -90,11 +90,11 @@ test("presence lists each person once, editing if any of their tabs is, and only
 test("someone arriving sees who is already on the page", () => {
     const hub = new RealtimeHub();
     const channel = `issue:${issueId}` as const;
-    const first = hub.connect(fakeSocket(), ana, false);
+    const first = hub.connect(fakeSocket(), ana);
     hub.subscribe(first, channel, projectId);
     hub.heartbeat(first, channel, false, 0);
     const late = fakeSocket();
-    hub.subscribe(hub.connect(late, bruno, false), channel, projectId);
+    hub.subscribe(hub.connect(late, bruno), channel, projectId);
     assert.deepEqual(ofType(late.messages, "presence")[0]?.viewers, [{ user: ana, editing: false }]);
 });
 
@@ -102,8 +102,8 @@ test("presence without a heartbeat expires and the others hear about it", () => 
     const hub = new RealtimeHub();
     const channel = `issue:${issueId}` as const;
     const watcher = fakeSocket();
-    hub.subscribe(hub.connect(watcher, bruno, false), channel, projectId);
-    const sleeping = hub.connect(fakeSocket(), ana, false);
+    hub.subscribe(hub.connect(watcher, bruno), channel, projectId);
+    const sleeping = hub.connect(fakeSocket(), ana);
     hub.subscribe(sleeping, channel, projectId);
     hub.heartbeat(sleeping, channel, false, 0);
 
@@ -114,34 +114,29 @@ test("presence without a heartbeat expires and the others hear about it", () => 
     assert.deepEqual(ofType(watcher.messages, "presence").at(-1)?.viewers, []);
 });
 
-test("removing someone from a project drops its channels from their sockets, but not an admin's", () => {
+test("removing someone from a project drops its channels from their sockets", () => {
     const hub = new RealtimeHub();
     const member = fakeSocket();
-    const connection = hub.connect(member, bruno, false);
+    const connection = hub.connect(member, bruno);
     hub.subscribe(connection, `project:${projectId}`, projectId);
     hub.subscribe(connection, `issue:${issueId}`, projectId);
     hub.subscribe(connection, "project:7a1c0e55-0000-4000-8000-0000000000ff", "7a1c0e55-0000-4000-8000-0000000000ff");
-    const admin = hub.connect(fakeSocket(), ana, true);
-    hub.subscribe(admin, `project:${projectId}`, projectId);
 
     hub.revoke(projectId, bruno.id);
-    hub.revoke(projectId, ana.id);
     assert.deepEqual([...connection.channels.keys()], ["project:7a1c0e55-0000-4000-8000-0000000000ff"]);
     assert.deepEqual(ofType(member.messages, "denied").map((message) => message.channel), [`project:${projectId}`, `issue:${issueId}`]);
-    assert.equal(admin.channels.size, 1);
 });
 
 test("a channel is open to project members only, and deleted issues have none", async () => {
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ projectId }) as never);
     const membership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ id: "membership", role: "member" }) as never);
-    assert.equal(await authorizeChannel(`issue:${issueId}`, { id: ana.id, isAdmin: false }), projectId);
+    assert.equal(await authorizeChannel(`issue:${issueId}`, { id: ana.id }), projectId);
 
     membership.mockImplementation(async () => undefined);
-    await assert.rejects(authorizeChannel(`issue:${issueId}`, { id: bruno.id, isAdmin: false }), isHttp(403));
-    assert.equal(await authorizeChannel(`issue:${issueId}`, { id: bruno.id, isAdmin: true }), projectId, "site admins see every project");
+    await assert.rejects(authorizeChannel(`issue:${issueId}`, { id: bruno.id }), isHttp(403));
 
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => undefined);
-    await assert.rejects(authorizeChannel(`document:${documentId}`, { id: ana.id, isAdmin: true }), isHttp(404));
+    await assert.rejects(authorizeChannel(`document:${documentId}`, { id: ana.id }), isHttp(404));
 });
 
 test("clients may only name project, issue and document channels, and presence is per issue or document", () => {

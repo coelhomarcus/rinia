@@ -20,12 +20,12 @@ const richText = (column: SQL | typeof issues.descriptionJson | typeof projectDo
  * Issues and pages whose title or text contains the term, from the projects the user can see. An identifier such as
  * `RIN-4` finds that issue first. Pages are searched in their last saved state.
  */
-export async function searchWorkspace(userId: string, isAdmin: boolean, term: string, options: SearchOptions = {}) {
+export async function searchWorkspace(userId: string, term: string, options: SearchOptions = {}) {
     const limit = options.limit ?? 20;
     const pattern = containing(term.trim());
     const scope: SQL[] = [];
     if (options.projectId) scope.push(eq(projects.id, options.projectId));
-    if (!isAdmin) scope.push(inArray(projects.id, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
+    scope.push(inArray(projects.id, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
 
     const identifier = /^([A-Za-z0-9]{2,8})-(\d+)$/.exec(term.trim());
     const issueMatch = or(

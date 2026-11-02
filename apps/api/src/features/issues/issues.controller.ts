@@ -40,7 +40,7 @@ export const create = asyncHandler<{ projectId: string }>(async (req, res) => {
 
 export const getOne = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
     const issue = await getIssueOrThrow(req.params.issueIdentifier);
-    await assertProjectMembership(issue.projectId, req.user!.sub, req.user!.isAdmin);
+    await assertProjectMembership(issue.projectId, req.user!.sub);
     res.json({ issue: { ...issue, identifier: issueIdentifier(issue) } });
 });
 

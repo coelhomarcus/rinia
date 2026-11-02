@@ -4,12 +4,12 @@ import { asyncHandler } from "../../middleware/async-handler";
 import { addFavorite, listFavorites, removeFavorite, restoreFavorite } from "./favorites.service";
 
 export const list = asyncHandler(async (req, res) => {
-    res.json({ favorites: await listFavorites(req.user!.sub, req.user!.isAdmin) });
+    res.json({ favorites: await listFavorites(req.user!.sub) });
 });
 
 export const create = asyncHandler(async (req, res) => {
     const input = createFavoriteSchema.parse(req.body);
-    res.status(201).json({ favorite: await addFavorite(req.user!.sub, req.user!.isAdmin, input) });
+    res.status(201).json({ favorite: await addFavorite(req.user!.sub, input) });
 });
 
 export const remove = asyncHandler<{ favoriteId: string }>(async (req, res) => {

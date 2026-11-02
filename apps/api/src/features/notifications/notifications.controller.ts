@@ -6,11 +6,11 @@ import { getIssueOrThrow, listMyIssues } from "../issues/issues.service";
 import { countUnreadNotifications, followIssue, isFollowingIssue, listNotifications, markAllNotificationsRead, setNotificationRead, unfollowIssue } from "./notifications.service";
 
 export const list = asyncHandler(async (req, res) => {
-    res.json({ notifications: await listNotifications(req.user!.sub, req.user!.isAdmin) });
+    res.json({ notifications: await listNotifications(req.user!.sub) });
 });
 
 export const unreadCount = asyncHandler(async (req, res) => {
-    res.json({ count: await countUnreadNotifications(req.user!.sub, req.user!.isAdmin) });
+    res.json({ count: await countUnreadNotifications(req.user!.sub) });
 });
 
 export const update = asyncHandler<{ notificationId: string }>(async (req, res) => {
@@ -24,29 +24,29 @@ export const readAll = asyncHandler(async (req, res) => {
 });
 
 export const myIssues = asyncHandler(async (req, res) => {
-    res.json({ issues: await listMyIssues(req.user!.sub, req.user!.isAdmin, myIssuesQuerySchema.parse(req.query)) });
+    res.json({ issues: await listMyIssues(req.user!.sub, myIssuesQuerySchema.parse(req.query)) });
 });
 
 /** Following is per issue and needs access to its project, like reading the issue does. */
-async function followableIssue(identifier: string, userId: string, isAdmin: boolean) {
+async function followableIssue(identifier: string, userId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await assertProjectMembership(issue.projectId, userId, isAdmin);
+    await assertProjectMembership(issue.projectId, userId);
     return issue;
 }
 
 export const subscription = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
-    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub, req.user!.isAdmin);
+    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub);
     res.json({ subscription: { following: await isFollowingIssue(req.user!.sub, issue.id) } });
 });
 
 export const follow = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
-    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub, req.user!.isAdmin);
+    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub);
     await followIssue(req.user!.sub, issue.id);
     res.json({ subscription: { following: true } });
 });
 
 export const unfollow = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
-    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub, req.user!.isAdmin);
+    const issue = await followableIssue(req.params.issueIdentifier, req.user!.sub);
     await unfollowIssue(req.user!.sub, issue.id);
     res.json({ subscription: { following: false } });
 });

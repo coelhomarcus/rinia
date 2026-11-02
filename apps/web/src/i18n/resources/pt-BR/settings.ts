@@ -21,7 +21,8 @@ const settings = {
         labelsSummary: "Etiquetas disponíveis para as tarefas deste projeto", labelCount_one: "{{count}} etiqueta", labelCount_other: "{{count}} etiquetas",
         identifier: "Identificador", identifierHint: "Usado nos IDs das tarefas", repositoryHint: "Aparece no cabeçalho do projeto", bannerHint: "Exibido no card do projeto",
         descriptionHint: "Um resumo curto exibido na página do projeto", descriptionPlaceholder: "ex.: App web para clientes e sua API",
-        dangerZone: "Zona de perigo", administrationDescription: "Configurações que valem para toda a instância.", data: "Dados", interfaceAndTheme: "Interface e tema",
+        dangerZone: "Zona de perigo", administrationDescription: "Configurações que valem para toda a instância.", interfaceAndTheme: "Interface e tema",
+        adminProjects: "Projetos", adminProjectsDescription: "Todos os projetos da instância: quem participa e o tamanho de cada um. O conteúdo fica visível só para os membros.", couldNotLoadAdminProjects: "Não foi possível carregar os projetos.", noOwner: "Sem proprietário", adminProjectSummary: "{{owner}} · {{members}}", documentCount_one: "{{count}} documento", documentCount_other: "{{count}} documentos", adminIssueCount_one: "{{count}} tarefa", adminIssueCount_other: "{{count}} tarefas", projectKey: "Chave", createdBy: "Criado por", createdOn: "Criado em", lastChanged: "Última alteração", size: "Tamanho", issues: "Tarefas", documents: "Documentos", adminContentNote: "Tarefas, documentos e comentários deste projeto só são visíveis para os membros.", couldNotLoadAdminProject: "Não foi possível carregar este projeto.",
     } as const;
 
 export default settings;

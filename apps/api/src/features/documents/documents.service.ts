@@ -82,12 +82,11 @@ export async function deleteDocument(
   projectId: string,
   documentId: string,
   userId: string,
-  isAdmin: boolean,
 ) {
   // Only the author is needed here, not the content a live room would have to convert.
   const document = await db.query.projectDocuments.findFirst({ where: matchingDocument(projectId, documentId), columns: { createdBy: true } });
   if (!document) throw new HttpError(404, "Document not found");
-  if (!isAdmin && document.createdBy !== userId) {
+  if (document.createdBy !== userId) {
     const owner = await db.query.projectMembers.findFirst({
       where: and(
         eq(projectMembers.projectId, projectId),

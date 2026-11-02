@@ -98,14 +98,14 @@ export function planIssueChange(change: IssueChange, followers: string[], audien
     return { follow: [...follow].filter((id) => audience.has(id)), notifications: [...planned.values()] };
 }
 
-/** Of `userIds`, the people who can see the project: its members, and admins. */
+/** Of `userIds`, the people who can see the project: its members. */
 async function projectAudience(projectId: string, userIds: string[]) {
     if (userIds.length === 0) return new Set<string>();
     const rows = await db
         .select({ id: users.id })
         .from(users)
         .leftJoin(projectMembers, and(eq(projectMembers.userId, users.id), eq(projectMembers.projectId, projectId)))
-        .where(and(inArray(users.id, userIds), or(isNotNull(projectMembers.id), eq(users.isAdmin, true))));
+        .where(and(inArray(users.id, userIds), isNotNull(projectMembers.id)));
     return new Set(rows.map((row) => row.id));
 }
 
@@ -129,14 +129,14 @@ export async function recordIssueChange(issue: { id: string; projectId: string }
     }
 }
 
-/** Hides notifications from projects the user has left. Admins see every project. */
-function visibleTo(userId: string, isAdmin: boolean) {
-    return isAdmin ? undefined : inArray(notifications.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId)));
+/** Hides notifications from projects the user has left. */
+function visibleTo(userId: string) {
+    return inArray(notifications.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId)));
 }
 
-export async function listNotifications(userId: string, isAdmin: boolean) {
+export async function listNotifications(userId: string) {
     const rows = await db.query.notifications.findMany({
-        where: and(eq(notifications.userId, userId), visibleTo(userId, isAdmin)),
+        where: and(eq(notifications.userId, userId), visibleTo(userId)),
         orderBy: [desc(notifications.createdAt)],
         limit: 200,
         with: {
@@ -174,11 +174,11 @@ export async function listNotifications(userId: string, isAdmin: boolean) {
     }));
 }
 
-export async function countUnreadNotifications(userId: string, isAdmin: boolean) {
+export async function countUnreadNotifications(userId: string) {
     const [row] = await db
         .select({ value: count() })
         .from(notifications)
-        .where(and(eq(notifications.userId, userId), isNull(notifications.readAt), visibleTo(userId, isAdmin)));
+        .where(and(eq(notifications.userId, userId), isNull(notifications.readAt), visibleTo(userId)));
     return row?.value ?? 0;
 }
 

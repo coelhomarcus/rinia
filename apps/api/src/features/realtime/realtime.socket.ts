@@ -111,7 +111,7 @@ async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
     const user = await db.query.users.findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true } }).catch(() => undefined);
     if (!user) return ws.close(4401, "Invalid session");
     if (ws.readyState !== ws.OPEN) return;
-    connection = realtimeHub.connect(ws, user, session.isAdmin);
+    connection = realtimeHub.connect(ws, user);
     // The session cookie outlives nothing: once the token expires, the socket closes and the client signs in again.
     if (session.exp) {
         const expiresIn = session.exp * 1000 - Date.now();
@@ -140,7 +140,7 @@ async function receive(ws: WebSocket, connection: RealtimeConnection, raw: strin
     if (message.type === "presence") return realtimeHub.heartbeat(connection, channel, message.editing);
     if (connection.channels.has(channel)) return send(ws, { type: "subscribed", channel });
     try {
-        const projectId = await authorizeChannel(channel, { id: connection.user.id, isAdmin: connection.isAdmin });
+        const projectId = await authorizeChannel(channel, { id: connection.user.id });
         if (!realtimeHub.connections.has(connection)) return;
         realtimeHub.subscribe(connection, channel, projectId);
         // The page is loaded before the client hears it can sync, so its first message finds the room ready.

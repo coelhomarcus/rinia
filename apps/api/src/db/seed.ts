@@ -278,10 +278,10 @@ async function main() {
             documentByTitle.set(document.title, created.id);
         }
 
-        if (seed.favorites?.project) await addFavorite(admin, true, { kind: "project", projectId: project.id });
-        if (seed.favorites?.issues) await addFavorite(admin, true, { kind: "issues", projectId: project.id });
+        if (seed.favorites?.project) await addFavorite(admin, { kind: "project", projectId: project.id });
+        if (seed.favorites?.issues) await addFavorite(admin, { kind: "issues", projectId: project.id });
         for (const title of seed.favorites?.documents ?? []) {
-            await addFavorite(admin, true, { kind: "document", projectId: project.id, documentId: documentByTitle.get(title)! });
+            await addFavorite(admin, { kind: "document", projectId: project.id, documentId: documentByTitle.get(title)! });
         }
 
         console.log(`Seeded ${project.name} (${project.issueKey}) with ${seed.issues.length} issues`);

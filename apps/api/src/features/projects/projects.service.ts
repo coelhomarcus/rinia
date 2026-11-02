@@ -1,5 +1,5 @@
 import { parseProjectCover, resolveLocale, suggestProjectKey, type CreateProjectInput, type Locale, type UpdateProjectInput, type UpdateProjectPageInput } from "@rinia/shared";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
@@ -104,13 +104,14 @@ export async function createProject(input: CreateProjectInput, creatorId: string
     throw new HttpError(409, "Could not generate a unique project key");
 }
 
-export async function listProjectsForUser(userId: string, isAdmin: boolean) {
-    const projectList = isAdmin
-        ? await db.query.projects.findMany({ columns: PROJECT_LIST_COLUMNS, orderBy: [desc(projects.createdAt)] })
-        : (await db.query.projectMembers.findMany({
-              where: eq(projectMembers.userId, userId),
-              with: { project: { columns: PROJECT_LIST_COLUMNS } },
-          })).map((membership) => membership.project);
+/** The projects the user belongs to. Site admins are no exception: they see only the projects they are members of. */
+export async function listProjectsForUser(userId: string) {
+    const projectList = (
+        await db.query.projectMembers.findMany({
+            where: eq(projectMembers.userId, userId),
+            with: { project: { columns: PROJECT_LIST_COLUMNS } },
+        })
+    ).map((membership) => membership.project);
 
     type MemberPreview = { id: string; name: string; avatarUrl: string | null };
     if (projectList.length === 0) return projectList.map((project) => ({ ...withParsedCover(project), memberCount: 0, memberPreview: [], owner: null as MemberPreview | null }));
