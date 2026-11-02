@@ -5,6 +5,7 @@ import { db } from "../../db";
 import { apiTokens } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import type { JwtPayload } from "../../lib/jwt";
+import { logFor } from "../../lib/request-context";
 
 /** How much of a token the list shows: the prefix and four random characters. */
 const VISIBLE_LENGTH = API_TOKEN_PREFIX.length + 4;
@@ -33,6 +34,7 @@ export async function createApiToken(userId: string, input: CreateApiTokenInput)
         .insert(apiTokens)
         .values({ userId, name: input.name, tokenHash: hashApiToken(secret), prefix: secret.slice(0, VISIBLE_LENGTH) })
         .returning({ id: apiTokens.id, name: apiTokens.name, prefix: apiTokens.prefix, lastUsedAt: apiTokens.lastUsedAt, createdAt: apiTokens.createdAt });
+    logFor("audit").info({ event: "api_token.created", userId, tokenId: token.id }, "API token created");
     return { token, secret };
 }
 
@@ -40,6 +42,7 @@ export async function createApiToken(userId: string, input: CreateApiTokenInput)
 export async function revokeApiToken(userId: string, tokenId: string) {
     const [deleted] = await db.delete(apiTokens).where(and(eq(apiTokens.id, tokenId), eq(apiTokens.userId, userId))).returning({ id: apiTokens.id });
     if (!deleted) throw new HttpError(404, "API token not found");
+    logFor("audit").info({ event: "api_token.revoked", userId, tokenId }, "API token revoked");
 }
 
 /** Who a token acts as, read from the user on every request so a changed admin flag applies at once. Null for an unknown or revoked token. */
@@ -56,7 +59,7 @@ export async function authenticateApiToken(token: string, now = new Date()): Pro
             .update(apiTokens)
             .set({ lastUsedAt: now })
             .where(eq(apiTokens.id, row.id))
-            .catch((error: unknown) => console.error("Could not record API token use", error));
+            .catch((error: unknown) => logFor("api-tokens").error({ err: error, tokenId: row.id }, "could not record API token use"));
     }
     return { sub: row.user.id, username: row.user.username, isAdmin: row.user.isAdmin };
 }

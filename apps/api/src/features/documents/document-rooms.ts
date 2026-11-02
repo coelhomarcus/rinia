@@ -9,6 +9,7 @@ import * as syncProtocol from "y-protocols/sync";
 import * as Y from "yjs";
 import { db } from "../../db";
 import { projectDocuments } from "../../db/schema";
+import { logFor } from "../../lib/request-context";
 
 const MESSAGE_SYNC = 0;
 const MESSAGE_AWARENESS = 1;
@@ -273,10 +274,12 @@ class DocumentRoom {
         this.unsavedSince = undefined;
         clearTimeout(this.saveTimer);
         this.saving = (async () => {
+            const startedAt = performance.now();
+            const state = Y.encodeStateAsUpdate(this.doc);
             try {
                 const saved = await db
                     .update(projectDocuments)
-                    .set({ yjsState: Y.encodeStateAsUpdate(this.doc), contentJson: this.json(), updatedAt: new Date(), revision: sql`${projectDocuments.revision} + 1` })
+                    .set({ yjsState: state, contentJson: this.json(), updatedAt: new Date(), revision: sql`${projectDocuments.revision} + 1` })
                     .where(and(eq(projectDocuments.id, this.documentId), isNull(projectDocuments.deletedAt)))
                     .returning({ id: projectDocuments.id });
                 // A deleted page keeps what was typed after the delete, and saves it if the delete is undone.
@@ -284,8 +287,12 @@ class DocumentRoom {
                     this.unsavedSince ??= since;
                     this.onHold = true;
                 }
+                logFor("documents").debug(
+                    { event: "document.saved", documentId: this.documentId, bytes: state.byteLength, durationMs: Math.round(performance.now() - startedAt), onHold: this.onHold || undefined },
+                    "collaborative page saved",
+                );
             } catch (error) {
-                console.error("Could not save a collaborative page", error);
+                logFor("documents").error({ event: "document.save_failed", documentId: this.documentId, bytes: state.byteLength, err: error }, "could not save a collaborative page");
                 this.unsavedSince ??= Date.now();
                 this.scheduleSave();
             } finally {
@@ -318,8 +325,12 @@ export class DocumentRooms {
         let pending = this.rooms.get(documentId);
         if (!pending) {
             const room = new DocumentRoom(documentId, (idle) => void this.drop(idle));
+            const startedAt = performance.now();
             pending = room.load().then(
-                () => room,
+                () => {
+                    logFor("documents").info({ event: "document.opened", documentId, durationMs: Math.round(performance.now() - startedAt) }, "collaborative page opened");
+                    return room;
+                },
                 (error: unknown) => {
                     room.discard();
                     throw error;
@@ -345,7 +356,7 @@ export class DocumentRooms {
             room?.receive(connection, message);
         } catch (error) {
             // A malformed message from one client must not stop the others.
-            console.warn("Ignoring a bad collaboration message", error);
+            logFor("documents").warn({ event: "document.bad_message", documentId: channel.slice("document:".length), userId: connection.user.id, err: error }, "ignoring a bad collaboration message");
         }
     }
 
@@ -369,6 +380,7 @@ export class DocumentRooms {
         const rooms = await Promise.all([...this.rooms.values()].map((pending) => pending.catch(() => undefined)));
         this.rooms.clear();
         await Promise.all(rooms.map((room) => room?.close()));
+        logFor("documents").info({ event: "document.closed_all", rooms: rooms.filter(Boolean).length }, "collaborative pages saved and closed");
     }
 
     private async drop(room: DocumentRoom) {

@@ -3,6 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { logFor } from "../../lib/request-context";
 import { DEFAULT_COLUMNS } from "./default-columns";
 import { isProjectKeyConflict } from "./project-key";
 import { publishChange, realtimeHub } from "../realtime/realtime.service";
@@ -215,6 +216,8 @@ export async function deleteProject(projectId: string) {
     if (!deleted) {
         throw new HttpError(404, "Project not found");
     }
+    // A deleted project cannot be undone, so who did it is kept.
+    logFor("audit").info({ event: "project.deleted", projectId }, "project deleted");
 }
 
 export async function listProjectMembers(projectId: string) {

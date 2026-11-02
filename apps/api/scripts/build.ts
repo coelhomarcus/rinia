@@ -11,6 +11,8 @@
 // Bun's own implementation. Going back to Node means changing the target, the
 // base image and the CMD, and keeping `ws` out of the bundle or installing node_modules.
 const entryPoints = ["src/server.ts", "src/db/migrate.ts"];
+// The startup log names the version it runs; there is no package.json next to the bundle to read it from.
+const { version } = (await Bun.file("package.json").json()) as { version: string };
 
 for (const entryPoint of entryPoints) {
     // One build per entry point keeps every output at the top of dist/ (dist/server.js, dist/migrate.js).
@@ -20,6 +22,7 @@ for (const entryPoint of entryPoints) {
         target: "bun",
         minify: true,
         sourcemap: "linked",
+        define: { "process.env.RINIA_VERSION": JSON.stringify(version) },
     });
 
     if (!result.success) {

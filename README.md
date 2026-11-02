@@ -91,6 +91,14 @@ Set these in `apps/api/.env`, or pass them to the container.
 | `ADMIN_USERNAMES` | Comma-separated admin usernames |
 | `PORT` | API port, default `3000` |
 | `APP_URL` | Public address of Rinia, used for links in MCP results. Defaults to the address each request came to |
+| `LOG_LEVEL` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`, or `silent`. Default `info` in production, `debug` in development, `silent` in tests |
+| `LOG_FORMAT` | `json` (one line per event) or `pretty` (coloured, for a terminal). Default `pretty` in development, `json` otherwise |
+| `SLOW_REQUEST_MS` | Requests slower than this are logged as warnings, default `1000` |
+| `SLOW_QUERY_MS` | Database queries slower than this are logged as warnings, with their SQL but not their values, default `500` |
+
+### Logs
+
+The API writes its logs to stdout. Every response carries an `X-Request-Id` header, and every line logged while handling that request carries the same `requestId`, with the user's id once they are signed in; a 500 response also returns it in its body, so a failure someone reports can be found in the logs. A proxy can send its own `X-Request-Id`, which is kept. Each API call is logged once as `http.request`, with its route pattern, status, duration, user agent, and the client's IP address. Passwords, tokens, cookies, the registration code, and what people write in issues, comments, and pages are never logged.
 
 ## ⚙️ Built with
 

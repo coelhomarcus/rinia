@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { issues, projectDocuments, projects } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
-import { currentOrigin } from "../../lib/request-context";
+import { currentOrigin, logFor } from "../../lib/request-context";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
 
 /** The part of a WebSocket the hub uses, so tests can pass a plain object. */
@@ -173,6 +173,6 @@ export function publishChange(type: RealtimeEventType, subject: { projectId: str
         const event: RealtimeEvent = { type, ...subject, ...currentOrigin() };
         realtimeHub.publish(event, channelsFor(event));
     } catch (error) {
-        console.error("Could not publish a realtime event", error);
+        logFor("realtime").error({ err: error, type, projectId: subject.projectId, id: subject.id }, "could not publish a realtime event");
     }
 }

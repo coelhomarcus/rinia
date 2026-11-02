@@ -4,6 +4,7 @@ import { appPaths, type ActionSource, columnBucket, createDocumentSchema, create
 import { z, ZodError } from "zod";
 import { HttpError } from "../../lib/http-error";
 import type { JwtPayload } from "../../lib/jwt";
+import { logFor } from "../../lib/request-context";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
 import { listCategories } from "../categories/categories.service";
 import { listColumns } from "../columns/columns.service";
@@ -48,18 +49,34 @@ function matchByName<T>(items: T[], wanted: string, name: (item: T) => string) {
     return exact.length > 0 ? exact : items.filter((item) => normalize(name(item)).includes(target));
 }
 
+/** A refusal or bad arguments the model can correct, as opposed to a fault in Rinia. */
+const isExpectedError = (error: unknown) => error instanceof ZodError || error instanceof HttpError;
+
 function errorMessage(error: unknown) {
     if (error instanceof ZodError) return `Invalid input: ${error.issues.map((issue) => `${issue.path.join(".") || "value"}: ${issue.message}`).join("; ")}`;
     if (error instanceof HttpError) return error.message;
-    console.error("MCP tool failed", error);
     return "Something went wrong in Rinia. Try again.";
 }
 
+/** One `mcp.tool` line per call: which tool, from which client, for whom, how long, and how it ended. */
+function logToolCall(call: { tool: string; source: ActionSource; userId: string; startedAt: number }, error?: unknown) {
+    const entry = { event: "mcp.tool", tool: call.tool, client: call.source.client, userId: call.userId, durationMs: Math.round(performance.now() - call.startedAt), ok: error === undefined };
+    const log = logFor("mcp");
+    if (error === undefined) log.info(entry, `tool ${call.tool}`);
+    else if (isExpectedError(error)) {
+        log.info({ ...entry, status: error instanceof HttpError ? error.statusCode : 400, fields: error instanceof ZodError ? error.issues.map((issue) => issue.path.join(".")) : undefined }, `tool ${call.tool} refused`);
+    } else log.error({ ...entry, err: error }, `tool ${call.tool} failed`);
+}
+
 /** Runs a tool and returns what it found as JSON, or its error as a message the model can act on. */
-async function respond(work: () => Promise<unknown>): Promise<CallToolResult> {
+async function respond(call: { tool: string; source: ActionSource; userId: string }, work: () => Promise<unknown>): Promise<CallToolResult> {
+    const startedAt = performance.now();
     try {
-        return { content: [{ type: "text", text: JSON.stringify(await work(), null, 2) }] };
+        const result: CallToolResult = { content: [{ type: "text", text: JSON.stringify(await work(), null, 2) }] };
+        logToolCall({ ...call, startedAt });
+        return result;
     } catch (error) {
+        logToolCall({ ...call, startedAt }, error);
         return { isError: true, content: [{ type: "text", text: errorMessage(error) }] };
     }
 }
@@ -87,7 +104,7 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
     ) {
         const schema = z.object(config.inputSchema);
         const register = server.registerTool.bind(server) as unknown as (name: string, config: object, callback: (args: unknown) => Promise<CallToolResult>) => void;
-        register(name, config, (args) => respond(() => handler(schema.parse(args))));
+        register(name, config, (args) => respond({ tool: name, source, userId: user.sub }, () => handler(schema.parse(args))));
     }
 
     /** A project's states, labels and members, loaded once per request. */
