@@ -22,13 +22,13 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const list = asyncHandler(async (req, res) => {
-    const projectList = await listProjectsForUser(req.user!.sub, req.user!.isAdmin);
+    const projectList = await listProjectsForUser(req.user!.sub);
     res.json({ projects: projectList });
 });
 
 export const getByKey = asyncHandler<{ key: string }>(async (req, res) => {
     const project = await getProjectByKey(z.string().trim().min(1).max(16).parse(req.params.key));
-    await assertProjectMembership(project.id, req.user!.sub, req.user!.isAdmin);
+    await assertProjectMembership(project.id, req.user!.sub);
     res.json({ project });
 });
 

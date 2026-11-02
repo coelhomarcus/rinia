@@ -7,9 +7,9 @@ import { createView, deleteView, duplicateView, listViews, restoreView, updateVi
 type ProjectParams = { projectId: string };
 type ViewParams = ProjectParams & { viewId: string };
 
-/** Mounted behind `requireProjectMember`, which leaves the member's role on the request. Site admins act as owners. */
+/** Mounted behind `requireProjectMember`, which leaves the member's role on the request. */
 function actorOf(req: Request<ProjectParams>): ViewActor {
-    return { userId: req.user!.sub, isProjectOwner: req.user!.isAdmin || req.projectMembership?.role === "owner" };
+    return { userId: req.user!.sub, isProjectOwner: req.projectMembership?.role === "owner" };
 }
 
 const viewId = (req: Request<ViewParams>) => z.string().uuid().parse(req.params.viewId);

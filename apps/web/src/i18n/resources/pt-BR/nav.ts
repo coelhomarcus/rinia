@@ -9,7 +9,7 @@ const nav = {
         home: "Início",
         backToApp: "Voltar ao app", preferences: "Preferências", personal: "Pessoal", integrations: "Integrações", allIntegrations: "Todas as integrações", apiTokens: "Tokens de API",
         favorite: "Favorito",
-        searchSettings: "Buscar configurações", yourProjects: "Seus projetos", administration: "Administração", noSettingsFound: "Nenhuma configuração encontrada.",
+        searchSettings: "Buscar configurações", yourProjects: "Seus projetos", projectsOf: "Projetos de {{name}}", otherProjects: "Outros projetos", administration: "Administração", noSettingsFound: "Nenhuma configuração encontrada.",
         resizeDrag: "Arraste", resizeDragHint: "para redimensionar",
         inbox: "Inbox", myIssues: "Minhas tarefas", unreadInbox: "Notificações não lidas",
         favorites: "Favoritos", addFavorite: "Adicionar aos favoritos", removeFavorite: "Remover dos favoritos", favoriteRemoved: "Favorito removido",

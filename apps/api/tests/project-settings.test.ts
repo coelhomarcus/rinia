@@ -163,15 +163,17 @@ function authorize(isAdmin: boolean): Promise<number> {
     });
 }
 
-test("project deletion/settings guard rejects members and nonmembers", async () => {
+test("project deletion/settings guard rejects members and nonmembers, site admins included", async () => {
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: "project" }));
     const membership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "member" }));
     assert.equal(await authorize(false), 403);
+    assert.equal(await authorize(true), 403);
     membership.mockImplementation(async () => undefined);
     assert.equal(await authorize(false), 403);
+    assert.equal(await authorize(true), 403);
 });
 
-test("project deletion/settings guard permits owner and admin, but not a missing project", async () => {
+test("project deletion/settings guard permits the owner, but not a missing project", async () => {
     const project = spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: "project" }));
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "owner" }));
     assert.equal(await authorize(false), 200);

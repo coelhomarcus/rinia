@@ -59,7 +59,6 @@ documentsRouter.delete(
       projectId,
       documentId,
       req.user!.sub,
-      req.user!.isAdmin,
     );
     res.json(result);
   }),

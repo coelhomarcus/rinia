@@ -144,7 +144,8 @@ export const Avatar = ({
         >
             <div
                 className={cx(
-                    "relative inline-flex size-full shrink-0 items-center justify-center overflow-hidden rounded-md bg-layer-2 outline-[0.5px] -outline-offset-[0.5px] outline-black/16 before:inset-[0.5px]",
+                    // A gray edge drawn inside the circle, so it shows on any background and leaves room for the ring that separates stacked avatars.
+                    "relative inline-flex size-full shrink-0 items-center justify-center overflow-hidden rounded-md bg-layer-2 outline-1 -outline-offset-1 outline-border-primary before:inset-px",
                     rounded && "rounded-full",
                     canShowImage &&
                         size !== "xs" &&

@@ -14,7 +14,6 @@ export interface RealtimeSocket {
 export interface RealtimeConnection {
     socket: RealtimeSocket;
     user: PresenceViewer["user"];
-    isAdmin: boolean;
     /** Each subscribed channel and the project it belongs to, so leaving a project drops its issues and documents too. */
     channels: Map<RealtimeChannel, string>;
 }
@@ -36,8 +35,8 @@ export class RealtimeHub {
     readonly connections = new Set<RealtimeConnection>();
     collaboration?: CollaborationHooks;
 
-    connect(socket: RealtimeSocket, user: PresenceViewer["user"], isAdmin: boolean): RealtimeConnection {
-        const connection: RealtimeConnection = { socket, user, isAdmin, channels: new Map() };
+    connect(socket: RealtimeSocket, user: PresenceViewer["user"]): RealtimeConnection {
+        const connection: RealtimeConnection = { socket, user, channels: new Map() };
         this.connections.add(connection);
         return connection;
     }
@@ -112,10 +111,10 @@ export class RealtimeHub {
         for (const connection of listeners) send(connection, { type: "event", event });
     }
 
-    /** Someone removed from a project stops hearing about it, on its issues and documents too. Site admins keep access. */
+    /** Someone removed from a project stops hearing about it, on its issues and documents too. */
     revoke(projectId: string, userId: string) {
         for (const connection of this.connections) {
-            if (connection.user.id !== userId || connection.isAdmin) continue;
+            if (connection.user.id !== userId) continue;
             for (const [channel, channelProjectId] of [...connection.channels]) {
                 if (channelProjectId !== projectId) continue;
                 this.unsubscribe(connection, channel);
@@ -142,7 +141,7 @@ function send(connection: RealtimeConnection, message: RealtimeServerMessage) {
 export const realtimeHub = new RealtimeHub();
 
 /** The project a channel belongs to, after checking the user may see it. Deleted issues and documents have no channel. */
-export async function authorizeChannel(channel: RealtimeChannel, user: { id: string; isAdmin: boolean }): Promise<string> {
+export async function authorizeChannel(channel: RealtimeChannel, user: { id: string }): Promise<string> {
     const [kind, id] = channel.split(":") as ["project" | "issue" | "document", string];
     const projectId =
         kind === "project"
@@ -151,7 +150,7 @@ export async function authorizeChannel(channel: RealtimeChannel, user: { id: str
               ? (await db.query.issues.findFirst({ where: and(eq(issues.id, id), isNull(issues.deletedAt)), columns: { projectId: true } }))?.projectId
               : (await db.query.projectDocuments.findFirst({ where: and(eq(projectDocuments.id, id), isNull(projectDocuments.deletedAt)), columns: { projectId: true } }))?.projectId;
     if (!projectId) throw new HttpError(404, "Channel not found");
-    await assertProjectMembership(projectId, user.id, user.isAdmin);
+    await assertProjectMembership(projectId, user.id);
     return projectId;
 }
 

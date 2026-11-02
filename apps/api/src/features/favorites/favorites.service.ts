@@ -36,7 +36,7 @@ function toFavorite(row: FavoriteRow) {
 }
 
 /** The user's favorites, oldest first, skipping projects they no longer belong to. */
-export async function listFavorites(userId: string, isAdmin: boolean) {
+export async function listFavorites(userId: string) {
     const rows = await db.query.favorites.findMany({
         where: and(eq(favorites.userId, userId), isNull(favorites.deletedAt)),
         orderBy: [asc(favorites.createdAt)],
@@ -44,7 +44,7 @@ export async function listFavorites(userId: string, isAdmin: boolean) {
     });
     // A view stops showing when it is deleted, or when its owner takes it back from the project.
     const activeTargets = rows.filter((row) => !row.document?.deletedAt && !row.issue?.deletedAt && !row.view?.deletedAt && (!row.view || row.view.shared || row.view.ownerId === userId));
-    if (isAdmin || activeTargets.length === 0) return activeTargets.map(toFavorite);
+    if (activeTargets.length === 0) return activeTargets.map(toFavorite);
 
     const memberships = await db.query.projectMembers.findMany({
         where: and(eq(projectMembers.userId, userId), inArray(projectMembers.projectId, [...new Set(activeTargets.map((row) => row.projectId))])),
@@ -54,8 +54,8 @@ export async function listFavorites(userId: string, isAdmin: boolean) {
     return activeTargets.filter((row) => allowed.has(row.projectId)).map(toFavorite);
 }
 
-export async function addFavorite(userId: string, isAdmin: boolean, input: CreateFavoriteInput) {
-    await assertProjectMembership(input.projectId, userId, isAdmin);
+export async function addFavorite(userId: string, input: CreateFavoriteInput) {
+    await assertProjectMembership(input.projectId, userId);
     const documentId = input.kind === "document" ? input.documentId : null;
     const issueId = input.kind === "issue" ? input.issueId : null;
     const viewId = input.kind === "view" ? input.viewId : null;

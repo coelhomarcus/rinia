@@ -150,9 +150,9 @@ test("a view can be favorited by anyone who can see it, and only them", async ()
     spyOn(db.query.projectMembers, "findFirst").mockImplementation((async () => ({ role: "member" })) as never);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
     spyOn(db.query.views, "findFirst").mockImplementation((async () => undefined) as never);
-    await assert.rejects(addFavorite(memberId, false, { kind: "view", projectId, viewId }), isHttp(404));
+    await assert.rejects(addFavorite(memberId, { kind: "view", projectId, viewId }), isHttp(404));
     spyOn(db.query.views, "findFirst").mockImplementation((async () => ({ shared: false, ownerId })) as never);
-    await assert.rejects(addFavorite(memberId, false, { kind: "view", projectId, viewId }), isHttp(404));
+    await assert.rejects(addFavorite(memberId, { kind: "view", projectId, viewId }), isHttp(404));
     assert.equal(insert.mock.calls.length, 0);
 });
 
@@ -164,5 +164,6 @@ test("a favorited view disappears when it is deleted or made private by its owne
         favorite("private", { shared: false, ownerId, deletedAt: null }),
         favorite("own", { shared: false, ownerId: memberId, deletedAt: null }),
     ]) as never);
-    assert.deepEqual((await listFavorites(memberId, true)).map((item) => item.id), ["shared", "own"]);
+    spyOn(db.query.projectMembers, "findMany").mockImplementation((async () => [{ projectId }]) as never);
+    assert.deepEqual((await listFavorites(memberId)).map((item) => item.id), ["shared", "own"]);
 });

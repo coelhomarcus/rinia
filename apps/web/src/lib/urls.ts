@@ -32,4 +32,6 @@ export const urls = {
     integrations: () => "/settings/integrations",
     integration: (slug: string) => `/settings/integrations/${slug}`,
     apiTokens: () => "/settings/api-tokens",
+    admin: () => "/settings/admin",
+    adminProject: (projectId: string) => `/settings/admin/projects/${projectId}`,
 };

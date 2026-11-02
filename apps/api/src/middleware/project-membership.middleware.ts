@@ -22,11 +22,7 @@ function findMembership(projectId: string, userId: string) {
 }
 
 /** Ad hoc membership check for routes without `:projectId` in the URL (e.g. /api/cards/:cardId), where the project is discovered from the resource itself. */
-export async function assertProjectMembership(projectId: string, userId: string, isAdmin: boolean): Promise<void> {
-    if (isAdmin) {
-        return;
-    }
-
+export async function assertProjectMembership(projectId: string, userId: string): Promise<void> {
     const membership = await findMembership(projectId, userId);
     if (!membership) {
         throw new HttpError(403, "You are not a member of this project");
@@ -36,11 +32,6 @@ export async function assertProjectMembership(projectId: string, userId: string,
 export const requireProjectMember = asyncHandler<{ projectId: string }>(async (req, res, next) => {
     const { projectId } = req.params;
     await ensureProjectExists(projectId);
-
-    if (req.user!.isAdmin) {
-        next();
-        return;
-    }
 
     const membership = await findMembership(projectId, req.user!.sub);
     if (!membership) {
@@ -55,11 +46,6 @@ export const requireProjectMember = asyncHandler<{ projectId: string }>(async (r
 export const requireProjectOwner = asyncHandler<{ projectId: string }>(async (req, res, next) => {
     const { projectId } = req.params;
     await ensureProjectExists(projectId);
-
-    if (req.user!.isAdmin) {
-        next();
-        return;
-    }
 
     const membership = await findMembership(projectId, req.user!.sub);
     if (!membership || membership.role !== "owner") {

@@ -197,7 +197,7 @@ export async function listIssues(projectId: string, query: IssueListQuery) {
  * Issues from every project the user can see that are assigned to them, created by them, or that they follow,
  * with what the list needs to show them outside their project.
  */
-export async function listMyIssues(userId: string, isAdmin: boolean, query: MyIssuesQuery) {
+export async function listMyIssues(userId: string, query: MyIssuesQuery) {
     const filters: SQL[] = [
         isNull(issues.deletedAt),
         query.filter === "assigned"
@@ -206,7 +206,7 @@ export async function listMyIssues(userId: string, isAdmin: boolean, query: MyIs
               ? eq(issues.createdBy, userId)
               : inArray(issues.id, db.select({ id: issueSubscriptions.issueId }).from(issueSubscriptions).where(eq(issueSubscriptions.userId, userId))),
     ];
-    if (!isAdmin) filters.push(inArray(issues.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
+    filters.push(inArray(issues.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
 
     const rows = await db.query.issues.findMany({
         where: and(...filters),

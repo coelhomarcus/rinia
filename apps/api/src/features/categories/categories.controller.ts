@@ -16,7 +16,6 @@ export const create = asyncHandler<{ projectId: string }>(async (req, res) => {
 export const remove = asyncHandler<{ projectId: string; categoryId: string }>(async (req, res) => {
     await deleteCategory(req.params.projectId, req.params.categoryId, {
         userId: req.user!.sub,
-        isAdmin: req.user!.isAdmin,
         isProjectOwner: req.projectMembership?.role === "owner",
     });
     res.status(204).send();
@@ -26,7 +25,6 @@ export const update = asyncHandler<{ projectId: string; categoryId: string }>(as
     const input = updateCategorySchema.parse(req.body);
     const category = await updateCategory(req.params.projectId, req.params.categoryId, input, {
         userId: req.user!.sub,
-        isAdmin: req.user!.isAdmin,
         isProjectOwner: req.projectMembership?.role === "owner",
     });
     res.json({ category });

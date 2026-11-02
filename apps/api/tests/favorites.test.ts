@@ -27,7 +27,7 @@ test("favorite targets must name the document or issue they point at", () => {
 test("non-members cannot favorite something in a project", async () => {
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => undefined);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
-    await assert.rejects(addFavorite("user", false, { kind: "project", projectId }), isHttp(403));
+    await assert.rejects(addFavorite("user", { kind: "project", projectId }), isHttp(403));
     assert.equal(insert.mock.calls.length, 0);
 });
 
@@ -35,15 +35,14 @@ test("a document from another project cannot be favorited under this one", async
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "member" }) as never);
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => undefined);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
-    await assert.rejects(addFavorite("user", false, { kind: "document", projectId, documentId }), isHttp(404));
+    await assert.rejects(addFavorite("user", { kind: "document", projectId, documentId }), isHttp(404));
     assert.equal(insert.mock.calls.length, 0);
 });
 
-test("favorites in projects the user has left are hidden, but admins see all", async () => {
+test("favorites in projects the user has left are hidden", async () => {
     spyOn(db.query.favorites, "findMany").mockImplementation(async () => [row("kept", projectId), row("left", otherProjectId)] as never);
     spyOn(db.query.projectMembers, "findMany").mockImplementation(async () => [{ projectId }] as never);
-    assert.deepEqual((await listFavorites("user", false)).map((favorite) => favorite.id), ["kept"]);
-    assert.deepEqual((await listFavorites("admin", true)).map((favorite) => favorite.id), ["kept", "left"]);
+    assert.deepEqual((await listFavorites("user")).map((favorite) => favorite.id), ["kept"]);
 });
 
 test("removing someone else's favorite reports it as missing", async () => {

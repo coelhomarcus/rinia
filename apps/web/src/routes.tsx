@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 
 const ProjectSettingsPage = lazy(() => import("@/pages/project-settings-page").then((module) => ({ default: module.ProjectSettingsPage })));
 const AdminSettingsPage = lazy(() => import("@/pages/admin-settings-page").then((module) => ({ default: module.AdminSettingsPage })));
+const AdminProjectSettingsPage = lazy(() => import("@/pages/admin-project-settings-page").then((module) => ({ default: module.AdminProjectSettingsPage })));
 const ProfileSettingsPage = lazy(() => import("@/pages/profile-settings-page").then((module) => ({ default: module.ProfileSettingsPage })));
 const DesignSystemPage = lazy(() => import("@/pages/design-system-page").then((module) => ({ default: module.default })));
 
@@ -93,6 +94,7 @@ export const AppRoutes = () => {
                     <Route path="/settings/agent/tokens" element={<Navigate to={urls.apiTokens()} replace />} />
                     <Route path="/settings/agent/*" element={<Navigate to={urls.integrations()} replace />} />
                     <Route path="/settings/admin" element={<AdminSettingsPage />} />
+                    <Route path="/settings/admin/projects/:projectId" element={<AdminProjectSettingsPage />} />
                     <Route path="/settings/project/:projectKey" element={<ProjectRoute><ProjectSettingsPage /></ProjectRoute>} />
                     <Route path="/settings/project/:projectKey/:section" element={<ProjectRoute><ProjectSettingsPage /></ProjectRoute>} />
                     <Route path="/project/:projectKey" element={<ProjectRoute><ProjectOverviewPage /></ProjectRoute>} />

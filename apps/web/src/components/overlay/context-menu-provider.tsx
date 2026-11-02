@@ -289,9 +289,9 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
     }, [notice]);
 
     const { data: projects } = useProjects();
-    const canDeleteProject = Boolean(user && (user.isAdmin || (!permissionsLoading && !permissionsError && isProjectOwner)));
+    const canDeleteProject = Boolean(user && !permissionsLoading && !permissionsError && isProjectOwner);
     const canDeleteDocument = Boolean(
-        state?.entity.type === "document" && user && (user.isAdmin || state.entity.authorId === user.id || (!permissionsLoading && !permissionsError && isProjectOwner)),
+        state?.entity.type === "document" && user && (state.entity.authorId === user.id || (!permissionsLoading && !permissionsError && isProjectOwner)),
     );
 
     const actions = useMemo<MenuAction[]>(() => {

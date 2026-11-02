@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { ControlledInput } from "@/components/form/controlled-input";
-import { SettingsHeading } from "@/components/settings/settings-layout";
+import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { ApiError } from "@/lib/api-client";
@@ -59,7 +59,7 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
                 }
             />
             {removeMutation.isError && (
-                <div className="mt-4">
+                <div className="mb-4">
                     <Alert tone="error">{removeMutation.error instanceof ApiError ? removeMutation.error.message : t("settings.couldNotRemoveMember")}</Alert>
                 </div>
             )}
@@ -72,72 +72,37 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
                 />
             )}
             {!!filtered?.length && (
-                <div className="mt-6 overflow-x-auto">
-                    <table className="w-full text-left text-sm text-secondary">
-                        <thead>
-                            <tr className="border-b border-subtle text-xs text-tertiary">
-                                <th scope="col" className="min-w-56 px-3 py-3 font-medium">
-                                    {t("settings.name")}
-                                </th>
-                                <th scope="col" className="px-3 py-3 font-medium">
-                                    {t("settings.email")}
-                                </th>
-                                <th scope="col" className="px-3 py-3 font-medium">
-                                    {t("settings.role")}
-                                </th>
-                                <th scope="col" className="px-3 py-3 font-medium whitespace-nowrap">
-                                    {t("settings.joinedOn")}
-                                </th>
-                                {isProjectOwner && (
-                                    <th scope="col" className="w-10">
-                                        <span className="sr-only">{t("settings.actions")}</span>
-                                    </th>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-subtle">
-                            {filtered.map((member) => (
-                                <tr key={member.id} className="group hover:bg-layer-transparent-hover">
-                                    <td className="px-3 py-3">
-                                        <div className="flex items-center gap-2">
-                                            <Avatar src={member.avatarUrl ?? undefined} initials={memberInitials(member.name)} size="xs" />
-                                            <span className="max-w-64 truncate">{member.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-3 py-3 text-tertiary">{member.email}</td>
-                                    <td className="px-3 py-3">{member.role === "owner" ? t("settings.owner") : t("settings.member")}</td>
-                                    <td className="px-3 py-3 whitespace-nowrap text-tertiary">
-                                        {new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(member.joinedAt))}
-                                    </td>
-                                    {isProjectOwner && (
-                                        <td className="px-2 py-3">
-                                            {member.role !== "owner" && (
-                                                <div className="opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">
-                                                    <ConfirmDialog
-                                                        trigger={
-                                                            <ButtonUtility
-                                                                icon={UserRoundMinus}
-                                                                size="sm"
-                                                                color="tertiary"
-                                                                tooltip={`${t("settings.removeMember")} ${member.name}`}
-                                                                isDisabled={removeMutation.isPending}
-                                                            />
-                                                        }
-                                                        title={t("settings.removeMember")}
-                                                        description={t("settings.removeMemberDescription", { name: member.name, username: member.username })}
-                                                        confirmLabel={t("settings.removeMember")}
-                                                        isPending={removeMutation.isPending}
-                                                        onConfirm={() => removeMutation.mutate(member.id)}
-                                                    />
-                                                </div>
-                                            )}
-                                        </td>
+                <SettingsCard>
+                    {filtered.map((member) => (
+                        <SettingsItemRow
+                            key={member.id}
+                            leading={<Avatar src={member.avatarUrl ?? undefined} initials={memberInitials(member.name)} size="sm" />}
+                            title={member.name}
+                            description={member.email}
+                        >
+                            <span className="hidden text-[13px] whitespace-nowrap text-tertiary sm:inline">
+                                {t("settings.joinedOnDate", { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(member.joinedAt)) })}
+                            </span>
+                            <span className="w-24 text-right text-[13px] text-secondary">{member.role === "owner" ? t("settings.owner") : t("settings.member")}</span>
+                            {isProjectOwner && (
+                                <span className="flex w-8 justify-end">
+                                    {member.role !== "owner" && (
+                                        <SettingsRowActions>
+                                            <ConfirmDialog
+                                                trigger={<ButtonUtility icon={UserRoundMinus} size="sm" color="tertiary" tooltip={`${t("settings.removeMember")} ${member.name}`} isDisabled={removeMutation.isPending} />}
+                                                title={t("settings.removeMember")}
+                                                description={t("settings.removeMemberDescription", { name: member.name, username: member.username })}
+                                                confirmLabel={t("settings.removeMember")}
+                                                isPending={removeMutation.isPending}
+                                                onConfirm={() => removeMutation.mutate(member.id)}
+                                            />
+                                        </SettingsRowActions>
                                     )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                </span>
+                            )}
+                        </SettingsItemRow>
+                    ))}
+                </SettingsCard>
             )}
         </div>
     );

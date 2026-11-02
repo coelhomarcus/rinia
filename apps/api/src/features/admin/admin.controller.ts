@@ -1,10 +1,11 @@
+import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
-import { createBackup } from "./admin.service";
+import { getAdminProject, listAdminProjects } from "./admin.service";
 
-export const getBackup = asyncHandler(async (_req, res) => {
-    const backup = await createBackup();
-    const filename = `rinia-backup-${backup.exportedAt.slice(0, 10)}.json`;
+export const listProjects = asyncHandler(async (_req, res) => {
+    res.json({ projects: await listAdminProjects() });
+});
 
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.json(backup);
+export const getProject = asyncHandler<{ projectId: string }>(async (req, res) => {
+    res.json({ project: await getAdminProject(z.string().uuid().parse(req.params.projectId)) });
 });

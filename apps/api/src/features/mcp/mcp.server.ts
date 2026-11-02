@@ -101,14 +101,14 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
 
     async function projectByKey(key: string) {
         const project = await getProjectByKey(key);
-        await assertProjectMembership(project.id, user.sub, user.isAdmin);
+        await assertProjectMembership(project.id, user.sub);
         return workspace(project);
     }
 
     async function issueByIdentifier(identifier: string) {
         if (!ISSUE_IDENTIFIER.test(identifier.trim())) throw new HttpError(400, `"${identifier}" is not an issue identifier. Use one such as RIN-4.`);
         const issue = await getIssueOrThrow(identifier.trim());
-        await assertProjectMembership(issue.projectId, user.sub, user.isAdmin);
+        await assertProjectMembership(issue.projectId, user.sub);
         return { issue, space: await workspace(issue.project) };
     }
 
@@ -164,7 +164,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
             annotations: { readOnlyHint: true },
         },
         async () => {
-                const projects = await listProjectsForUser(user.sub, user.isAdmin);
+                const projects = await listProjectsForUser(user.sub);
                 return Promise.all(
                     projects.map(async (project) => {
                         const space = await workspace(project);
@@ -203,7 +203,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
         async (args) => {
                 const spaces = args.project
                     ? [await projectByKey(args.project)]
-                    : await Promise.all((await listProjectsForUser(user.sub, user.isAdmin)).map((project) => workspace(project)));
+                    : await Promise.all((await listProjectsForUser(user.sub)).map((project) => workspace(project)));
                 const assignee = args.mine ? "me" : args.assignee;
                 const scope = args.scope ?? "open";
 
@@ -289,7 +289,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
         },
         async (args) => {
                 const space = args.project ? await projectByKey(args.project) : undefined;
-                const found = await searchWorkspace(user.sub, user.isAdmin, args.query, { projectId: space?.project.id, limit: args.limit });
+                const found = await searchWorkspace(user.sub, args.query, { projectId: space?.project.id, limit: args.limit });
                 return {
                     issues: found.issues.map((issue) => {
                         const identifier = `${issue.issueKey}-${issue.number}`;
