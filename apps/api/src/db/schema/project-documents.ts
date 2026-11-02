@@ -11,7 +11,7 @@ import {
 import { projects } from "./projects";
 import { users } from "./users";
 import type { TiptapDocument } from "./issues";
-import type { EntityIcon } from "@rinia/shared";
+import type { ActionSource, EntityIcon } from "@rinia/shared";
 
 const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
   dataType: () => "bytea",
@@ -34,6 +34,8 @@ export const projectDocuments = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** The tool that created the page, when it was not made in the web app. */
+    source: jsonb("source").$type<ActionSource>(),
     revision: integer("revision").notNull().default(1),
     /** A snapshot of the page as Tiptap JSON, rewritten from `yjsState` whenever people edit it. */
     contentJson: jsonb("content_json").$type<TiptapDocument>().notNull(),

@@ -1,6 +1,6 @@
 const projects = {
-        project: "Project", updated: "Updated", noProjects: "No projects yet", createFirst: "Create your first project to start organizing your work.",
-        couldNotLoad: "Could not load your projects. Try refreshing the page.", projectStatus: "Project status",
+        project: "Project", updated: "Updated", noProjects: "No projects yet",
+        projectStatus: "Project status",
         workflowSummary: "A quick view of the work across your workflow.", issueCount_one: "{{count}} issue", issueCount_other: "{{count}} issues",
         addStatus: "Add a status to start organizing issues.", estimate: "Estimate",
         points: "{{count}} points", views: "Project views", viewsDescription: "Choose the workspace that matches the way you want to work.",
@@ -12,7 +12,6 @@ const projects = {
         noDescription: "No description", updatedAt: "Updated {{date}}",
         homeResources: "Project resources", homeResourcesHint: "Add documents to keep what the team needs to know in one place.", viewMembers: "View members",
         addDescription: "Add a description…", goTo: "Go to",
-        createdOn: "Created {{date}}", noMembers: "No members yet",
         deleteProjectPrompt: "To confirm, type “{{phrase}}”", deletePhrase: "delete my project", confirmDelete: "Delete my project",
         columnActions: "Column actions", hideColumn: "Hide column", manageStates: "Manage states", showColumn: "Show column", hiddenColumns: "Hidden columns", showAllColumns: "Show all columns", noHiddenColumns: "No hidden columns", columnHidden: "Column hidden",
     } as const;

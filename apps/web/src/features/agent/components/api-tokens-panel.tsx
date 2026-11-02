@@ -88,6 +88,9 @@ function ApiTokenRow({ token, isRevoking, onRevoke }: { token: ApiToken; isRevok
                 <>
                     <span className="font-mono">{token.prefix}…</span>
                     {" · "}
+                    {token.access === "read" ? t("agent.accessRead") : t("agent.accessWrite")}
+                    {token.oauth && ` · ${t("agent.viaOAuth")}`}
+                    {" · "}
                     {t("agent.tokenCreatedOn", { date: date(token.createdAt) })}
                     {" · "}
                     {token.lastUsedAt ? t("agent.tokenLastUsed", { date: date(token.lastUsedAt) }) : t("agent.tokenNeverUsed")}

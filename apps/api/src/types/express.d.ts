@@ -12,6 +12,8 @@ declare global {
             user?: JwtPayload;
             /** How `user` signed in: the browser session cookie or an API token. */
             authMethod?: "session" | "token";
+            /** What the API token may do. A session can do everything, so this is set only for tokens. */
+            tokenAccess?: import("@rinia/shared").ApiTokenAccess;
             projectMembership?: typeof projectMembers.$inferSelect;
         }
     }

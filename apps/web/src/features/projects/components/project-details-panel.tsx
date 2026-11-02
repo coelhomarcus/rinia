@@ -12,7 +12,7 @@ import { ApiError } from "@/lib/api-client";
 import { useProject } from "../hooks/use-project";
 import { useUpdateProject } from "../hooks/use-projects";
 import { DeleteProjectDialog } from "./delete-project-dialog";
-import { ProjectCoverControl, ProjectIconControl } from "./project-appearance-controls";
+import { ProjectIconControl } from "./project-appearance-controls";
 import { projectIconColor } from "./project-icon";
 import { useTranslation } from "react-i18next";
 
@@ -98,9 +98,6 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
                                 </Field>
                             )}
                         />
-                    </SettingsControl>
-                    <SettingsControl title={t("appearance.projectBanner")} description={t("settings.bannerHint")}>
-                        {isProjectOwner ? <ProjectCoverControl projectId={projectId} cover={project.cover} preview={{ name: project.name, issueKey: project.issueKey, icon }} isProjectOwner /> : <span className="text-[13px] text-tertiary">—</span>}
                     </SettingsControl>
                 </SettingsGroup>
 

@@ -1,5 +1,5 @@
-import { nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
-import { and, asc, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
+import { nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
+import { and, asc, count, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import type { TiptapDocument as StoredDocument } from "../../db/schema";
@@ -192,6 +192,38 @@ export async function listIssues(projectId: string, query: IssueListQuery) {
     const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { issueKey: true } });
     if (!project) throw new HttpError(404, "Project not found");
     return rows.map((issue) => ({ ...issue, identifier: `${project.issueKey}-${issue.number}` }));
+}
+
+/** What `searchIssues` filters by. `assigneeId: null` asks for unassigned issues; an empty list of states matches nothing. */
+export interface IssueSearch {
+    projectIds: string[];
+    columnIds?: string[];
+    priority?: IssuePriority;
+    assigneeId?: string | null;
+    /** An issue matches when it has any of these labels. */
+    categoryIds?: string[];
+    offset: number;
+    limit: number;
+}
+
+/**
+ * A page of issues across projects, most urgent first, then most recently updated, filtered and counted by the
+ * database. Membership is checked by the caller, which passes only projects the user is in.
+ */
+export async function searchIssues(search: IssueSearch) {
+    if (search.projectIds.length === 0 || search.columnIds?.length === 0 || search.categoryIds?.length === 0) return { total: 0, issues: [] };
+    const filters = [inArray(issues.projectId, search.projectIds), isNull(issues.deletedAt)];
+    if (search.columnIds) filters.push(inArray(issues.columnId, search.columnIds));
+    if (search.priority) filters.push(eq(issues.priority, search.priority));
+    if (search.assigneeId === null) filters.push(isNull(issues.assigneeId));
+    else if (search.assigneeId) filters.push(eq(issues.assigneeId, search.assigneeId));
+    if (search.categoryIds) filters.push(inArray(issues.id, db.select({ id: issueLabels.issueId }).from(issueLabels).where(inArray(issueLabels.categoryId, search.categoryIds))));
+    const where = and(...filters);
+    const [rows, [counted]] = await Promise.all([
+        db.query.issues.findMany({ where, orderBy: [asc(priorityRank), desc(issues.updatedAt), asc(issues.number)], limit: search.limit, offset: search.offset, with: { labels: LABELS_WITH } }),
+        db.select({ value: count() }).from(issues).where(where),
+    ]);
+    return { total: counted?.value ?? 0, issues: rows.map(withLabels) };
 }
 
 /**
@@ -513,29 +545,29 @@ export async function listIssueRelations(identifier: string, actorId: string) {
     return relations.map((relation) => ({ ...relation, target: relation.sourceIssueId === issue.id ? relation.target : relation.source }));
 }
 
-export async function createIssueRelation(identifier: string, input: CreateIssueRelationInput, actorId: string) {
-    const source = await getIssueOrThrow(identifier);
+export async function createIssueRelation(identifier: string, input: CreateIssueRelationInput, actorId: string, source?: ActionSource) {
+    const from = await getIssueOrThrow(identifier);
     const target = await getIssueOrThrow(input.targetIssueIdentifier);
-    await ensureProjectMember(actorId, source.projectId);
-    if (source.projectId !== target.projectId) throw new HttpError(400, "Issues must belong to the same project");
-    if (source.id === target.id) throw new HttpError(400, "An issue cannot relate to itself");
-    const existing = await db.query.issueRelations.findFirst({ where: and(eq(issueRelations.sourceIssueId, source.id), eq(issueRelations.targetIssueId, target.id), eq(issueRelations.type, input.type)) });
+    await ensureProjectMember(actorId, from.projectId);
+    if (from.projectId !== target.projectId) throw new HttpError(400, "Issues must belong to the same project");
+    if (from.id === target.id) throw new HttpError(400, "An issue cannot relate to itself");
+    const existing = await db.query.issueRelations.findFirst({ where: and(eq(issueRelations.sourceIssueId, from.id), eq(issueRelations.targetIssueId, target.id), eq(issueRelations.type, input.type)) });
     if (existing) throw new HttpError(409, "This relation already exists");
-    const [relation] = await db.insert(issueRelations).values({ sourceIssueId: source.id, targetIssueId: target.id, type: input.type }).returning();
-    await db.insert(issueActivities).values({ issueId: source.id, actorId, type: "relation_added", payload: { relationId: relation.id, targetIssueId: target.id, relationType: input.type } });
+    const [relation] = await db.insert(issueRelations).values({ sourceIssueId: from.id, targetIssueId: target.id, type: input.type }).returning();
+    await db.insert(issueActivities).values({ issueId: from.id, actorId, type: "relation_added", payload: { relationId: relation.id, targetIssueId: target.id, relationType: input.type }, ...(source && { source }) });
     // Both issues list the relation, so both pages hear about it.
-    for (const issueId of [source.id, target.id]) publishChange("relation.created", { projectId: source.projectId, id: relation.id, issueId });
+    for (const issueId of [from.id, target.id]) publishChange("relation.created", { projectId: from.projectId, id: relation.id, issueId });
     return relation;
 }
 
-export async function deleteIssueRelation(relationId: string, actorId: string) {
+export async function deleteIssueRelation(relationId: string, actorId: string, source?: ActionSource) {
     const relation = await db.query.issueRelations.findFirst({ where: eq(issueRelations.id, relationId) });
     if (!relation) throw new HttpError(404, "Relation not found");
-    const source = await getIssueOrThrow(relation.sourceIssueId);
-    await ensureProjectMember(actorId, source.projectId);
+    const from = await getIssueOrThrow(relation.sourceIssueId);
+    await ensureProjectMember(actorId, from.projectId);
     await db.delete(issueRelations).where(eq(issueRelations.id, relationId));
-    await db.insert(issueActivities).values({ issueId: source.id, actorId, type: "relation_removed", payload: { relationId, targetIssueId: relation.targetIssueId, relationType: relation.type } });
-    for (const issueId of [relation.sourceIssueId, relation.targetIssueId]) publishChange("relation.deleted", { projectId: source.projectId, id: relationId, issueId });
+    await db.insert(issueActivities).values({ issueId: from.id, actorId, type: "relation_removed", payload: { relationId, targetIssueId: relation.targetIssueId, relationType: relation.type }, ...(source && { source }) });
+    for (const issueId of [relation.sourceIssueId, relation.targetIssueId]) publishChange("relation.deleted", { projectId: from.projectId, id: relationId, issueId });
 }
 
 const sameSource = (a: ActionSource | null | undefined, b: ActionSource | null | undefined) => (a?.via ?? null) === (b?.via ?? null) && (a?.client ?? null) === (b?.client ?? null);
@@ -612,7 +644,7 @@ async function issuesInProject(projectId: string, issueIds: string[]) {
  * Applies one change to many issues of a project in a single transaction, with an activity entry for each issue
  * that actually changed. Membership is checked once, by the project route.
  */
-export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssuesInput, actorId: string) {
+export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssuesInput, actorId: string, source?: ActionSource) {
     const { issueIds, patch } = input;
     if (patch.columnId) await ensureColumnInProject(patch.columnId, projectId);
     if (patch.assigneeId) await ensureAssigneeInProject(patch.assigneeId, projectId);
@@ -626,17 +658,17 @@ export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssue
     const labelsToRemove: Array<{ issueId: string; categoryId: string }> = [];
     for (const issue of current) {
         for (const [field, type] of BULK_FIELDS) {
-            if (field in values && issue[field] !== values[field]) activities.push({ issueId: issue.id, actorId, type, payload: { field, from: issue[field], to: values[field] } });
+            if (field in values && issue[field] !== values[field]) activities.push({ issueId: issue.id, actorId, type, payload: { field, from: issue[field], to: values[field] }, ...(source && { source }) });
         }
         if (!touchesLabels) continue;
         const { added, removed } = labelChanges(issue.categoryIds, nextLabels(issue.categoryIds, patch));
         for (const categoryId of added) {
             labelsToAdd.push({ issueId: issue.id, categoryId });
-            activities.push({ issueId: issue.id, actorId, type: "label_added", payload: { categoryId } });
+            activities.push({ issueId: issue.id, actorId, type: "label_added", payload: { categoryId }, ...(source && { source }) });
         }
         for (const categoryId of removed) {
             labelsToRemove.push({ issueId: issue.id, categoryId });
-            activities.push({ issueId: issue.id, actorId, type: "label_removed", payload: { categoryId } });
+            activities.push({ issueId: issue.id, actorId, type: "label_removed", payload: { categoryId }, ...(source && { source }) });
         }
     }
 

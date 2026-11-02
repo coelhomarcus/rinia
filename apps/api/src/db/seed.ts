@@ -55,7 +55,6 @@ const PROJECTS: SeedProject[] = [
             name: "Rinia",
             description: "O próprio workspace: issues, documentos e quadro.",
             iconAppearance: { type: "icon", key: "rocket", color: "#5e6ad2" },
-            cover: { type: "gradient", key: "aurora" },
         },
         members: ["ana", "bruno"],
         labels: [
@@ -175,7 +174,6 @@ const PROJECTS: SeedProject[] = [
             name: "Site institucional",
             description: "Landing page e páginas públicas.",
             iconAppearance: { type: "icon", key: "globe", color: "#26b5ce" },
-            cover: { type: "gradient", key: "lagoon" },
         },
         members: ["ana"],
         labels: [
@@ -201,7 +199,6 @@ const PROJECTS: SeedProject[] = [
             name: "App mobile",
             description: "Cliente iOS e Android.",
             iconAppearance: { type: "icon", key: "mobile", color: "#f2994a" },
-            cover: { type: "gradient", key: "ember" },
         },
         members: ["bruno"],
         labels: [{ name: "Pesquisa", color: "#9b51e0" }],

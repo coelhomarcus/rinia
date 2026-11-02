@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { createProjectSchema, suggestProjectKey } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
@@ -11,29 +11,27 @@ import { ControlledInput } from "@/components/form/controlled-input";
 import { ControlledTextarea } from "@/components/form/controlled-textarea";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { AppearancePicker, appearancePopupClass } from "@/components/appearance/appearance-picker";
-import { GradientPicker } from "@/components/appearance/gradient-picker";
 import { ApiError } from "@/lib/api-client";
 import { useCreateProject } from "../hooks/use-projects";
 import { DEFAULT_PROJECT_ICON, ProjectIcon } from "./project-icon";
 import { useTranslation } from "react-i18next";
 import { urls } from "@/lib/urls";
 
-export const CreateProjectModal = () => {
+/** `trigger` replaces the default "New project" button; it must accept a ref and click handlers. */
+export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
     const mutation = useCreateProject();
     const navigate = useNavigate();
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
     const { t } = useTranslation();
     const { control, handleSubmit, reset, setError, watch, formState } = useForm({
         resolver: zodResolver(createProjectSchema),
-        defaultValues: { name: "", issueKey: "", description: "", repositoryUrl: "", iconAppearance: { type: "icon" as const, key: DEFAULT_PROJECT_ICON }, cover: null },
+        defaultValues: { name: "", issueKey: "", description: "", repositoryUrl: "", iconAppearance: { type: "icon" as const, key: DEFAULT_PROJECT_ICON } },
     });
     const projectName = watch("name");
     const generatedIssueKey = suggestProjectKey(projectName);
-    const issueKey = watch("issueKey");
-    const iconAppearance = watch("iconAppearance");
 
     return (
-        <ModalDialog trigger={<Button iconLeading={Plus}>{t("nav.newProject")}</Button>} title={t("nav.newProject")} size="2xl">
+        <ModalDialog trigger={trigger ?? <Button iconLeading={Plus}>{t("nav.newProject")}</Button>} title={t("nav.newProject")} size="2xl">
             {({ close }) => (
                 <form
                     className="flex flex-col gap-4"
@@ -105,17 +103,6 @@ export const CreateProjectModal = () => {
                     />
                     <ControlledTextarea control={control} name="description" label={t("projects.description")} rows={3} />
                     <ControlledInput control={control} name="repositoryUrl" label={t("projects.repository")} placeholder="https://github.com/..." />
-                    <Controller
-                        control={control}
-                        name="cover"
-                        render={({ field }) => (
-                            <GradientPicker
-                                cover={field.value}
-                                onChange={field.onChange}
-                                preview={{ name: projectName.trim() || t("projects.projectName"), issueKey: issueKey || (projectName.trim() ? generatedIssueKey : "PRJ"), icon: iconAppearance }}
-                            />
-                        )}
-                    />
 
                     {formState.errors.root && <p className="text-sm text-danger-primary">{formState.errors.root.message}</p>}
 

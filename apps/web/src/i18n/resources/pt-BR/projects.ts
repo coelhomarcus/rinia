@@ -1,6 +1,6 @@
 const projects = {
-        project: "Projeto", updated: "Atualizado", noProjects: "Nenhum projeto ainda", createFirst: "Crie seu primeiro projeto para começar a organizar seu trabalho.",
-        couldNotLoad: "Não foi possível carregar seus projetos. Tente atualizar a página.", projectStatus: "Status do projeto",
+        project: "Projeto", updated: "Atualizado", noProjects: "Nenhum projeto ainda",
+        projectStatus: "Status do projeto",
         workflowSummary: "Uma visão rápida do trabalho em andamento.", issueCount_one: "{{count}} tarefa", issueCount_other: "{{count}} tarefas",
         addStatus: "Adicione um estado para começar a organizar as tarefas.", estimate: "Estimativa",
         points: "{{count}} pontos", views: "Visualizações do projeto", viewsDescription: "Escolha a área de trabalho que combina com seu jeito de trabalhar.",
@@ -12,7 +12,6 @@ const projects = {
         noDescription: "Sem descrição", updatedAt: "Atualizado {{date}}",
         homeResources: "Recursos do projeto", homeResourcesHint: "Adicione documentos para reunir o que a equipe precisa saber.", viewMembers: "Ver membros",
         addDescription: "Adicione uma descrição…", goTo: "Ir para",
-        createdOn: "Criado em {{date}}", noMembers: "Nenhum membro ainda",
         deleteProjectPrompt: "Para confirmar, digite “{{phrase}}”", deletePhrase: "excluir meu projeto", confirmDelete: "Excluir meu projeto",
         columnActions: "Ações da coluna", hideColumn: "Ocultar coluna", manageStates: "Gerenciar estados", showColumn: "Mostrar coluna", hiddenColumns: "Colunas ocultas", showAllColumns: "Mostrar todas", noHiddenColumns: "Nenhuma coluna oculta", columnHidden: "Coluna ocultada",
     } as const;

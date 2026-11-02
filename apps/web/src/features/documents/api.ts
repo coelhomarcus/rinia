@@ -1,4 +1,4 @@
-import type { CreateDocumentInput, EntityIcon, TiptapDocument, UpdateDocumentInput } from "@rinia/shared";
+import type { ActionSource, CreateDocumentInput, EntityIcon, TiptapDocument, UpdateDocumentInput } from "@rinia/shared";
 import { apiClient } from "@/lib/api-client";
 
 export interface DocumentPage {
@@ -9,6 +9,8 @@ export interface DocumentPage {
     contentJson: TiptapDocument;
     createdBy: string;
     createdAt: string;
+    /** The tool that created the page, when it was not made in the web app. */
+    source: ActionSource | null;
     updatedAt: string;
     revision: number;
 }

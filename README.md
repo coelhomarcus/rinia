@@ -29,13 +29,13 @@ Rinia is a self-hosted platform where a team plans work, writes about it, and sh
   A block editor with slash commands, tables, images, and mentions. People edit the same page at the same time, with live cursors and a lock on the line someone is typing in. Pages work offline and sync when you are back.
 
 - **Projects and teams**
-  Give every project an icon and a cover, shape its states and labels, and add members by username with a preview of who you are adding. Deletes can be undone.
+  Give every project an icon, shape its states and labels, and add members by username with a preview of who you are adding. Deletes can be undone.
 
 - **Realtime**
   Boards, lists, comments, and pages update as teammates work, and you see who else is on the page.
 
 - **MCP and API**
-  Connect Claude Code, Claude, VS Code, Codex, Gemini CLI, or any MCP client at `/api/mcp` with a personal API token from **Settings → Integrations**. Tools act as you: they list, search, create, and update issues, comment, and write pages in the projects you belong to. What they change shows in the activity feed with the tool's avatar beside yours, and revoking a token cuts it off at once. The same token works with the REST API.
+  Connect Claude Code, Claude, VS Code, Codex, Gemini CLI, or any MCP client at `/api/mcp`, with a personal API token from **Settings → Integrations** or, for clients that support it, by signing in with OAuth. Tools act as you: they list, search, create, update, relate, and delete issues, comment, read your inbox, and read and write pages in the projects you belong to, with typed results, issues and pages as resources, and prompts for triage and standups. Rewriting a description or a page needs the revision the tool read, so it cannot undo someone's edit, and page edits reach people who have the page open as they happen. A token can be read only. What tools change shows in the activity feed with the tool's avatar beside yours, and revoking a token cuts it off at once. The same token works with the REST API.
 
 - **Administration**
   Site admins see every project with its owner, members, and size, without reading what is inside, and registration is gated by a code.
@@ -90,7 +90,7 @@ Set these in `apps/api/.env`, or pass them to the container.
 | `SPECIAL_REGISTRATION_CODE` | Code required to create an account |
 | `ADMIN_USERNAMES` | Comma-separated admin usernames |
 | `PORT` | API port, default `3000` |
-| `APP_URL` | Public address of Rinia, used for links in MCP results. Defaults to the address each request came to |
+| `APP_URL` | Public address of Rinia, used for links in MCP results and as the OAuth issuer. Defaults to the address each request came to |
 | `LOG_LEVEL` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`, or `silent`. Default `info` in production, `debug` in development, `silent` in tests |
 | `LOG_FORMAT` | `json` (one line per event) or `pretty` (coloured, for a terminal). Default `pretty` in development, `json` otherwise |
 | `SLOW_REQUEST_MS` | Requests slower than this are logged as warnings, default `1000` |

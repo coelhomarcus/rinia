@@ -1,15 +1,11 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { cleanClientName } from "@rinia/shared";
 import { Router, type Request } from "express";
-import { env } from "../../config/env";
 import { asyncHandler } from "../../middleware/async-handler";
 import { requireAuth } from "../../middleware/auth.middleware";
+import { appBaseUrl } from "../oauth/oauth.service";
+import { resourceMetadataUrl } from "../oauth/oauth.routes";
 import { createMcpServer } from "./mcp.server";
-
-/** Links in results open where the request came in, unless APP_URL says where Rinia lives. */
-function appBaseUrl(req: Request) {
-    return env.APP_URL ?? `${req.protocol}://${req.get("host")}`;
-}
 
 /** HTTP libraries and browsers say nothing about which tool is behind them. */
 const GENERIC_USER_AGENT = /^(node|undici|axios|curl|wget|python|aiohttp|httpx|go-http-client|okhttp|got|fetch|mozilla)\b/i;
@@ -31,16 +27,16 @@ function mcpClient(req: Request): string | null {
  */
 export const mcpRouter = Router();
 
-mcpRouter.use((_req, res, next) => {
-    // Tells MCP clients that a refused request needs a bearer token, instead of leaving them to look for OAuth.
-    res.set("WWW-Authenticate", 'Bearer realm="Rinia"');
+mcpRouter.use((req, res, next) => {
+    // Tells MCP clients that a refused request needs a bearer token, and where to sign in to get one with OAuth.
+    res.set("WWW-Authenticate", `Bearer realm="Rinia", resource_metadata="${resourceMetadataUrl(req)}"`);
     next();
 }, requireAuth);
 
 mcpRouter.post(
     "/",
     asyncHandler(async (req, res) => {
-        const server = createMcpServer({ user: req.user!, baseUrl: appBaseUrl(req), client: mcpClient(req) });
+        const server = createMcpServer({ user: req.user!, baseUrl: appBaseUrl(req), client: mcpClient(req), access: req.tokenAccess ?? "write" });
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
         res.on("close", () => {
             void transport.close();

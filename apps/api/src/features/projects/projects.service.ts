@@ -1,4 +1,4 @@
-import { parseProjectCover, resolveLocale, suggestProjectKey, type CreateProjectInput, type Locale, type UpdateProjectInput, type UpdateProjectPageInput } from "@rinia/shared";
+import { resolveLocale, suggestProjectKey, type CreateProjectInput, type Locale, type UpdateProjectInput, type UpdateProjectPageInput } from "@rinia/shared";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
@@ -16,13 +16,12 @@ const PROJECT_LIST_COLUMNS = {
     repositoryUrl: true,
     icon: true,
     iconAppearance: true,
-    cover: true,
     createdBy: true,
     createdAt: true,
     updatedAt: true,
 } as const;
 
-type ProjectAppearanceInput = Pick<CreateProjectInput, "icon" | "iconAppearance" | "cover">;
+type ProjectAppearanceInput = Pick<CreateProjectInput, "icon" | "iconAppearance">;
 
 function projectAppearance(input: ProjectAppearanceInput) {
     if (input.iconAppearance !== undefined) {
@@ -33,10 +32,6 @@ function projectAppearance(input: ProjectAppearanceInput) {
         };
     }
     return input.icon === undefined ? {} : { icon: input.icon, iconAppearance: input.icon ? { type: "icon" as const, key: input.icon } : null };
-}
-
-function withParsedCover<T extends { cover: unknown }>(project: T) {
-    return { ...project, cover: parseProjectCover(project.cover) };
 }
 
 /** Another project's former key stays reserved so its old issue links never point somewhere else. */
@@ -71,13 +66,12 @@ export async function createProject(input: CreateProjectInput, creatorId: string
 
         try {
             return await db.transaction(async (tx) => {
-                const { icon: _icon, iconAppearance: _iconAppearance, cover, issueKey: _inputIssueKey, ...projectInput } = input;
+                const { icon: _icon, iconAppearance: _iconAppearance, issueKey: _inputIssueKey, ...projectInput } = input;
                 const [project] = await tx
                     .insert(projects)
                     .values({
                         issueKey,
                         ...projectInput,
-                        cover: cover ?? null,
                         ...projectAppearance(input),
                         createdBy: creatorId,
                     })
@@ -94,7 +88,7 @@ export async function createProject(input: CreateProjectInput, creatorId: string
                     })),
                 );
 
-                return withParsedCover(project);
+                return project;
             });
         } catch (error) {
             if (!isProjectKeyConflict(error)) throw error;
@@ -115,7 +109,7 @@ export async function listProjectsForUser(userId: string) {
     ).map((membership) => membership.project);
 
     type MemberPreview = { id: string; name: string; avatarUrl: string | null };
-    if (projectList.length === 0) return projectList.map((project) => ({ ...withParsedCover(project), memberCount: 0, memberPreview: [], owner: null as MemberPreview | null }));
+    if (projectList.length === 0) return projectList.map((project) => ({ ...project, memberCount: 0, memberPreview: [], owner: null as MemberPreview | null }));
     const projectIds = projectList.map((project) => project.id);
     const memberships = await db.query.projectMembers.findMany({
         where: inArray(projectMembers.projectId, projectIds),
@@ -133,7 +127,7 @@ export async function listProjectsForUser(userId: string) {
     }
     return projectList.map((project) => {
         const members = memberMap.get(project.id) ?? [];
-        return { ...withParsedCover(project), memberCount: members.length, memberPreview: members.slice(0, 3), owner: ownerMap.get(project.id) ?? null };
+        return { ...project, memberCount: members.length, memberPreview: members.slice(0, 3), owner: ownerMap.get(project.id) ?? null };
     });
 }
 
@@ -142,14 +136,14 @@ export async function getProjectById(projectId: string) {
     if (!project) {
         throw new HttpError(404, "Project not found");
     }
-    return withParsedCover(project);
+    return project;
 }
 
 /** Finds a project by its current key or a key it used before, so old URLs keep resolving. */
 export async function getProjectByKey(key: string) {
     const issueKey = key.trim().toUpperCase();
     const current = await db.query.projects.findFirst({ where: eq(projects.issueKey, issueKey) });
-    if (current) return withParsedCover(current);
+    if (current) return current;
     const alias = await db.query.projectKeyAliases.findFirst({ where: eq(projectKeyAliases.key, issueKey), columns: { projectId: true } });
     if (!alias) throw new HttpError(404, "Project not found");
     return getProjectById(alias.projectId);
@@ -162,7 +156,7 @@ export async function updateProject(projectId: string, input: UpdateProjectInput
         const duplicate = await db.query.projects.findFirst({ where: and(eq(projects.issueKey, renamedKey), sql`${projects.id} <> ${projectId}`), columns: { id: true } });
         if (duplicate || await isReservedKey(renamedKey, projectId)) throw new HttpError(409, "Project key is already in use");
     }
-    const { icon: _icon, iconAppearance: _iconAppearance, cover: _cover, ...projectInput } = input;
+    const { icon: _icon, iconAppearance: _iconAppearance, ...projectInput } = input;
     const project = await db
         .transaction(async (tx) => {
             if (renamedKey) {
@@ -177,7 +171,6 @@ export async function updateProject(projectId: string, input: UpdateProjectInput
                 .update(projects)
                 .set({
                     ...projectInput,
-                    ...(input.cover === undefined ? {} : { cover: input.cover }),
                     ...projectAppearance(input),
                     updatedAt: new Date(),
                 })
@@ -194,7 +187,7 @@ export async function updateProject(projectId: string, input: UpdateProjectInput
         throw new HttpError(404, "Project not found");
     }
     publishChange("project.updated", { projectId, id: projectId });
-    return withParsedCover(project);
+    return project;
 }
 
 export async function updateProjectPage(projectId: string, input: UpdateProjectPageInput) {

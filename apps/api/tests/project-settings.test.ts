@@ -31,16 +31,15 @@ test("creation accepts a custom key, normalizes it, and keeps old clients compat
     }
 });
 
-test("project appearance validates custom icons and remote covers while keeping legacy icon clients", () => {
+test("project appearance validates custom icons while keeping legacy icon clients", () => {
     assert.deepEqual(createProjectSchema.parse({ name: "My project", icon: "rocket" }).icon, "rocket");
     assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "emoji", value: "🧠" } }).success, true);
-    assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "image", url: "https://images.example.test/logo.svg" }, cover: { type: "gradient", key: "aurora" } }).success, true);
+    assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "image", url: "https://images.example.test/logo.svg" } }).success, true);
     assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "icon", key: "rocket", color: "#0097ff" } }).success, true);
     assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "icon", key: "rocket", color: "blue" } }).success, false);
     assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "icon", key: "unknown" } }).success, false);
-    assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { url: "https://images.example.test/banner.jpg", position: { x: 50, y: 50 } } }).success, false);
-    assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { type: "gradient", key: "unknown" } }).success, false);
-    assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { type: "gradient", key: "blueprint" } }).success, true);
+    // Banners are gone; a cover from an older client is dropped rather than rejected.
+    assert.equal("cover" in createProjectSchema.parse({ name: "My project", cover: { type: "gradient", key: "aurora" } }), false);
 });
 
 test("custom key is persisted verbatim without querying automatic suggestions", async () => {
@@ -123,14 +122,14 @@ function mockRename(current: { issueKey: string; nextIssueNumber: number }) {
     const calls: Array<{ op: string; table: unknown; values?: unknown }> = [];
     let lookups = 0;
     // The first lookup loads the project being renamed; the second checks the new key against other projects.
-    spyOn(db.query.projects, "findFirst").mockImplementation(async () => (lookups++ === 0 ? { id: "project", cover: null, ...current } : undefined) as never);
+    spyOn(db.query.projects, "findFirst").mockImplementation(async () => (lookups++ === 0 ? { id: "project", ...current } : undefined) as never);
     mockReservedKeys();
     spyOn(db, "transaction").mockImplementation(async (work: (tx: unknown) => Promise<unknown>) => work({
         delete: (table: unknown) => ({ where: async () => { calls.push({ op: "delete", table }); } }),
         insert: (table: unknown) => ({ values: (values: unknown) => ({ onConflictDoNothing: async () => { calls.push({ op: "insert", table, values }); } }) }),
         update: (table: unknown) => ({ set: (values: Record<string, unknown>) => ({ where: () => ({ returning: async () => {
             calls.push({ op: "update", table, values });
-            return [{ id: "project", cover: null, ...current, ...values }];
+            return [{ id: "project", ...current, ...values }];
         } }) }) }),
     }));
     return calls;
@@ -184,7 +183,7 @@ test("project deletion/settings guard permits the owner, but not a missing proje
 });
 
 test("a project resolves by its current key or by a key it used before", async () => {
-    const project = { id: "project", issueKey: "NEW", cover: null };
+    const project = { id: "project", issueKey: "NEW" };
     const lookup = spyOn(db.query.projects, "findFirst").mockImplementation(async () => (lookup.mock.calls.length === 1 ? undefined : project) as never);
     spyOn(db.query.projectKeyAliases, "findFirst").mockImplementation(async () => ({ projectId: "project" }) as never);
     assert.equal((await getProjectByKey("old")).issueKey, "NEW");

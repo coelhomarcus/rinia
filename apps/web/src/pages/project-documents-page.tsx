@@ -22,6 +22,7 @@ import { getDocumentSession } from "@/features/documents/sessions";
 import { ProjectHomeTabs } from "@/features/projects/components/project-home-tabs";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
+import { sourceLabel } from "@/features/board/components/issue-property-icons";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { realtimeClient } from "@/features/realtime/realtime-client";
@@ -86,6 +87,7 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
                                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-primary">{page.title}</span>
                                     <span className="hidden text-xs text-tertiary sm:block">
                                         {t("documents.created", { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(page.createdAt)) })}
+                                        {page.source && ` · ${t("issue.viaSource", { client: sourceLabel(page.source) })}`}
                                     </span>
                                 </Link>
                                 <ContextMenuButton

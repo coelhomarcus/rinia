@@ -1,4 +1,4 @@
-import type { CreateProjectInput, EntityIcon, ProjectCover, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
+import type { CreateProjectInput, EntityIcon, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
 import { apiClient } from "@/lib/api-client";
 
 export interface Project {
@@ -10,7 +10,6 @@ export interface Project {
     repositoryUrl: string | null;
     icon: string | null;
     iconAppearance: EntityIcon | null;
-    cover: ProjectCover | null;
     pageContent: string;
     createdBy: string;
     createdAt: string;

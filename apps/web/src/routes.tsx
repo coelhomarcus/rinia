@@ -31,7 +31,7 @@ const IntegrationsSettingsPage = lazy(() => import("@/pages/integrations-setting
 const IntegrationSettingsPage = lazy(() => import("@/pages/integration-settings-page").then((module) => ({ default: module.IntegrationSettingsPage })));
 const ApiTokensSettingsPage = lazy(() => import("@/pages/api-tokens-settings-page").then((module) => ({ default: module.ApiTokensSettingsPage })));
 const PreferencesSettingsPage = lazy(() => import("@/pages/preferences-settings-page").then((module) => ({ default: module.PreferencesSettingsPage })));
-const ProjectsPage = lazy(() => import("@/pages/projects-page").then((module) => ({ default: module.ProjectsPage })));
+const OAuthConsentPage = lazy(() => import("@/pages/oauth-consent-page").then((module) => ({ default: module.OAuthConsentPage })));
 const RegisterPage = lazy(() => import("@/pages/register-page").then((module) => ({ default: module.RegisterPage })));
 
 /** Old `/projects/<uuid>/...` links (bookmarks, pasted URLs) land on the matching key-based URL. */
@@ -73,6 +73,8 @@ export const AppRoutes = () => {
                 <Route element={<AuthLayout />}>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    {/* Where MCP clients send someone to sign in with Rinia. */}
+                    <Route path="/oauth/authorize" element={<RequireAuth><OAuthConsentPage /></RequireAuth>} />
                 </Route>
 
                 <Route
@@ -82,7 +84,7 @@ export const AppRoutes = () => {
                         </RequireAuth>
                     }
                 >
-                    <Route path="/" element={<ProjectsPage />} />
+                    <Route path="/" element={<Navigate to={urls.myIssues()} replace />} />
                     <Route path="/inbox" element={<InboxPage />} />
                     <Route path="/my-issues" element={<MyIssuesPage />} />
                     <Route path="/my-issues/:filter" element={<MyIssuesPage />} />

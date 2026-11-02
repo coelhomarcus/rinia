@@ -1,4 +1,4 @@
-import { resolveLocale, type CreateDocumentInput, type Locale, type UpdateDocumentInput } from "@rinia/shared";
+import { resolveLocale, type ActionSource, type CreateDocumentInput, type Locale, type TiptapDocument, type UpdateDocumentInput } from "@rinia/shared";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { projectDocuments, projectMembers, users } from "../../db/schema";
@@ -39,17 +39,27 @@ export async function getDocument(projectId: string, documentId: string) {
   return live ? { ...document, contentJson: live } : document;
 }
 
+/**
+ * The page with its revision matching its content: edits still in memory are saved first, so a revision read here is
+ * the one `writeDocumentContent` compares against.
+ */
+export async function getSavedDocument(projectId: string, documentId: string) {
+  await documentRooms.flush(documentId);
+  return getDocument(projectId, documentId);
+}
+
 export async function createDocument(
   projectId: string,
   userId: string,
   input: CreateDocumentInput,
+  source?: ActionSource,
 ) {
   assertRichText(input.contentJson, "document");
   const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { locale: true } });
   const title = input.title?.trim() || EMPTY_DOCUMENT_TITLES[resolveLocale(user?.locale)];
   const [document] = await db
     .insert(projectDocuments)
-    .values({ projectId, createdBy: userId, ...input, iconAppearance: input.iconAppearance ?? null, title })
+    .values({ projectId, createdBy: userId, ...input, iconAppearance: input.iconAppearance ?? null, title, source: source ?? null })
     .returning();
   publishChange("document.created", { projectId, id: document.id });
   const { yjsState: _yjsState, ...page } = document;
@@ -76,6 +86,28 @@ export async function updateDocument(
     .where(matchingDocument(projectId, documentId))
     .returning();
   if (!document) throw new HttpError(404, "Document not found");
+  publishChange("document.updated", { projectId, id: documentId });
+  return getDocument(projectId, documentId);
+}
+
+/**
+ * Rewrites a page's content from outside the editor, as the MCP server does. It goes through the page's live room, so
+ * people who have it open see the change arrive. With `expectedRevision`, a page saved since that revision is left
+ * alone, so a change based on an old read cannot undo what someone wrote in between.
+ */
+export async function writeDocumentContent(projectId: string, documentId: string, input: { contentJson: TiptapDocument; expectedRevision?: number }) {
+  assertRichText(input.contentJson, "document");
+  const found = await db.query.projectDocuments.findFirst({ where: matchingDocument(projectId, documentId), columns: { id: true } });
+  if (!found) throw new HttpError(404, "Document not found");
+  if (input.expectedRevision !== undefined) {
+    // Edits still in memory count as changes since the revision the caller read.
+    await documentRooms.flush(documentId);
+    const current = await db.query.projectDocuments.findFirst({ where: matchingDocument(projectId, documentId), columns: { revision: true } });
+    if (current && current.revision !== input.expectedRevision) {
+      throw new HttpError(409, `This page changed after revision ${input.expectedRevision} and is now at revision ${current.revision}. Read it again and reapply your change.`);
+    }
+  }
+  await documentRooms.replace(documentId, input.contentJson);
   publishChange("document.updated", { projectId, id: documentId });
   return getDocument(projectId, documentId);
 }

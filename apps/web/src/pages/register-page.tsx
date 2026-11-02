@@ -2,11 +2,12 @@ import { type RegisterInput, registerSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Link, Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { ControlledInput } from "@/components/form/controlled-input";
 import { AUTH_QUERY_KEY, register } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { returnPath } from "@/features/auth/return-path";
 import { ApiError } from "@/lib/api-client";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/i18n/language-provider";
@@ -14,6 +15,7 @@ import { useLanguage } from "@/i18n/language-provider";
 export const RegisterPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const queryClient = useQueryClient();
     const { t } = useTranslation();
     const { locale } = useLanguage();
@@ -28,7 +30,7 @@ export const RegisterPage = () => {
         mutationFn: register,
         onSuccess: (authUser) => {
             queryClient.setQueryData(AUTH_QUERY_KEY, authUser);
-            navigate("/", { replace: true });
+            navigate(returnPath(location), { replace: true });
         },
         onError: (error) => {
             setError("root", { message: error instanceof ApiError ? error.message : t("auth.unableToCreateAccount") });
@@ -36,7 +38,7 @@ export const RegisterPage = () => {
     });
 
     if (user) {
-        return <Navigate to="/" replace />;
+        return <Navigate to={returnPath(location)} replace />;
     }
 
     return (
@@ -62,7 +64,7 @@ export const RegisterPage = () => {
 
             <p className="text-center text-[13px] text-tertiary">
                 {t("auth.alreadyHaveAccount")}{" "}
-                <Link to="/login" className="font-semibold text-accent-primary hover:underline">
+                <Link to="/login" state={location.state} className="font-semibold text-accent-primary hover:underline">
                     {t("auth.signIn")}
                 </Link>
             </p>
