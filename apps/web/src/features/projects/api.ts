@@ -68,6 +68,15 @@ export function addProjectMember(projectId: string, username: string): Promise<P
     return apiClient.post<{ member: ProjectMember }>(`/projects/${projectId}/members`, { username }).then((res) => res.member);
 }
 
+export interface MemberLookup {
+    user: (ProjectMemberPreview & { username: string }) | null;
+    isMember: boolean;
+}
+
+export function lookupProjectMember(projectId: string, username: string): Promise<MemberLookup> {
+    return apiClient.get<MemberLookup>(`/projects/${projectId}/members/lookup?username=${encodeURIComponent(username)}`);
+}
+
 export function removeProjectMember(projectId: string, userId: string): Promise<void> {
     return apiClient.delete<void>(`/projects/${projectId}/members/${userId}`);
 }

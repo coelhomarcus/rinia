@@ -14,6 +14,7 @@ import {
 } from "../../middleware/project-membership.middleware";
 import {
   addMember,
+  lookupMember,
   create,
   getByKey,
   getOne,
@@ -48,6 +49,7 @@ projectsRouter.use(
 );
 
 projectsRouter.get("/:projectId/members", requireProjectMember, listMembers);
+projectsRouter.get("/:projectId/members/lookup", requireProjectOwner, lookupMember);
 projectsRouter.post("/:projectId/members", requireProjectOwner, addMember);
 projectsRouter.delete(
   "/:projectId/members/:userId",

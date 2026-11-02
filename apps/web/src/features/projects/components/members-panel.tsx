@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type AddProjectMemberInput, addProjectMemberSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AddOutline as Plus, SearchOutline as Search, UserMinusOutline as UserRoundMinus } from "@makeplane/propel/icons";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
@@ -16,7 +16,7 @@ import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } fr
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { ApiError } from "@/lib/api-client";
-import { useAddProjectMember, useProjectMembers, useRemoveProjectMember } from "../hooks/use-project-members";
+import { useAddProjectMember, useMemberLookup, useProjectMembers, useRemoveProjectMember } from "../hooks/use-project-members";
 import { useTranslation } from "react-i18next";
 
 export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
@@ -115,24 +115,54 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
         resolver: zodResolver(addProjectMemberSchema),
         defaultValues: { username: "" },
     });
+    // The lookup waits for a pause in typing, so it does not ask about every letter.
+    const typed = (useWatch({ control, name: "username" }) ?? "").trim().toLowerCase().replace(/^@/, "");
+    const [username, setUsername] = useState("");
+    useEffect(() => {
+        const timer = setTimeout(() => setUsername(typed), 300);
+        return () => clearTimeout(timer);
+    }, [typed]);
+    const lookup = useMemberLookup(projectId, username);
+    const checking = !!typed && (typed !== username || lookup.isFetching);
+    const settled = !!typed && !checking;
+    const found = settled ? lookup.data?.user ?? null : null;
+    const isMember = !!found && !!lookup.data?.isMember;
+
     return (
         <form
             className="space-y-5"
             noValidate
             onSubmit={handleSubmit((data) =>
-                mutation.mutate(data.username, {
+                mutation.mutate(data.username.replace(/^@/, ""), {
                     onSuccess: onClose,
                     onError: (error) => setError("root", { message: error instanceof ApiError ? error.message : t("settings.couldNotAddMember") }),
                 }),
             )}
         >
             <ControlledInput control={control} name="username" label={t("settings.username")} placeholder={t("settings.username")} isRequired autoFocus isDisabled={mutation.isPending} />
+            {typed && (
+                <div aria-live="polite" className="space-y-2">
+                    {checking && <p className="text-[13px] text-tertiary">{t("settings.checkingUser")}</p>}
+                    {settled && lookup.isError && <Alert tone="error">{t("settings.couldNotCheckUser")}</Alert>}
+                    {settled && lookup.data && !found && <Alert tone="warning">{t("settings.userNotFound", { username: typed })}</Alert>}
+                    {found && (
+                        <div className="flex items-center gap-3 rounded-lg border border-secondary px-3 py-2.5">
+                            <Avatar src={found.avatarUrl ?? undefined} initials={memberInitials(found.name)} size="sm" />
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-primary">{found.name}</p>
+                                <p className="truncate text-[13px] text-tertiary">@{found.username}</p>
+                            </div>
+                        </div>
+                    )}
+                    {isMember && <p className="text-[13px] text-tertiary">{t("settings.userAlreadyMember", { username: found!.username })}</p>}
+                </div>
+            )}
             {formState.errors.root && <Alert tone="error">{formState.errors.root.message}</Alert>}
             <div className="flex justify-end gap-2">
                 <Button color="secondary" size="lg" isDisabled={mutation.isPending} onClick={onClose}>
                     {t("common.cancel")}
                 </Button>
-                <Button type="submit" size="lg" isLoading={mutation.isPending}>
+                <Button type="submit" size="lg" isLoading={mutation.isPending} isDisabled={!found || isMember}>
                     {t("settings.addMember")}
                 </Button>
             </div>
