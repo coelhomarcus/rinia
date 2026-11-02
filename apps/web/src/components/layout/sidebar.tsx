@@ -198,15 +198,17 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                             <div key={group.key}>
                                 <SectionLabel label={group.label} owner={group.owner} open={groupOpen(group)} onToggle={() => toggleGroup(group)} />
                                 <Collapse open={groupOpen(group)}>
-                                    {group.projects.map((project) => (
-                                        <ProjectNavItem
-                                            key={project.id}
-                                            project={project}
-                                            currentProjectId={routeProjectId}
-                                            open={openProjects.has(project.id)}
-                                            onToggle={() => toggleStoredId(OPEN_PROJECTS_KEY, setOpenProjects, project.id)}
-                                        />
-                                    ))}
+                                    <div className="pl-2">
+                                        {group.projects.map((project) => (
+                                            <ProjectNavItem
+                                                key={project.id}
+                                                project={project}
+                                                currentProjectId={routeProjectId}
+                                                open={openProjects.has(project.id)}
+                                                onToggle={() => toggleStoredId(OPEN_PROJECTS_KEY, setOpenProjects, project.id)}
+                                            />
+                                        ))}
+                                    </div>
                                 </Collapse>
                             </div>
                         ))}
@@ -444,7 +446,7 @@ function FavoritesNav({ open, onToggle }: { open: boolean; onToggle: () => void 
         <Collapse open={rows.some((row) => !row.leaving)} lazy={false} animate={ready}>
             <SectionLabel label={t("nav.favorites")} open={open} onToggle={onToggle} />
             <Collapse open={open} lazy={false}>
-                <div className="flex flex-col">
+                <div className="flex flex-col pl-2">
                     {rows.map((row) => (
                         <FavoriteRow key={row.favorite.id} favorite={row.favorite} leaving={row.leaving} animateIn={row.animateIn} />
                     ))}
