@@ -11,11 +11,13 @@ import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-
 import type { Favorite } from "@/features/favorites/api";
 import { useFavorites, useMigrateLegacyFavorites, useRemoveFavorite } from "@/features/favorites/hooks/use-favorites";
 import { useUnreadNotificationCount } from "@/features/notifications/hooks/use-notifications";
+import { Avatar } from "@/components/base/avatar/avatar";
+import { getInitials } from "@/components/base/avatar/utils";
 import { Collapse } from "@/components/base/collapse";
 import { UNMOUNT_AFTER } from "@/components/base/motion";
 import { Presence } from "@/components/base/presence";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
-import type { ProjectCardSummary } from "@/features/projects/api";
+import type { ProjectCardSummary, ProjectMemberPreview } from "@/features/projects/api";
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { groupProjectsByOwner, type ProjectGroup } from "@/features/projects/lib/project-groups";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
@@ -194,7 +196,7 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                         <FavoritesNav open={sections.favorites} onToggle={() => toggleSection("favorites")} />
                         {projectGroups.map((group) => (
                             <div key={group.key}>
-                                <SectionLabel label={group.label} open={groupOpen(group)} onToggle={() => toggleGroup(group)} />
+                                <SectionLabel label={group.label} owner={group.owner} open={groupOpen(group)} onToggle={() => toggleGroup(group)} />
                                 <Collapse open={groupOpen(group)}>
                                     {group.projects.map((project) => (
                                         <ProjectNavItem
@@ -324,7 +326,7 @@ function SettingsNavSection({ label, children }: { label: string; children: Reac
     );
 }
 
-function SectionLabel({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
+function SectionLabel({ label, owner, open, onToggle }: { label: string; owner?: ProjectMemberPreview | null; open: boolean; onToggle: () => void }) {
     return (
         <button
             type="button"
@@ -332,6 +334,9 @@ function SectionLabel({ label, open, onToggle }: { label: string; open: boolean;
             onClick={onToggle}
             className="group/section mt-5 mb-0.5 flex h-6 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-tertiary hover:text-secondary"
         >
+            {owner && (
+                <Avatar src={owner.avatarUrl ?? undefined} initials={getInitials(owner.name)} size="xs" className="size-4" contentClassName="[&>span]:text-[8px]" />
+            )}
             {label}
             <span className="text-placeholder group-hover/section:text-tertiary"><Caret open={open} /></span>
         </button>
