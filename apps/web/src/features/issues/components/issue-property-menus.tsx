@@ -75,12 +75,11 @@ function PropertyMenu<V>({ property, label, triggerLabel, trigger, className, op
                             {numbered.hint && <span className="tabular-nums">{numbered.hint}</span>}
                         </div>
                         {options.map((option, index) => {
-                            const number = numbered.numbers[index];
                             return (
-                                <Menu.Item key={option.key} className={menuItem} aria-keyshortcuts={number === null ? undefined : String(number)} onClick={() => pick(option)}>
+                                <Menu.Item key={option.key} className={menuItem} aria-keyshortcuts={numbered.ariaKeyFor(option)} onClick={() => pick(option)}>
                                     {option.icon}
                                     <span className="flex-1 truncate">{option.label}</span>
-                                    <OptionNumber value={number} />
+                                    <OptionNumber value={numbered.labels[index]} />
                                 </Menu.Item>
                             );
                         })}

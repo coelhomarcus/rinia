@@ -1,6 +1,6 @@
 import type { IssuePriority } from "@rinia/shared";
 
-/** Menu order, as in Linear: no priority first (shortcut 0 / item 1), then most to least urgent. */
+/** Menu order, as in Linear: no priority first (shortcut 1), then most to least urgent. */
 export const PRIORITY_OPTIONS: readonly IssuePriority[] = ["none", "urgent", "high", "medium", "low"];
 
 /** Translation key for a priority's name; "none" reads as "No priority" rather than a bare "None". */

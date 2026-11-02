@@ -855,7 +855,7 @@ function IssueQuickActions({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, i
 
 /**
  * A property row that opens a searchable list. Arrow keys move, Enter picks, and the number keys pick directly
- * while the search is empty: 0 clears, 1-9 pick the options in order (estimates: the value itself).
+ * while the search is empty: 1-9 pick the options in order (estimates: the value itself) and Backspace clears where the options are not numbered in order.
  */
 function PropertyMenu<V>({
     open,
@@ -957,7 +957,7 @@ function PropertyMenu<V>({
                                     role="option"
                                     tabIndex={-1}
                                     aria-selected={option.value === value}
-                                    aria-keyshortcuts={!query && numbered.numberFor(option) !== null ? String(numbered.numberFor(option)) : undefined}
+                                    aria-keyshortcuts={query ? undefined : numbered.ariaKeyFor(option)}
                                     onMouseEnter={() => setActive(index)}
                                     onClick={() => choose(option)}
                                     className={cx("flex h-8 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] text-secondary transition-colors duration-100", index === active && "bg-layer-2-hover text-primary")}
@@ -965,7 +965,7 @@ function PropertyMenu<V>({
                                     <span className="grid size-4 shrink-0 place-items-center">{option.icon}</span>
                                     <span className="min-w-0 flex-1 truncate">{option.label}</span>
                                     {option.value === value && <Check className="size-3.5 shrink-0 text-secondary" />}
-                                    <OptionNumber value={query ? null : numbered.numberFor(option)} />
+                                    <OptionNumber value={query ? null : numbered.labelFor(option)} />
                                 </button>
                             ))}
                             {filtered.length === 0 && <p className="px-2 py-2 text-[13px] text-placeholder">{t("common.noResults")}</p>}
@@ -1030,7 +1030,7 @@ function IssueProperties({
     const avatar = (person: { name: string; avatarUrl: string | null }) => <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} className="size-4 text-[9px]" />;
     const created = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(issue.createdAt));
     const parentIcon = <ParentOutline className="size-4 text-tertiary" />;
-    // A long searchable list: only 0 clears, so digits stay free for searching "RIN-12".
+    // A long searchable list: only Backspace clears, so digits stay free for searching "RIN-12".
     const parentOptions: PropertyOption<string>[] = [
         { key: "none", value: "", label: t("issue.noParent"), icon: parentIcon, clears: true },
         ...projectIssues.filter((candidate) => candidate.id !== issue.id).map((candidate) => ({ key: candidate.id, value: candidate.id, label: `${candidate.identifier} ${candidate.title}`, icon: parentIcon })),

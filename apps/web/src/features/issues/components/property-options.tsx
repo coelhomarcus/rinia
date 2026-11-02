@@ -43,12 +43,12 @@ export function statusOptions(statuses: Status[], t: TFunction): PropertyOption<
     return statuses.map((status) => ({ key: status.id, value: status.id, label: translateStatusName(status.name, t), icon: <StateIcon name={status.name} color={status.color} className={propertyIcon} /> }));
 }
 
-/** "No priority" clears, so it is `0`; urgent to low are `1` to `4`. */
+/** "No priority" is `1`, then urgent to low are `2` to `5`. */
 export function priorityOptions(t: TFunction): PropertyOption<IssuePriority>[] {
     return PRIORITY_OPTIONS.map((priority) => ({ key: priority, value: priority, label: t(priorityLabelKey(priority)), icon: <PriorityIcon priority={priority} className={propertyIcon} />, clears: priority === "none" }));
 }
 
-/** Unassigned clears, so it is `0`; the members are `1` to `9`. */
+/** Unassigned is `1`, then the members. */
 export function assigneeOptions(people: Person[], t: TFunction): PropertyOption<string | null>[] {
     return [
         { key: "unassigned", value: null, label: t("issue.unassigned"), icon: <UnassignedIcon />, clears: true },
@@ -56,7 +56,7 @@ export function assigneeOptions(people: Person[], t: TFunction): PropertyOption<
     ];
 }
 
-/** No estimate clears, so it is `0`; each estimate is numbered by its own value (1 2 3 5 8). */
+/** No estimate clears with Backspace; each estimate is numbered by its own value (1 2 3 5 8). */
 export function estimateOptions(t: TFunction): PropertyOption<number | null>[] {
     return [
         { key: "none", value: null, label: t("issue.noEstimate"), icon: <EstimateIcon muted />, clears: true },
@@ -64,7 +64,7 @@ export function estimateOptions(t: TFunction): PropertyOption<number | null>[] {
     ];
 }
 
-/** The number beside an option: right-aligned, tabular and the same size in every menu. Empty where an option has none. */
-export function OptionNumber({ value }: { value: number | null }) {
+/** The key beside an option (its digit, or ⌫): right-aligned, tabular and the same size in every menu. Empty where an option has none. */
+export function OptionNumber({ value }: { value: string | null }) {
     return <span aria-hidden="true" className="w-3 shrink-0 text-right text-[11px] text-placeholder tabular-nums">{value ?? ""}</span>;
 }
