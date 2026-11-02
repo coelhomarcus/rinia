@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { TiptapDocument } from "@rinia/shared";
-import { Bold, Check, CheckSquare, Code2, Heading2, ImagePlus, Italic, Link2, List, ListOrdered, Minus, MoreHorizontal, Quote, Strikethrough } from "lucide-react";
-import Link from "@tiptap/extension-link";
-import Mention from "@tiptap/extension-mention";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
+import { checkRichText, richTextAllowsImages, richTextExtensionSet } from "@rinia/shared/src/rich-text-schema";
+import { Bold, Check, CheckSquare, Code2, Heading2, ImagePlus, Italic, Link2, List, ListOrdered, Minus, MoreHorizontal, Quote, Strikethrough, Table2 } from "lucide-react";
 import { Placeholder } from "@tiptap/extensions";
 import { PluginKey } from "@tiptap/pm/state";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { EditorContent, Extension, useEditor, type Editor } from "@tiptap/react";
+import { EditorContent, Extension, useEditor, useEditorState } from "@tiptap/react";
 import Suggestion, { type SuggestionProps } from "@tiptap/suggestion";
-import StarterKit from "@tiptap/starter-kit";
 import { Popover as BasePopover } from "@base-ui/react/popover";
 import { Button, type Props as ButtonProps } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
@@ -19,9 +15,14 @@ import { Input } from "@/components/base/input/input";
 import { ToggleGroupItem, ToggleGroupRoot } from "@/components/base/toggle-group/toggle-group";
 import { cx } from "@/utils/cx";
 import { useTranslation } from "react-i18next";
-import type { TranslationKey } from "@/i18n/resources";
 import i18n from "@/i18n/i18n";
 import { DocumentImage } from "@/features/documents/components/document-image";
+import { type EditorCommand, commandIcons, executeBlockCommand, filterBlockCommands } from "@/features/editor/commands";
+import { MarkdownTablePaste } from "@/features/editor/markdown-paste";
+import { TableControls } from "@/features/editor/table-controls";
+import { TableActionsMenu } from "@/features/editor/table-menu";
+import { UnsupportedContent } from "@/features/editor/unsupported-content";
+import "@/features/editor/editor-ui.css";
 import "./issue-rich-text-editor.css";
 
 export const EMPTY_TIPTAP_DOCUMENT: TiptapDocument = { type: "doc", content: [] };
@@ -32,32 +33,19 @@ export interface MentionItem {
     description?: string;
 }
 
-interface SlashItem {
-    id: string;
-    label: string;
-    description: string;
-    icon: typeof Heading2;
-    run: (editor: Editor) => void;
-}
+type SuggestionItem = { id: string; label: string; description?: string; detail?: string };
 
-function SuggestionMenu<T extends { id: string; label: string; description?: string; icon?: typeof Heading2 }>({ items, selectedIndex, onSelect }: { items: T[]; selectedIndex: number; onSelect: (item: T) => void }) {
+function SuggestionMenu<T extends SuggestionItem>({ items, selectedIndex, onSelect }: { items: T[]; selectedIndex: number; onSelect: (item: T) => void }) {
     const { t } = useTranslation();
-    const labelKeys: Record<string, [TranslationKey, TranslationKey]> = {
-        paragraph: ["editor.text", "editor.startParagraph"], heading: ["editor.headingFormat", "editor.addHeading"],
-        "bullet-list": ["editor.bulletList", "editor.createSimpleList"], "ordered-list": ["editor.numberedList", "editor.createNumberedList"],
-        "task-list": ["editor.todoList", "editor.trackChecklist"], quote: ["editor.quote", "editor.highlightQuote"],
-        code: ["editor.codeBlock", "editor.addFormattedCode"], divider: ["editor.divider", "editor.separateSections"],
-        image: ["editor.image", "editor.insertImageUrl"],
-    };
     return (
         <div role="listbox" aria-label={t("editor.editorSuggestions")} className="min-w-60 overflow-hidden rounded-lg border border-subtle bg-surface-1 p-1 shadow-2xl">
             {items.length === 0 ? <p className="px-3 py-2 text-xs text-tertiary">{t("editor.noMatchingCommands")}</p> : items.map((item, index) => {
-                const Icon = item.icon;
-                const keys = labelKeys[item.id];
+                const Icon = commandIcons[item.id];
+                const detail = item.detail ?? item.description;
                 return (
                     <button key={item.id} type="button" role="option" aria-selected={index === selectedIndex} className={cx("flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left", index === selectedIndex && "bg-surface-2")} onMouseDown={(event) => { event.preventDefault(); onSelect(item); }}>
                         {Icon && <Icon className="size-4 shrink-0 text-tertiary" />}
-                        <span className="min-w-0"><span className="block text-sm font-medium text-primary">{keys ? t(keys[0]) : item.label}</span>{item.description && <span className="block truncate text-xs text-tertiary">{keys ? t(keys[1]) : item.description}</span>}</span>
+                        <span className="min-w-0"><span className="block text-sm font-medium text-primary">{item.label}</span>{detail && <span className="block truncate text-xs text-tertiary">{detail}</span>}</span>
                     </button>
                 );
             })}
@@ -65,7 +53,7 @@ function SuggestionMenu<T extends { id: string; label: string; description?: str
     );
 }
 
-function createSuggestionRenderer<T extends { id: string; label: string; description?: string; icon?: typeof Heading2 }>() {
+function createSuggestionRenderer<T extends SuggestionItem>() {
     let popup: HTMLDivElement | null = null;
     let root: Root | null = null;
     let selectedIndex = 0;
@@ -166,46 +154,25 @@ function createMentionSuggestion(getItems: () => MentionItem[]) {
 
 const SLASH_PLUGIN_KEY = new PluginKey("rinia-slash-commands");
 
-function createSlashSuggestion(includeImages: boolean) {
-    const commands: SlashItem[] = [
-        { id: "paragraph", label: "Text", description: "Start with a plain paragraph", icon: Heading2, run: (editor) => editor.chain().setParagraph().run() },
-        { id: "heading", label: "Heading", description: "Add a section heading", icon: Heading2, run: (editor) => editor.chain().toggleHeading({ level: 2 }).run() },
-        { id: "bullet-list", label: "Bullet list", description: "Create a simple list", icon: List, run: (editor) => editor.chain().toggleBulletList().run() },
-        { id: "ordered-list", label: "Numbered list", description: "Create a numbered list", icon: ListOrdered, run: (editor) => editor.chain().toggleOrderedList().run() },
-        { id: "task-list", label: "Task list", description: "Track a checklist", icon: CheckSquare, run: (editor) => editor.chain().toggleTaskList().run() },
-        { id: "quote", label: "Quote", description: "Highlight a quotation", icon: Quote, run: (editor) => editor.chain().toggleBlockquote().run() },
-        { id: "code", label: "Code block", description: "Add formatted code", icon: Code2, run: (editor) => editor.chain().toggleCodeBlock().run() },
-        { id: "divider", label: "Divider", description: "Separate sections", icon: Minus, run: (editor) => editor.chain().setHorizontalRule().run() },
-        { id: "image", label: "Image", description: "Add an image from a URL", icon: ImagePlus, run: (editor) => editor.chain().setImage({ src: "", alt: "" }).run() },
-    ];
-    const availableCommands = includeImages ? commands : commands.filter((command) => command.id !== "image");
+/** The slash menu offers the shared block catalog, filtered to what this profile's schema allows. */
+function createSlashSuggestion(profile: RichTextProfile) {
     return Extension.create({
         name: "slashCommands",
         addProseMirrorPlugins() {
-            return [Suggestion<SlashItem>({
+            return [Suggestion<EditorCommand>({
                 editor: this.editor,
                 pluginKey: SLASH_PLUGIN_KEY,
                 char: "/",
-                items: ({ query }) => {
-                    const keys: Record<string, [TranslationKey, TranslationKey]> = {
-                        paragraph: ["editor.text", "editor.startParagraph"], heading: ["editor.headingFormat", "editor.addHeading"],
-                        "bullet-list": ["editor.bulletList", "editor.createSimpleList"], "ordered-list": ["editor.numberedList", "editor.createNumberedList"],
-                        "task-list": ["editor.todoList", "editor.trackChecklist"], quote: ["editor.quote", "editor.highlightQuote"],
-                        code: ["editor.codeBlock", "editor.addFormattedCode"], divider: ["editor.divider", "editor.separateSections"],
-                        image: ["editor.image", "editor.insertImageUrl"],
-                    };
-                    const translatedQuery = query.toLowerCase();
-                    return availableCommands.filter((command) => {
-                        const text = keys[command.id]?.map((key) => i18n.t(key)).join(" ") ?? "";
-                        return `${command.label} ${command.description} ${text}`.toLowerCase().includes(translatedQuery);
-                    });
-                },
-                command: ({ editor, range, props }) => { editor.chain().focus().deleteRange(range).run(); props.run(editor); },
-                render: () => createSuggestionRenderer<SlashItem>(),
+                items: ({ query }) => filterBlockCommands(query, profile),
+                allow: ({ state }) => state.selection.empty && !state.selection.$from.parent.type.spec.code,
+                command: ({ editor, range, props }) => executeBlockCommand(editor, props, range),
+                render: () => createSuggestionRenderer<EditorCommand>(),
             })];
         },
     });
 }
+
+type RichTextProfile = "description" | "comment";
 
 interface RichTextEditorProps {
     content: TiptapDocument;
@@ -216,10 +183,17 @@ interface RichTextEditorProps {
     className?: string;
     onSubmitShortcut?: () => void;
     toolbar?: boolean;
-    variant?: "document" | "description" | "comment";
+    variant?: RichTextProfile;
+    /** Puts the cursor at the end once the editor is ready, for editors that appear when someone clicks to write. */
+    autoFocus?: boolean;
 }
 
-export const RichTextEditor = ({ content, editable = true, onChange, placeholder, mentionItems = [], className, onSubmitShortcut, variant = "document", toolbar = true }: RichTextEditorProps) => {
+/**
+ * The editor for issue descriptions and comments. Its schema comes from the shared profile, the same one the API checks
+ * on save. Content the profile cannot read is never loaded: the editor shows it as saved and sends no changes, so
+ * nothing is overwritten with an empty document.
+ */
+export const RichTextEditor = ({ content, editable = true, onChange, placeholder, mentionItems = [], className, onSubmitShortcut, variant = "description", toolbar = true, autoFocus = false }: RichTextEditorProps) => {
     const { t } = useTranslation();
     const mentionItemsRef = useRef(mentionItems);
     mentionItemsRef.current = mentionItems;
@@ -229,14 +203,23 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
     const onSubmitShortcutRef = useRef(onSubmitShortcut);
     const placeholderRef = useRef(placeholder);
     const syncingRef = useRef(false);
+    const emittedRef = useRef<TiptapDocument | null>(null);
+    const [container, setContainer] = useState<HTMLDivElement | null>(null);
     onChangeRef.current = onChange;
     onSubmitShortcutRef.current = onSubmitShortcut;
     placeholderRef.current = placeholder;
+    // What the editor itself just sent back is known to be valid, so typing does not re-check the whole document.
+    const check = useMemo(() => (content === emittedRef.current ? { ok: true as const } : checkRichText(content, variant)), [content, variant]);
+    const readable = check.ok;
+    const readableRef = useRef(readable);
+    readableRef.current = readable;
     const editor = useEditor({
         immediatelyRender: false,
-        editable,
-        content,
+        editable: editable && readable,
+        autofocus: autoFocus && editable && readable ? "end" : false,
+        content: readable ? content : EMPTY_TIPTAP_DOCUMENT,
         editorProps: {
+            attributes: { class: "rinia-prose", "data-profile": variant },
             handleKeyDown: (_view, event) => {
                 if (onSubmitShortcutRef.current && (event.metaKey || event.ctrlKey) && event.key === "Enter") {
                     event.preventDefault();
@@ -246,21 +229,26 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
                 return false;
             },
         },
-        extensions: [
-            StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false }),
-            Link.configure({ openOnClick: !editable, autolink: true }),
-            TaskList,
-            TaskItem.configure({ nested: true }),
-            Placeholder.configure({ placeholder: () => placeholderRef.current ?? i18n.t("editor.writeSomething") }),
-            Mention.configure({ HTMLAttributes: { class: "mention" }, suggestion: mentionSuggestion }),
-            ...(variant === "description" ? [DocumentImage] : []),
-            ...(editable ? [createSlashSuggestion(variant === "description")] : []),
-        ],
+        extensions: (() => {
+            const shared = richTextExtensionSet(variant);
+            return [
+                shared.starterKit,
+                shared.link.configure({ openOnClick: !editable }),
+                shared.taskList,
+                shared.taskItem,
+                shared.table,
+                ...(shared.image ? [DocumentImage] : []),
+                shared.mention.configure({ suggestion: mentionSuggestion }),
+                Placeholder.configure({ placeholder: () => placeholderRef.current ?? i18n.t("editor.writeSomething") }),
+                ...(editable ? [createSlashSuggestion(variant), MarkdownTablePaste.configure({ profile: variant })] : []),
+            ];
+        })(),
         onUpdate: ({ editor: currentEditor }) => {
-            if (syncingRef.current) return;
+            if (syncingRef.current || !readableRef.current) return;
             const nextContent = currentEditor.getJSON() as TiptapDocument;
             if (JSON.stringify(nextContent) === JSON.stringify(contentRef.current)) return;
             contentRef.current = nextContent;
+            emittedRef.current = nextContent;
             onChangeRef.current?.(nextContent);
         },
     });
@@ -269,10 +257,10 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
         if (!editor) return;
         contentRef.current = content;
         syncingRef.current = true;
-        if (editor.isEditable !== editable) editor.setEditable(editable);
-        if (JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) editor.commands.setContent(content, { emitUpdate: false });
+        if (editor.isEditable !== (editable && readable)) editor.setEditable(editable && readable);
+        if (readable && JSON.stringify(editor.getJSON()) !== JSON.stringify(content)) editor.commands.setContent(content, { emitUpdate: false });
         syncingRef.current = false;
-    }, [content, editable, editor]);
+    }, [content, editable, editor, readable]);
 
     useEffect(() => {
         if (!editor) return;
@@ -280,9 +268,12 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
         editor.view.dispatch(editor.state.tr.setMeta("language-change", true));
     }, [editor, t]);
 
-    return <div className={cx("tiptap-editor", editable && "min-h-32", !editable && "tiptap-editor-readonly", `tiptap-editor-${variant}`, className)}>
-        {editable && toolbar && editor && <RichTextToolbar editor={editor} showImages={variant === "description"} />}
+    if (!check.ok) return <UnsupportedContent content={content} unsupported={check.unsupported} className={className} />;
+
+    return <div ref={setContainer} className={cx("tiptap-editor relative", editable && "min-h-32", !editable && "tiptap-editor-readonly", `tiptap-editor-${variant}`, className)}>
+        {editable && toolbar && editor && <RichTextToolbar editor={editor} showImages={richTextAllowsImages(variant)} />}
         {editable && editor && <RichTextBubbleMenu editor={editor} />}
+        {editable && editor && <TableControls editor={editor} container={container} />}
         <EditorContent editor={editor} />
     </div>;
 };
@@ -313,6 +304,7 @@ function RichTextToolbar({ editor, showImages }: { editor: NonNullable<ReturnTyp
         <span className="mx-1 h-5 w-px bg-border-secondary" aria-hidden="true" />
         <FormatButton icon={Heading2} label={t("editor.headingFormat")} active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
         {showImages && <FormatButton icon={ImagePlus} label={t("editor.insertImageUrl")} onClick={() => editor.chain().focus().setImage({ src: "", alt: "" }).run()} />}
+        <FormatButton icon={Table2} label={t("editor.table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} />
         <BasePopover.Root open={isLinkEditorOpen} onOpenChange={setIsLinkEditorOpen}>
             <BasePopover.Trigger
                 render={<button type="button" aria-label={t("editor.linkAction")} aria-pressed={editor.isActive("link")} className={cx("inline-flex size-7 items-center justify-center rounded-md text-tertiary outline-accent-strong transition-colors hover:bg-layer-1-hover hover:text-primary", editor.isActive("link") && "bg-surface-2 text-primary")} onClick={toggleLink} />}
@@ -348,18 +340,24 @@ function RichTextToolbar({ editor, showImages }: { editor: NonNullable<ReturnTyp
     </div>;
 }
 
+/** Formatting for selected text, and the table's actions while the cursor is in a table, as on pages. */
 function RichTextBubbleMenu({ editor }: { editor: NonNullable<ReturnType<typeof useEditor>> }) {
     const { t } = useTranslation();
+    const state = useEditorState({ editor, selector: ({ editor: e }) => ({ bold: e.isActive("bold"), italic: e.isActive("italic"), strike: e.isActive("strike"), table: e.isActive("table"), empty: e.state.selection.empty }) });
     return <BubbleMenu
         editor={editor}
         appendTo={() => document.body}
         options={{ strategy: "fixed", placement: "top", offset: 8, flip: { padding: 12 }, shift: { padding: 12 } }}
+        shouldShow={({ view, state: editorState, element }) => (view.hasFocus() || element.contains(document.activeElement)) && (!editorState.selection.empty || editor.isActive("table")) && !editor.isActive("image")}
         className="z-[100] flex items-center gap-1 rounded-lg border border-subtle bg-surface-1 p-1 shadow-2xl"
     >
-        <FormatButton icon={Bold} label={t("editor.bold")} active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} />
-        <FormatButton icon={Italic} label={t("editor.italic")} active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} />
-        <FormatButton icon={Strikethrough} label={t("editor.strikethrough")} active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} />
-        <LinkPopover editor={editor} />
+        {!state.empty && <>
+            <FormatButton icon={Bold} label={t("editor.bold")} active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()} />
+            <FormatButton icon={Italic} label={t("editor.italic")} active={state.italic} onClick={() => editor.chain().focus().toggleItalic().run()} />
+            <FormatButton icon={Strikethrough} label={t("editor.strikethrough")} active={state.strike} onClick={() => editor.chain().focus().toggleStrike().run()} />
+            <LinkPopover editor={editor} />
+        </>}
+        {state.table && <TableActionsMenu editor={editor} triggerClassName="inline-flex size-7 items-center justify-center rounded-md text-tertiary outline-accent-strong transition-colors hover:bg-layer-1-hover hover:text-primary" />}
     </BubbleMenu>;
 }
 

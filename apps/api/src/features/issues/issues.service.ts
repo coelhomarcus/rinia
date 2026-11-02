@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import type { TiptapDocument as StoredDocument } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { mentionedUserIds, newMentions, recordIssueChange } from "../notifications/notifications.service";
 import { publishChange } from "../realtime/realtime.service";
@@ -223,6 +224,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
 }
 
 export async function createIssue(projectId: string, input: CreateIssueInput, actorId: string, source?: ActionSource) {
+    assertRichText(input.descriptionJson, "description");
     validateIssueImageUrls(input.descriptionJson);
     await ensureProjectMember(actorId, projectId);
     if (input.parentIssueId) await ensureParentIsValid(input.parentIssueId, undefined, projectId);
@@ -266,6 +268,7 @@ export async function createIssue(projectId: string, input: CreateIssueInput, ac
 }
 
 export async function updateIssue(identifier: string, input: UpdateIssueInput, actorId: string, source?: ActionSource) {
+    assertRichText(input.descriptionJson, "description");
     const current = await getIssueOrThrow(identifier);
     await ensureProjectMember(actorId, current.projectId);
     validateIssueImageUrls(input.descriptionJson);
@@ -437,6 +440,7 @@ async function threadOf(parentCommentId: string, issueId: string) {
 }
 
 export async function createIssueComment(identifier: string, input: CreateIssueCommentInput, authorId: string, source?: ActionSource) {
+    assertRichText(input.contentJson, "comment");
     const issue = await getIssueOrThrow(identifier);
     await ensureProjectMember(authorId, issue.projectId);
     const threadId = input.parentCommentId ? await threadOf(input.parentCommentId, issue.id) : null;
@@ -452,6 +456,7 @@ export async function createIssueComment(identifier: string, input: CreateIssueC
 }
 
 export async function updateIssueComment(commentId: string, input: UpdateIssueCommentInput, authorId: string) {
+    assertRichText(input.contentJson, "comment");
     await commentForMember(commentId, authorId);
     const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), isNull(issueComments.deletedAt)) });
     if (!comment) throw new HttpError(404, "Comment not found");

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, mock, spyOn, test } from "bun:test";
 import type { RealtimeChannel } from "@rinia/shared";
-import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/document-extensions";
+import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/rich-text-schema";
 import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import * as decoding from "lib0/decoding";
 import * as encoding from "lib0/encoding";

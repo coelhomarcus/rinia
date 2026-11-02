@@ -6,7 +6,7 @@ import { type Editor, useEditorState } from "@tiptap/react";
 import { ArrowDown, ArrowUp, Copy, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { convertDocumentBlock } from "./block-conversion";
-import { commandIcons, filterBlockCommands } from "./editor-suggestions";
+import { commandIcons, filterBlockCommands } from "@/features/editor/commands";
 
 function getTopLevelBlock(editor: Editor, position: number) {
     if (!Number.isInteger(position) || position < 0 || position >= editor.state.doc.content.size) return null;
@@ -135,7 +135,7 @@ function BlockActions({
                                 {node && !["image", "table", "horizontalRule"].includes(node.type.name) && (
                                     <>
                                         <p className="mt-2 border-t border-subtle px-2 py-2 text-xs text-tertiary">{t("editor.turnInto")}</p>
-                                        {filterBlockCommands("").slice(0, 9).map((command) => {
+                                        {filterBlockCommands("", "document").slice(0, 9).map((command) => {
                                             const Icon = commandIcons[command.id];
                                             return (
                                             <button

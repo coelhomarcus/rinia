@@ -1,10 +1,9 @@
 import { SettingsOutline } from "@makeplane/propel/icons";
 import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
-import { GradientCover } from "@/components/appearance/gradient-cover";
 import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { ProjectCardSummary } from "../api";
-import { ProjectIcon, projectIconColor } from "./project-icon";
+import { ProjectCoverHeader } from "./project-cover-header";
 import { useTranslation } from "react-i18next";
 import { urls } from "@/lib/urls";
 
@@ -23,19 +22,7 @@ export const ProjectCard = ({ project }: { project: ProjectCardSummary }) => {
             data-project-issue-key={project.issueKey}
         >
             <Link to={urls.project(project.issueKey)} className="flex min-h-0 flex-1 flex-col outline-none focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-inset">
-                <div className="relative h-24 shrink-0">
-                    <GradientCover cover={project.cover} className="absolute inset-0" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-2.5 flex h-8 items-center gap-2 px-3">
-                        <span className={projectIconColor(project.iconAppearance ?? project.icon) ? "grid size-7 shrink-0 place-items-center" : "grid size-7 shrink-0 place-items-center rounded-sm bg-white/10 text-white"}>
-                            <ProjectIcon icon={project.iconAppearance ?? project.icon} className={projectIconColor(project.iconAppearance ?? project.icon) ? "size-7" : "size-4"} tile />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[13px] font-semibold text-white">{project.name}</span>
-                            <span className="block font-mono text-[10px] font-medium text-white/80">{project.issueKey}</span>
-                        </span>
-                    </div>
-                </div>
+                <ProjectCoverHeader cover={project.cover} icon={project.iconAppearance ?? project.icon} name={project.name} issueKey={project.issueKey} />
                 <div className="flex min-h-0 flex-1 flex-col justify-between p-3">
                     <p className="line-clamp-2 text-xs leading-5 text-tertiary">{project.description?.trim() || t("projects.createdOn", { date })}</p>
                     <div className="flex items-center justify-between gap-2">

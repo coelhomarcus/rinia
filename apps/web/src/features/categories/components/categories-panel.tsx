@@ -13,6 +13,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "../hooks/use-categories";
 import { CATEGORY_COLORS } from "./category-badge";
+import { LabelPresetsDialog } from "./label-presets-dialog";
 import { useTranslation } from "react-i18next";
 
 export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
@@ -32,9 +33,22 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                 title={t("settings.labels")}
                 description={t("settings.createLabelsDescription")}
                 control={
-                    <Button size="sm" iconLeading={Plus} isDisabled={pending || !!editor} onClick={() => setEditor("new")}>
-                        {t("settings.addLabel")}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {categories && (
+                            <LabelPresetsDialog
+                                trigger={
+                                    <Button size="sm" color="secondary" isDisabled={pending || !!editor}>
+                                        {t("settings.useLabelPresets")}
+                                    </Button>
+                                }
+                                existing={categories}
+                                onCreate={(preset) => createMutation.mutateAsync(preset)}
+                            />
+                        )}
+                        <Button size="sm" iconLeading={Plus} isDisabled={pending || !!editor} onClick={() => setEditor("new")}>
+                            {t("settings.addLabel")}
+                        </Button>
+                    </div>
                 }
             />
             {error && (

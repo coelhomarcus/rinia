@@ -7,6 +7,9 @@ import { db } from "../../db";
 import { users } from "../../db/schema";
 import { SESSION_COOKIE_NAME } from "../../lib/cookies";
 import { type JwtPayload, verifyToken } from "../../lib/jwt";
+import type { Logger } from "../../lib/logger";
+import { logFor } from "../../lib/request-context";
+import { HttpError } from "../../lib/http-error";
 import { documentRooms, fromBase64 } from "../documents/document-rooms";
 import { authorizeChannel, type RealtimeConnection, realtimeHub } from "./realtime.service";
 
@@ -44,6 +47,8 @@ export function sameOrigin(req: Pick<IncomingMessage, "headers">): boolean {
 }
 
 function reject(socket: Duplex, status: 401 | 403 | 404) {
+    // A socket from another site is refused as a possible hijack; the rest is a stale page or a wrong address.
+    logFor("realtime")[status === 403 ? "warn" : "info"]({ event: "realtime.rejected", status }, "realtime handshake refused");
     const reason = status === 401 ? "Unauthorized" : status === 403 ? "Forbidden" : "Not Found";
     socket.end(`HTTP/1.1 ${status} ${reason}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
@@ -93,6 +98,7 @@ export function attachRealtime(server: Server) {
 }
 
 async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
+    const log = logFor("realtime").child({ userId: session.sub });
     ws.alive = true;
     ws.on("pong", () => (ws.alive = true));
     // Messages that arrive while the user loads are kept and handled in order once it has.
@@ -100,18 +106,27 @@ async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
     let connection: RealtimeConnection | undefined;
     let queue = Promise.resolve();
     const handle = (raw: string) => {
-        queue = queue.then(() => receive(ws, connection!, raw)).catch((error) => console.error("Realtime message failed", error));
+        queue = queue.then(() => receive(ws, connection!, raw, log)).catch((error: unknown) => log.error({ event: "realtime.message_failed", err: error }, "realtime message failed"));
     };
     ws.on("message", (data) => (connection ? handle(data.toString()) : pending.push(data.toString())));
-    ws.on("close", () => {
-        if (connection) realtimeHub.disconnect(connection);
+    ws.on("close", (code, reason) => {
+        if (connection) {
+            realtimeHub.disconnect(connection);
+            log.info({ event: "realtime.disconnected", code, reason: reason.toString(), connections: realtimeHub.connections.size }, "realtime disconnected");
+        }
         connection = undefined;
     });
 
-    const user = await db.query.users.findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true } }).catch(() => undefined);
+    const user = await db.query.users
+        .findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true } })
+        .catch((error: unknown) => {
+            log.error({ event: "realtime.user_lookup_failed", err: error }, "could not load the user of a realtime socket");
+            return undefined;
+        });
     if (!user) return ws.close(4401, "Invalid session");
     if (ws.readyState !== ws.OPEN) return;
     connection = realtimeHub.connect(ws, user);
+    log.info({ event: "realtime.connected", connections: realtimeHub.connections.size }, "realtime connected");
     // The session cookie outlives nothing: once the token expires, the socket closes and the client signs in again.
     if (session.exp) {
         const expiresIn = session.exp * 1000 - Date.now();
@@ -122,16 +137,21 @@ async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
     pending.splice(0).forEach(handle);
 }
 
-async function receive(ws: WebSocket, connection: RealtimeConnection, raw: string) {
+async function receive(ws: WebSocket, connection: RealtimeConnection, raw: string, log: Logger) {
     let json: unknown;
     try {
         json = JSON.parse(raw);
     } catch {
-        return;
+        return log.warn({ event: "realtime.invalid_message", reason: "not_json", size: raw.length }, "realtime message is not JSON");
     }
     const parsed = realtimeClientMessageSchema.safeParse(json);
-    if (!parsed.success || !realtimeHub.connections.has(connection)) return;
+    if (!parsed.success) {
+        const fields = [...new Set(parsed.error.issues.map((issue) => issue.path.join(".")))];
+        return log.warn({ event: "realtime.invalid_message", reason: "schema", fields, size: raw.length }, "realtime message does not match its schema");
+    }
+    if (!realtimeHub.connections.has(connection)) return;
     const message = parsed.data;
+    log.trace({ event: "realtime.message", type: message.type, channel: "channel" in message ? message.channel : undefined }, "realtime message");
     if (message.type === "ping") return send(ws, { type: "pong" });
     const channel = message.channel as RealtimeChannel;
     if (message.type === "doc") return documentRooms.receive(connection, channel, fromBase64(message.data));
@@ -146,7 +166,10 @@ async function receive(ws: WebSocket, connection: RealtimeConnection, raw: strin
         // The page is loaded before the client hears it can sync, so its first message finds the room ready.
         if (channel.startsWith("document:")) await documentRooms.join(connection, channel.slice("document:".length));
         send(ws, { type: "subscribed", channel });
-    } catch {
+    } catch (error) {
+        // Not found or not a member is a refusal; anything else, such as a page that would not load, is a fault.
+        if (error instanceof HttpError) log.info({ event: "realtime.denied", channel, status: error.statusCode }, "realtime subscription refused");
+        else log.error({ event: "realtime.subscribe_failed", channel, err: error }, "realtime subscription failed");
         // A page that could not be loaded must not leave the tab listening to it.
         realtimeHub.unsubscribe(connection, channel);
         send(ws, { type: "denied", channel });

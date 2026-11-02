@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-or
 import { db } from "../../db";
 import { boardColumns, issueSubscriptions, notifications, projectMembers, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { logFor } from "../../lib/request-context";
 
 const PERSON = { id: true, name: true, username: true, avatarUrl: true } as const;
 const EXCERPT_LENGTH = 160;
@@ -125,7 +126,7 @@ export async function recordIssueChange(issue: { id: string; projectId: string }
         }
     } catch (error) {
         // The change itself is already saved; a missed notification must not turn it into a failed request.
-        console.error("Could not record issue notifications", error);
+        logFor("notifications").error({ err: error, issueId: issue.id, projectId: issue.projectId }, "could not record issue notifications");
     }
 }
 

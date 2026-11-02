@@ -11,10 +11,15 @@ import { mcpRouter } from "./features/mcp/mcp.routes";
 import { myIssuesRouter, notificationsRouter } from "./features/notifications/notifications.routes";
 import { projectsRouter } from "./features/projects/projects.routes";
 import { usersRouter } from "./features/users/users.routes";
-import { requestContext } from "./lib/request-context";
+import { assignRequestId, requestContext } from "./lib/request-context";
+import { accessLog } from "./middleware/access-log.middleware";
 import { errorHandler } from "./middleware/error-handler.middleware";
 
 export const app = express();
+
+// First, so every response carries its X-Request-Id and every API call is logged, even one whose body fails to parse.
+app.use(assignRequestId);
+app.use(accessLog());
 
 // Runs behind Dokploy's reverse proxy — without this, the IP-based rate limiter
 // would see the proxy's internal IP instead of each client's real IP.
@@ -29,7 +34,8 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use("/api/projects/:projectId/documents", express.json({ limit: "2mb" }));
 app.use(express.json());
 app.use(cookieParser());
-// Lets services tag realtime events with who made the change.
+// Lets services tag realtime events with who made the change, and log with the request's id. It runs after the body
+// parsers so the context is not lost in their stream callbacks.
 app.use(requestContext);
 
 app.get("/api/health", (_req, res) => {

@@ -1,4 +1,4 @@
-import type { TiptapDocument } from "@rinia/shared";
+import { tiptapToMarkdown, type TiptapDocument } from "@rinia/shared";
 import { priorityLabelKey } from "./priority";
 import i18n from "@/i18n/i18n";
 import type { TranslationKey } from "@/i18n/resources";
@@ -70,7 +70,7 @@ function buildIssueClipboardContent({
         "",
         `## ${t("issue.description")}`,
         "",
-        tiptapDocumentToMarkdown(description) || `(${t("issue.noDescription")})`,
+        tiptapToMarkdown(description) || `(${t("issue.noDescription")})`,
     ];
 
     if (issue.children.length > 0) {
@@ -96,7 +96,7 @@ function buildIssueClipboardContent({
     if (comments.length > 0) {
         lines.push("", `## ${t("issue.comments")} (${comments.length})`, "");
         comments.forEach((comment) => {
-            lines.push(`### ${comment.author.name} — ${formatDate(comment.createdAt, locale)}`, "", tiptapDocumentToMarkdown(comment.contentJson) || `(${t("issue.emptyComment")})`, "");
+            lines.push(`### ${comment.author.name} — ${formatDate(comment.createdAt, locale)}`, "", tiptapToMarkdown(comment.contentJson) || `(${t("issue.emptyComment")})`, "");
         });
     }
 
@@ -109,117 +109,6 @@ function buildIssueClipboardContent({
     }
 
     return lines.join("\n").trim();
-}
-
-function tiptapDocumentToMarkdown(document: TiptapDocument | null | undefined): string {
-    if (!document || !Array.isArray(document.content)) return "";
-    return document.content.map((node) => renderNode(asNode(node))).filter(Boolean).join("\n\n").trim();
-}
-
-type TiptapNode = Record<string, unknown>;
-
-function asNode(value: unknown): TiptapNode {
-    return value && typeof value === "object" ? value as TiptapNode : {};
-}
-
-function childrenOf(node: TiptapNode): TiptapNode[] {
-    return Array.isArray(node.content) ? node.content.map(asNode) : [];
-}
-
-function renderNode(node: TiptapNode): string {
-    const children = childrenOf(node);
-    const renderedChildren = () => children.map(renderNode).filter(Boolean).join("");
-
-    switch (node.type) {
-        case "text":
-            return applyMarks(String(node.text ?? ""), Array.isArray(node.marks) ? node.marks.map(asNode) : []);
-        case "paragraph":
-            return renderedChildren();
-        case "heading": {
-            const level = Math.max(1, Math.min(6, Number(asNode(node.attrs).level) || 1));
-            return `${"#".repeat(level)} ${renderedChildren()}`;
-        }
-        case "bulletList":
-            return children.map((item) => renderListItem(item, "- ")).join("\n");
-        case "orderedList": {
-            const start = Number(asNode(node.attrs).start) || 1;
-            return children.map((item, index) => renderListItem(item, `${start + index}. `)).join("\n");
-        }
-        case "taskList":
-            return children.map((item) => renderListItem(item, asNode(item.attrs).checked ? "- [x] " : "- [ ] ")).join("\n");
-        case "listItem":
-        case "taskItem":
-            return renderedChildren();
-        case "blockquote":
-            return renderedChildren().split("\n").map((line) => `> ${line}`).join("\n");
-        case "codeBlock": {
-            const language = String(asNode(node.attrs).language ?? "");
-            const code = children.map((child) => String(child.text ?? "")).join("");
-            return `\`\`\`${language}\n${code}\n\`\`\``;
-        }
-        case "horizontalRule":
-            return "---";
-        case "hardBreak":
-            return "\n";
-        case "image": {
-            const attrs = asNode(node.attrs);
-            const alt = String(attrs.alt ?? "");
-            const src = String(attrs.src ?? "");
-            return src ? `![${alt}](${src})` : alt;
-        }
-        case "mention": {
-            const attrs = asNode(node.attrs);
-            return `@${String(attrs.label ?? attrs.username ?? attrs.id ?? "unknown")}`;
-        }
-        case "table":
-            return renderTable(children);
-        case "tableRow":
-        case "tableHeader":
-        case "tableCell":
-            return renderedChildren();
-        case "doc":
-            return children.map(renderNode).filter(Boolean).join("\n\n");
-        default:
-            return renderedChildren();
-    }
-}
-
-function renderListItem(item: TiptapNode, prefix: string): string {
-    const content = childrenOf(item).map(renderNode).filter(Boolean).join(" ").replaceAll("\n", "\n  ");
-    return `${prefix}${content}`;
-}
-
-function renderTable(rows: TiptapNode[]): string {
-    const matrix = rows.map((row) => childrenOf(row).map((cell) =>
-        childrenOf(cell).map(renderNode).filter(Boolean).join(" ").replaceAll("|", "\\|").replaceAll("\n", " "),
-    ));
-    if (matrix.length === 0) return "";
-    const width = Math.max(...matrix.map((row) => row.length));
-    const formatRow = (row: string[]) => `| ${Array.from({ length: width }, (_, index) => row[index] ?? "").join(" | ")} |`;
-    return [formatRow(matrix[0]), formatRow(Array.from({ length: width }, () => "---")), ...matrix.slice(1).map(formatRow)].join("\n");
-}
-
-function applyMarks(text: string, marks: TiptapNode[]): string {
-    return marks.reduce((value, mark) => {
-        switch (mark.type) {
-            case "bold":
-                return `**${value}**`;
-            case "italic":
-                return `*${value}*`;
-            case "strike":
-                return `~~${value}~~`;
-            case "code":
-                return `\`${value}\``;
-            case "underline":
-                return `<u>${value}</u>`;
-            case "link": {
-                const href = String(asNode(mark.attrs).href ?? "");
-                return href ? `[${value}](${href})` : value;
-            }
-            default:
-                return value;
-        }
-    }, text);
 }
 
 function formatDate(value: string, locale: string): string {

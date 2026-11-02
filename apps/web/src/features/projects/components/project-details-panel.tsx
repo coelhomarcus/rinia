@@ -100,7 +100,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
                         />
                     </SettingsControl>
                     <SettingsControl title={t("appearance.projectBanner")} description={t("settings.bannerHint")}>
-                        {isProjectOwner ? <ProjectCoverControl projectId={projectId} cover={project.cover} isProjectOwner /> : <span className="text-[13px] text-tertiary">—</span>}
+                        {isProjectOwner ? <ProjectCoverControl projectId={projectId} cover={project.cover} preview={{ name: project.name, issueKey: project.issueKey, icon }} isProjectOwner /> : <span className="text-[13px] text-tertiary">—</span>}
                     </SettingsControl>
                 </SettingsGroup>
 

@@ -1,6 +1,6 @@
 import { Popover } from "@base-ui/react/popover";
 import type { EntityIcon, ProjectCover, UpdateProjectInput } from "@rinia/shared";
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 import { AppearancePicker, appearancePopupClass } from "@/components/appearance/appearance-picker";
 import { GradientPicker } from "@/components/appearance/gradient-picker";
 import { parseProjectCover } from "@rinia/shared";
@@ -67,11 +67,13 @@ export function ProjectCoverControl({
     projectId,
     cover,
     isProjectOwner,
+    preview,
     triggerClassName,
 }: {
     projectId: string;
     cover: ProjectCover | null | undefined;
     isProjectOwner: boolean;
+    preview?: ComponentProps<typeof GradientPicker>["preview"];
     triggerClassName?: string;
 }) {
     const { t } = useTranslation();
@@ -89,9 +91,9 @@ export function ProjectCoverControl({
             </Popover.Trigger>
             <Popover.Portal>
                 <Popover.Positioner sideOffset={8} collisionPadding={12} className="z-[60]">
-                    <Popover.Popup className={cx("w-72 max-w-[calc(100vw-2rem)] rounded-lg", overlayChrome.popupPadded)}>
+                    <Popover.Popup className={cx("w-[22rem] max-w-[calc(100vw-2rem)] rounded-lg", overlayChrome.popupPadded)}>
                         <Popover.Title className="sr-only">{t("appearance.projectBanner")}</Popover.Title>
-                        <GradientPicker cover={cover} onChange={(next) => update.mutate({ cover: next })} disabled={update.isPending} />
+                        <GradientPicker cover={cover} preview={preview} onChange={(next) => update.mutate({ cover: next })} disabled={update.isPending} />
                     </Popover.Popup>
                 </Popover.Positioner>
             </Popover.Portal>

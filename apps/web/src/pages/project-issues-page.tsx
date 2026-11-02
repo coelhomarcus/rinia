@@ -44,6 +44,9 @@ type OrderBy = IssueOrder;
 type GroupBy = ListGroupBy;
 type Scope = "active" | "backlog" | "all";
 
+/** The keys that open a list row's property menu, by the `data-property` of its trigger. */
+const ROW_MENU_KEYS: Record<string, string | undefined> = { s: "status", p: "priority", a: "assignee" };
+
 /**
  * Each project keeps its own selection; moving to another project starts empty. On a saved view's page the
  * view is passed in: its scope lives in the address like its filters, and its layout is part of what it saves.
@@ -198,6 +201,17 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 openIssue(orderedIssues[currentIndex].identifier);
             }
             if (event.key === "Escape") setSelectedIssueId(null);
+
+            // S, P and A open the selected row's menu, as on the issue screen. Estimates and labels are not shown on rows.
+            const property = !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.isComposing && currentIndex >= 0 ? ROW_MENU_KEYS[event.key.toLowerCase()] : undefined;
+            if (property && !target?.closest("[role='menu'], [role='dialog'], [role='listbox']")) {
+                const trigger = document.querySelector<HTMLElement>(`[data-issue-id="${orderedIssues[currentIndex].id}"] [data-property="${property}"]`);
+                if (trigger) {
+                    event.preventDefault();
+                    trigger.focus();
+                    trigger.click();
+                }
+            }
         }
 
         window.addEventListener("keydown", handleListKeyDown);

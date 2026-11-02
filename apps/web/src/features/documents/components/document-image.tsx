@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Popover } from "@base-ui/react/popover";
-import { DocumentImageNode } from "@rinia/shared/src/document-extensions";
+import { DocumentImageNode } from "@rinia/shared/src/rich-text-schema";
 import { type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { ImageIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";

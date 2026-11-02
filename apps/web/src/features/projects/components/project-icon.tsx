@@ -1,5 +1,6 @@
-import type { EntityIcon, ProjectIconKey } from "@rinia/shared";
+import { readableBacking, type EntityIcon, type ProjectIconKey } from "@rinia/shared";
 import { iconBackground } from "@/components/appearance/icon-color-picker";
+import { cx } from "@/utils/cx";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -155,9 +156,15 @@ interface ProjectIconProps {
     className?: string;
     /** Draws a colored icon on a tinted square of its own color instead of the bare glyph. */
     tile?: boolean;
+    /**
+     * `cover` sets every icon on an opaque square that keeps it readable on a project banner:
+     * a coloured glyph on light or dark, whichever contrasts more, anything else on the theme surface.
+     */
+    backing?: "cover";
 }
 
-export const ProjectIcon = ({ icon, className, tile }: ProjectIconProps) => {
+export const ProjectIcon = ({ icon, className, tile, backing }: ProjectIconProps) => {
+    if (backing === "cover") return <CoverBackedIcon icon={icon} className={className} />;
     if (icon && typeof icon === "object") {
         if (icon.type === "emoji") {
             return (
@@ -180,12 +187,37 @@ export const ProjectIcon = ({ icon, className, tile }: ProjectIconProps) => {
     return <Icon className={className} />;
 };
 
-function ProjectImageIcon({ url, className }: { url: string; className?: string }) {
+function CoverBackedIcon({ icon, className }: { icon: EntityIcon | string | null | undefined; className?: string }) {
+    const appearance = icon && typeof icon === "object" ? icon : null;
+    const frame = "inline-grid shrink-0 place-items-center overflow-hidden rounded-md shadow-sm";
+    if (appearance?.type === "icon" && appearance.color) {
+        const Icon = resolveProjectIcon(appearance.key);
+        return (
+            <span className={cx(frame, "ring-1 ring-white/25", className)} style={{ color: appearance.color, backgroundColor: readableBacking(appearance.color) }}>
+                <Icon className="size-[62%]" aria-hidden="true" />
+            </span>
+        );
+    }
+    const Icon = resolveProjectIcon(appearance?.type === "icon" ? appearance.key : typeof icon === "string" ? icon : null);
+    return (
+        <span className={cx(frame, "bg-surface-1 text-primary ring-1 ring-subtle", className)} style={{ containerType: "inline-size" }}>
+            {appearance?.type === "emoji" ? (
+                <span style={{ fontSize: "62cqw", lineHeight: 1 }}>{appearance.value}</span>
+            ) : appearance?.type === "image" ? (
+                <ProjectImageIcon url={appearance.url} className="size-full" fallbackClassName="size-[62%]" />
+            ) : (
+                <Icon className="size-[62%]" aria-hidden="true" />
+            )}
+        </span>
+    );
+}
+
+function ProjectImageIcon({ url, className, fallbackClassName }: { url: string; className?: string; fallbackClassName?: string }) {
     const [failed, setFailed] = useState(false);
     useEffect(() => setFailed(false), [url]);
     if (failed) {
         const Fallback = resolveProjectIcon(DEFAULT_PROJECT_ICON);
-        return <Fallback className={className} />;
+        return <Fallback className={fallbackClassName ?? className} />;
     }
     return (
         <span className={`inline-grid place-items-center overflow-hidden ${className ?? ""}`}>

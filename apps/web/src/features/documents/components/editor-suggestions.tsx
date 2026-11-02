@@ -1,172 +1,13 @@
 import { autoUpdate, computePosition, flip, offset, shift, size } from "@floating-ui/dom";
 import { PluginKey } from "@tiptap/pm/state";
-import type { Editor } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import { exitSuggestion } from "@tiptap/suggestion";
-import {
-    Code2,
-    Heading1,
-    Heading2,
-    Heading3,
-    Image as ImageIcon,
-    List,
-    ListChecks,
-    ListOrdered,
-    type LucideIcon,
-    Minus,
-    Quote,
-    Table2,
-    Type,
-} from "lucide-react";
 import { type Root, createRoot } from "react-dom/client";
+import { type EditorCommand, commandIcons, executeBlockCommand, filterBlockCommands } from "@/features/editor/commands";
 import i18n from "@/i18n/i18n";
-import type { TranslationKey } from "@/i18n/resources";
 
 export const documentSlashKey = new PluginKey("document-slash");
 export const documentMentionKey = new PluginKey("document-mention");
-export interface EditorCommand {
-    id: string;
-    label: string;
-    detail?: string;
-    group?: string;
-    aliases?: string[];
-    run?: (editor: Editor, range: { from: number; to: number }) => void;
-}
-export const blockCommands: EditorCommand[] = [
-    {
-        id: "text",
-        label: "Text",
-        detail: "Plain paragraph",
-        group: "Text",
-        aliases: ["paragraph", "plain"],
-        run: (e, range) => e.chain().focus().deleteRange(range).setParagraph().run(),
-    },
-    ...([1, 2, 3] as const).map((level) => ({
-        id: `heading-${level}`,
-        label: `Heading ${level}`,
-        detail: "Section heading",
-        group: "Text",
-        aliases: [`h${level}`, `heading${level}`],
-        run: (e: Editor, range: { from: number; to: number }) => e.chain().focus().deleteRange(range).setHeading({ level }).run(),
-    })),
-    {
-        id: "bullet",
-        label: "Bullet list",
-        detail: "Unordered list",
-        group: "Lists",
-        aliases: ["bullets", "unordered", "ul"],
-        run: (e, range) => e.chain().focus().deleteRange(range).toggleBulletList().run(),
-    },
-    {
-        id: "numbered",
-        label: "Numbered list",
-        detail: "Ordered list",
-        group: "Lists",
-        aliases: ["ordered", "number", "ol"],
-        run: (e, range) => e.chain().focus().deleteRange(range).toggleOrderedList().run(),
-    },
-    {
-        id: "task",
-        label: "To-do list",
-        detail: "Checklist",
-        group: "Lists",
-        aliases: ["todo", "task list", "checklist"],
-        run: (e, range) => e.chain().focus().deleteRange(range).toggleTaskList().run(),
-    },
-    {
-        id: "quote",
-        label: "Quote",
-        detail: "Block quote",
-        group: "Blocks",
-        aliases: ["blockquote", "citation"],
-        run: (e, range) => e.chain().focus().deleteRange(range).toggleBlockquote().run(),
-    },
-    {
-        id: "code",
-        label: "Code block",
-        detail: "Preformatted text",
-        group: "Blocks",
-        aliases: ["pre", "codeblock"],
-        run: (e, range) => e.chain().focus().deleteRange(range).toggleCodeBlock().run(),
-    },
-    {
-        id: "divider",
-        label: "Divider",
-        detail: "Horizontal rule",
-        group: "Blocks",
-        aliases: ["horizontal rule", "hr", "separator"],
-        run: (e, range) => e.chain().focus().deleteRange(range).setHorizontalRule().run(),
-    },
-    {
-        id: "image",
-        label: "Image",
-        detail: "Insert an image URL",
-        group: "Media",
-        aliases: ["img", "picture", "photo"],
-        run: (e, range) => e.chain().focus().deleteRange(range).setImage({ src: "", alt: "" }).run(),
-    },
-    {
-        id: "table",
-        label: "Table",
-        detail: "3 × 3 with a header row",
-        group: "Media",
-        aliases: ["grid"],
-        run: (e, range) => e.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
-    },
-];
-
-export function filterBlockCommands(query: string) {
-    const normalizedQuery = query.trim().toLowerCase();
-    const localized = blockCommands.map(localizeCommand);
-    if (!normalizedQuery) return localized;
-    return localized.filter((item, index) => [item.label, item.detail, blockCommands[index].label, blockCommands[index].detail, ...(item.aliases ?? [])].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery));
-}
-
-const commandKeys: Record<string, [TranslationKey, TranslationKey, TranslationKey]> = {
-    text: ["editor.text", "editor.paragraph", "editor.blocks"],
-    "heading-1": ["editor.heading", "editor.sectionHeading", "editor.blocks"],
-    "heading-2": ["editor.heading", "editor.sectionHeading", "editor.blocks"],
-    "heading-3": ["editor.heading", "editor.sectionHeading", "editor.blocks"],
-    bullet: ["editor.bulletList", "editor.unorderedList", "editor.lists"],
-    numbered: ["editor.numberedList", "editor.orderedList", "editor.lists"],
-    task: ["editor.todoList", "editor.checklist", "editor.lists"],
-    quote: ["editor.quote", "editor.blockquote", "editor.blocks"],
-    code: ["editor.codeBlock", "editor.preformatted", "editor.blocks"],
-    divider: ["editor.divider", "editor.horizontalRule", "editor.blocks"],
-    image: ["editor.image", "editor.insertImageUrl", "editor.media"],
-    table: ["editor.table", "editor.tableDimensions", "editor.media"],
-};
-
-function localizeCommand(item: EditorCommand): EditorCommand {
-    const keys = commandKeys[item.id];
-    if (!keys) return item;
-    const headingLevel = item.id.startsWith("heading-") ? Number(item.id.slice(-1)) : undefined;
-    const translate = i18n.getFixedT(null, "translation") as unknown as (key: TranslationKey, options?: Record<string, string | number>) => string;
-    const label = headingLevel ? translate(keys[0], { level: headingLevel }) : translate(keys[0]);
-    return { ...item, label, detail: translate(keys[1]), group: translate(keys[2]) };
-}
-
-export function executeBlockCommand(editor: Editor, item: EditorCommand, range: { from: number; to: number }) {
-    const { selection, doc } = editor.state;
-    if (editor.isDestroyed || !selection.empty || range.from < 0 || range.to < range.from || range.to > doc.content.size) return;
-    if (selection.from !== range.to || !doc.textBetween(range.from, range.to, "\n", "\n").startsWith("/")) return;
-    item.run?.(editor, range);
-}
-
-export const commandIcons: Record<string, LucideIcon> = {
-    text: Type,
-    "heading-1": Heading1,
-    "heading-2": Heading2,
-    "heading-3": Heading3,
-    bullet: List,
-    numbered: ListOrdered,
-    task: ListChecks,
-    quote: Quote,
-    code: Code2,
-    divider: Minus,
-    image: ImageIcon,
-    table: Table2,
-};
 
 /** Floating UI owns geometry; the portal is outside the document's scrolling surface. */
 export function documentSuggestions(pluginKey: PluginKey) {
@@ -185,7 +26,7 @@ export function documentSuggestions(pluginKey: PluginKey) {
             range: live.range,
             query: live.query ?? "",
             text: live.text ?? "",
-            items: filterBlockCommands(live.query ?? ""),
+            items: filterBlockCommands(live.query ?? "", "document"),
             clientRect: () => {
                 if (next.editor.isDestroyed) return null;
                 try {

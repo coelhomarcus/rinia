@@ -252,13 +252,13 @@ async function main() {
                     assigneeId: issue.assignee ? userId[issue.assignee] : null,
                     estimate: issue.estimate ?? null,
                     parentIssueId: issue.parent ? issueByTitle.get(issue.parent)?.id : null,
-                    ...(issue.description ? { descriptionJson: markdownToTiptap(issue.description) } : {}),
+                    ...(issue.description ? { descriptionJson: markdownToTiptap(issue.description, "description") } : {}),
                 },
                 admin,
             );
             issueByTitle.set(issue.title, created);
             for (const comment of issue.comments ?? []) {
-                await createIssueComment(created.identifier, { contentJson: markdownToTiptap(comment.text) }, userId[comment.by]);
+                await createIssueComment(created.identifier, { contentJson: markdownToTiptap(comment.text, "comment") }, userId[comment.by]);
             }
         }
 

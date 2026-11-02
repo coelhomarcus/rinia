@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, mock, spyOn, test } from "bun:test";
 import type { RealtimeChannel } from "@rinia/shared";
-import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/document-extensions";
+import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/rich-text-schema";
 import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import type * as Y from "yjs";
 import { DocumentProvider } from "../../web/src/features/documents/collab/document-provider";
