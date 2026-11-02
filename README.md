@@ -1,30 +1,44 @@
-
 <p align="center">
   <img src="apps/web/public/brand/rinia-icon-dark.svg" alt="Rinia" width="96">
 </p>
 <h1 align="center">Rinia</h1>
-<p align="center"><b>A calm workspace for projects, issues, and docs</b></p>
+<p align="center"><b>The calm workspace for projects, issues, and docs</b></p>
 
 <p align="center">
-    <a href="#-getting-started"><b>Getting started</b></a> •
     <a href="#-features"><b>Features</b></a> •
+    <a href="#-getting-started"><b>Getting started</b></a> •
     <a href="https://github.com/alty-oss/rinia/issues"><b>Issues</b></a>
 </p>
 
 <br />
 
-Rinia keeps each project in one place: an issue tracker with list and board views, a document editor, and the people working on it. No setup rituals, just a dark, fast interface that stays out of the way.
+Rinia is a self-hosted platform where a team plans work, writes about it, and ships it, all in one place. Issues, documents, people, and AI tools share the same projects, so nothing lives in a tab of its own.
 
 ## 🌟 Features
 
 - **Issues**
-  Track work with project-scoped IDs such as `TK-184`. Switch between a list and a Kanban board, filter by assignee or label, and open any issue in a side peek without losing your place.
+  Project-scoped IDs such as `TK-184`, priorities, estimates, due dates, labels, sub-issues, and relations. Work in a list or on a Kanban board, group and filter by assignee, state, or label, and act on many issues at once.
+
+- **Views and inbox**
+  Save any filter as a view, follow your own work under **My issues**, pin favorites, and catch mentions, assignments, and replies in your inbox. A search palette jumps to any issue or page.
+
+- **Conversations and history**
+  Comment with threads, reactions, and mentions. Every change lands in an activity feed, and every edit to a description is kept as a version you can open and restore.
 
 - **Documents**
-  Write project pages in a block editor with slash commands, tables, and images. Changes save as you type, and drafts survive a refresh.
+  A block editor with slash commands, tables, images, and mentions. People edit the same page at the same time, with live cursors and a lock on the line someone is typing in. Pages work offline and sync when you are back.
 
-- **Projects**
-  Give every project an icon, color, and banner. Invite members, manage labels, and follow the activity history.
+- **Projects and teams**
+  Give every project an icon and a cover, shape its states and labels, and add members by username with a preview of who you are adding. Deletes can be undone.
+
+- **Realtime**
+  Boards, lists, comments, and pages update as teammates work, and you see who else is on the page.
+
+- **MCP and API**
+  Connect Claude Code, Claude, VS Code, Codex, Gemini CLI, or any MCP client at `/api/mcp` with a personal API token from **Settings → Integrations**. Tools act as you: they list, search, create, and update issues, comment, and write pages in the projects you belong to. What they change shows in the activity feed with the tool's avatar beside yours, and revoking a token cuts it off at once. The same token works with the REST API.
+
+- **Administration**
+  Site admins see every project with its owner, members, and size, without reading what is inside, and registration is gated by a code.
 
 - **Made to feel at home**
   Dark and light themes, keyboard shortcuts, and an interface in English and Portuguese.
@@ -55,9 +69,9 @@ bun run db:migrate
 bun run db:seed
 ```
 
-The seed creates three projects with issues, labels, and documents, plus the accounts `admin`, `ana`, and `bruno`, all with the password `rinia1234`. Run `bun run db:reset` to drop the database and seed it again. Both commands refuse to run with `NODE_ENV=production` or against a database that is not on your machine.
+The seed creates three projects with issues, labels, and documents, plus the accounts `admin`, `ana`, and `bruno`, all with the password `rinia1234`. Run `bun run db:reset` to start over. Both commands refuse to run with `NODE_ENV=production` or against a database that is not on your machine.
 
-Then start the API and the web app in separate terminals:
+Start the API and the web app in separate terminals:
 
 ```bash
 bun run dev:api   # http://localhost:3000
@@ -78,34 +92,6 @@ Set these in `apps/api/.env`, or pass them to the container.
 | `PORT` | API port, default `3000` |
 | `APP_URL` | Public address of Rinia, used for links in MCP results. Defaults to the address each request came to |
 
-### Connect Claude Code (MCP)
-
-Rinia has an [MCP](https://modelcontextprotocol.io) server at `/api/mcp`, so Claude Code and other AI tools can read and change your projects. They act as you: they see the projects you are a member of and can do what you can do.
-
-1. In Rinia, open **Settings → Integrations → All integrations** and pick your tool (Claude Code, Claude, VS Code, Codex, Gemini CLI, or any other MCP client). Its page creates a token and fills it into the setup steps. Copy it right away; it is shown only once. Tokens are listed and revoked in **Settings → Integrations → API tokens**.
-2. Add the server to Claude Code:
-
-   ```bash
-   claude mcp add --transport http rinia https://your-rinia-host/api/mcp --header "Authorization: Bearer rinia_..."
-   ```
-
-   For local development, use `http://localhost:3000/api/mcp`. Add `--scope user` to use Rinia from every folder.
-3. Ask in plain words, for example "lista minhas tarefas em andamento" or "comenta na RIN-4 que o deploy terminou".
-
-| Tool | What it does |
-| --- | --- |
-| `list_projects` | Projects with their key, states, labels and members |
-| `list_issues` | Issues, filtered by project, state, assignee (`me`), priority or label |
-| `get_issue` | One issue with its description, sub-issues, relations and comments |
-| `search` | Issues and pages that contain the words, or an issue by its identifier |
-| `get_document` | A page as Markdown |
-| `create_issue` | Creates an issue |
-| `update_issue` | Changes state, assignee, priority, labels, title, description, due date or parent |
-| `add_comment` | Comments on an issue, or replies to a comment |
-| `create_document` | Creates a page from Markdown |
-
-Results name issues by identifier (`RIN-4`) and link to them in Rinia. Revoking a token on the API tokens page cuts off whatever uses it at once. The same token also works with the REST API as `Authorization: Bearer <token>`.
-
 ## ⚙️ Built with
 
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
@@ -121,12 +107,4 @@ Results name issues by identifier (`RIN-4`) and link to them in Rinia. Revoking 
 
 Found a bug or have an idea? [Open an issue](https://github.com/alty-oss/rinia/issues). Commits and pull requests follow Conventional Commits; see [AGENTS.md](./AGENTS.md).
 
-Before opening a pull request, run:
-
-```bash
-bun run typecheck
-bun run test
-bun run build
-```
-
-`bun run test` never touches a database. Migrations and transactions are tested against PostgreSQL with `bun run test:db`: point `TEST_DATABASE_URL` at a local server where you can create databases, for example the `postgres` database of the container above. Each run creates its own database and drops it afterwards; without the variable those tests are skipped.
+Before opening a pull request, run `bun run typecheck`, `bun run test`, and `bun run build`. Database tests run with `bun run test:db` against a local PostgreSQL set in `TEST_DATABASE_URL`; without it they are skipped.
