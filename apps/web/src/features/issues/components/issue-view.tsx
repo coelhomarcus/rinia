@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { EntityIcon, TiptapDocument, UpdateIssueInput } from "@rinia/shared";
+import type { ActionSource, EntityIcon, TiptapDocument, UpdateIssueInput } from "@rinia/shared";
 import { ArrowDown, ArrowUp, Ban, CalendarDays, Check, History, ChevronRight, Copy, GitBranch, Link2, Pencil, Plus, ShieldOff, Sparkles, Trash2 } from "lucide-react";
 import { Link, useBeforeUnload, useLocation, useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,7 +22,7 @@ import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { PresenceAvatars } from "@/features/realtime/components/presence-avatars";
 import { useChannelPresence, useRealtimeChannels } from "@/features/realtime/use-realtime";
-import { IssueAvatar, PriorityIcon, StateIcon } from "@/features/board/components/issue-property-icons";
+import { IssueAvatar, IssueAvatarGroup, PriorityIcon, SourceAvatar, StateIcon, sourceLabel } from "@/features/board/components/issue-property-icons";
 import { useColumns } from "@/features/board/hooks/use-board";
 import { columnBucket, defaultIssueColumn } from "@/features/board/column-bucket";
 import { dueState as getDueState, dueStateClass, formatDueDate } from "@/features/issues/lib/due-date";
@@ -1339,8 +1339,8 @@ function IssueRelations({
     );
 }
 
-type ActivityEntry = { id: string; type: string; createdAt: string; actor: { name: string; avatarUrl: string | null }; payload: Record<string, unknown> };
-type CommentEntry = { id: string; contentJson: TiptapDocument; authorId: string; author: { name: string; username?: string; avatarUrl: string | null }; createdAt: string; updatedAt: string; reactions: ReactionGroup[]; parentCommentId: string | null };
+type ActivityEntry = { id: string; type: string; createdAt: string; actor: { name: string; avatarUrl: string | null }; source?: ActionSource | null; payload: Record<string, unknown> };
+type CommentEntry = { id: string; contentJson: TiptapDocument; authorId: string; author: { name: string; username?: string; avatarUrl: string | null }; source?: ActionSource | null; createdAt: string; updatedAt: string; reactions: ReactionGroup[]; parentCommentId: string | null };
 interface TimelineLookups {
     columns: Array<{ id: string; name: string; color?: string | null }>;
     members: Array<{ id: string; name: string }>;
@@ -1456,11 +1456,12 @@ function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; lookups: T
     const label = entry.type === "label_added" || entry.type === "label_removed" ? lookups.categories.find((category) => category.id === entry.payload.categoryId) : undefined;
     return (
         <li className="animate-enter flex items-center gap-2.5 py-1.5 pl-1 text-[13px] text-tertiary">
-            <span className="grid size-5 shrink-0 place-items-center">
-                {statusTo ? <StateIcon name={statusTo.name} color={statusTo.color} /> : <IssueAvatar name={entry.actor.name} avatarUrl={entry.actor.avatarUrl} className="size-4 text-[9px]" />}
+            <span className="grid h-5 min-w-5 shrink-0 place-items-center">
+                {statusTo ? <StateIcon name={statusTo.name} color={statusTo.color} /> : <IssueAvatarGroup name={entry.actor.name} avatarUrl={entry.actor.avatarUrl} source={entry.source} className="size-4 text-[9px]" />}
             </span>
             <p className="min-w-0 flex-1">
-                <span className="font-medium text-secondary">{entry.actor.name}</span> {activityLabelKeys[entry.type] ? t(activityLabelKeys[entry.type]) : entry.type}
+                <span className="font-medium text-secondary">{entry.actor.name}</span>
+                {statusTo && entry.source && <SourceAvatar source={entry.source} className="ml-1 size-4 align-middle" />}{" "}{activityLabelKeys[entry.type] ? t(activityLabelKeys[entry.type]) : entry.type}
                 {label && <> <LabelChip label={label} className="inline-flex max-w-40 align-middle" /></>}
                 {formatActivityChange(entry.payload, { ...lookups, columns: lookups.columns.map((column) => ({ ...column, name: translateStatusName(column.name, t) })) }, t("issue.noneValue"), i18n.language)}
                 <span className="text-placeholder"> · </span>
@@ -1567,8 +1568,9 @@ function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, 
     return (
         <div className="group/comment px-4 py-3">
             <div className="mb-1.5 flex items-center gap-2 text-[13px]">
-                <IssueAvatar name={entry.author.name} avatarUrl={entry.author.avatarUrl} className="size-5 text-[10px]" />
+                <IssueAvatarGroup name={entry.author.name} avatarUrl={entry.author.avatarUrl} source={entry.source} className="size-5 text-[10px]" />
                 <span className="font-medium text-primary">{entry.author.name}</span>
+                {entry.source && <span className="text-tertiary">{t("issue.viaSource", { client: sourceLabel(entry.source) })}</span>}
                 <time className="text-tertiary" title={formatFullIssueDate(entry.createdAt, i18n.language)} dateTime={entry.createdAt}>
                     {formatDistanceToNow(entry.createdAt, i18n.language)}{edited ? ` · ${t("issue.edited")}` : ""}
                 </time>

@@ -1,3 +1,4 @@
+import type { ActionSource } from "@rinia/shared";
 import { index, jsonb, pgTable, timestamp, uuid, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { issues, type TiptapDocument } from "./issues";
 import { users } from "./users";
@@ -18,6 +19,7 @@ export const issueComments = pgTable(
             .references(() => users.id),
         parentCommentId: uuid("parent_comment_id").references((): AnyPgColumn => issueComments.id, { onDelete: "cascade" }),
         contentJson: jsonb("content_json").$type<TiptapDocument>().notNull(),
+        source: jsonb("source").$type<ActionSource>(),
         createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
         deletedAt: timestamp("deleted_at", { withTimezone: true }),

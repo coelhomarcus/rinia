@@ -1,3 +1,4 @@
+import type { ActionSource } from "@rinia/shared";
 import { jsonb, pgEnum, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { issues } from "./issues";
 import { users } from "./users";
@@ -27,6 +28,8 @@ export const issueActivities = pgTable("issue_activities", {
         .notNull()
         .references(() => users.id),
     type: issueActivityTypeEnum("type").notNull(),
+    /** Set when the change came through a tool such as MCP rather than the web app. */
+    source: jsonb("source").$type<ActionSource>(),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

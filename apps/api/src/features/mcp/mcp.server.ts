@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
-import { appPaths, columnBucket, createDocumentSchema, createIssueSchema, defaultIssueColumn, dueDateSchema, issuePriorityValues, markdownToTiptap, matchDocumentSlug, nextLabels, tiptapToMarkdown, updateIssueSchema, type IssuePriority, type UpdateIssueInput } from "@rinia/shared";
+import { appPaths, type ActionSource, columnBucket, createDocumentSchema, createIssueSchema, defaultIssueColumn, dueDateSchema, issuePriorityValues, markdownToTiptap, matchDocumentSlug, nextLabels, tiptapToMarkdown, updateIssueSchema, type IssuePriority, type UpdateIssueInput } from "@rinia/shared";
 import { z, ZodError } from "zod";
 import { HttpError } from "../../lib/http-error";
 import type { JwtPayload } from "../../lib/jwt";
@@ -16,6 +16,8 @@ export interface McpActor {
     user: JwtPayload;
     /** Where Rinia is opened, for the links in results: `https://rinia.example.com`. */
     baseUrl: string;
+    /** The tool making the request, such as `claude-code`, when it said. Recorded on what it changes. */
+    client?: string | null;
 }
 
 const INSTRUCTIONS = `Rinia is a project tracker. Projects are named by a short key such as RIN, and issues by their identifier, such as RIN-4.
@@ -59,7 +61,8 @@ type ProjectRef = { id: string; issueKey: string; name: string };
  * One MCP server per request, acting as the token's owner. Every tool goes through the same services as the web app,
  * after the same membership check, so permissions, notifications and live updates behave as if the person did it.
  */
-export function createMcpServer({ user, baseUrl }: McpActor) {
+export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
+    const source: ActionSource = { via: "mcp", client };
     const server = new McpServer({ name: "rinia", version: "1.0.0" }, { instructions: INSTRUCTIONS });
     const link = (path: string) => new URL(path, baseUrl).toString();
     const workspaces = new Map<string, ReturnType<typeof loadWorkspace>>();
@@ -362,7 +365,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
                     parentIssueId: parent?.id,
                     dueDate: args.dueDate,
                 });
-                const created = await createIssue(space.project.id, input, user.sub);
+                const created = await createIssue(space.project.id, input, user.sub, source);
                 const { issue } = await issueByIdentifier(created.identifier);
                 return summarize(space, issue);
         },
@@ -409,7 +412,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
                 };
                 const input = updateIssueSchema.parse(Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)));
                 if (Object.keys(input).length === 0) throw new HttpError(400, "Choose something to change.");
-                await updateIssue(issue.id, input, user.sub);
+                await updateIssue(issue.id, input, user.sub, source);
                 return summarize(space, (await issueByIdentifier(args.issue)).issue);
         },
     );
@@ -428,7 +431,7 @@ export function createMcpServer({ user, baseUrl }: McpActor) {
         },
         async (args) => {
                 const { issue, space } = await issueByIdentifier(args.issue);
-                const comment = await createIssueComment(issue.id, { contentJson: markdownToTiptap(args.body), parentCommentId: args.replyTo }, user.sub);
+                const comment = await createIssueComment(issue.id, { contentJson: markdownToTiptap(args.body), parentCommentId: args.replyTo }, user.sub, source);
                 const identifier = space.identifier(issue);
                 return { id: comment?.id, issue: identifier, author: comment?.author.username, createdAt: comment?.createdAt, url: issueUrl(identifier, issue.title) };
         },

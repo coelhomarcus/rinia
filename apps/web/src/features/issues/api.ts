@@ -1,4 +1,4 @@
-import type { BulkIssuePatch, EntityIcon, IssuePriority, IssueView, MyIssuesQuery } from "@rinia/shared";
+import type { ActionSource, BulkIssuePatch, EntityIcon, IssuePriority, IssueView, MyIssuesQuery } from "@rinia/shared";
 import type {
     CreateIssueCommentInput,
     CreateIssueInput,
@@ -72,6 +72,7 @@ export interface IssueComment {
     /** The comment whose thread this reply is in, or null for a comment that opens a thread. */
     parentCommentId: string | null;
     contentJson: TiptapDocument;
+    source: ActionSource | null;
     createdAt: string;
     updatedAt: string;
     author: IssuePerson;
@@ -87,6 +88,7 @@ export interface DescriptionRevision {
     contentJson: TiptapDocument;
     /** Set when this version brought back an older one. */
     restoredFromId: string | null;
+    source: ActionSource | null;
     createdAt: string;
     updatedAt: string;
     author: IssuePerson;
@@ -98,6 +100,8 @@ export interface IssueActivity {
     actorId: string;
     type: string;
     payload: Record<string, unknown>;
+    /** Set when a tool such as MCP made the change, null when it was made in the app. */
+    source: ActionSource | null;
     createdAt: string;
     actor: IssuePerson;
 }

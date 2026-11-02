@@ -1,4 +1,4 @@
-import { nextLabels, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
+import { nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
 import { and, asc, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
@@ -222,7 +222,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
     return rows.map((issue) => ({ ...withLabels(issue), identifier: issueIdentifier(issue) }));
 }
 
-export async function createIssue(projectId: string, input: CreateIssueInput, actorId: string) {
+export async function createIssue(projectId: string, input: CreateIssueInput, actorId: string, source?: ActionSource) {
     validateIssueImageUrls(input.descriptionJson);
     await ensureProjectMember(actorId, projectId);
     if (input.parentIssueId) await ensureParentIsValid(input.parentIssueId, undefined, projectId);
@@ -254,18 +254,18 @@ export async function createIssue(projectId: string, input: CreateIssueInput, ac
             })
             .returning();
         if (categoryIds.length > 0) await tx.insert(issueLabels).values(categoryIds.map((categoryId) => ({ issueId: created.id, categoryId })));
-        await tx.insert(issueActivities).values({ issueId: created.id, actorId, type: "created", payload: {} });
+        await tx.insert(issueActivities).values({ issueId: created.id, actorId, type: "created", payload: {}, ...(source && { source }) });
         return { ...created, categoryIds, project: { issueKey: identity.issueKey } };
     });
     if (input.descriptionJson?.content.length) {
-        await recordDescriptionRevision({ issueId: issue.id, revision: issue.descriptionRevision, authorId: actorId, contentJson: input.descriptionJson });
+        await recordDescriptionRevision({ issueId: issue.id, revision: issue.descriptionRevision, authorId: actorId, contentJson: input.descriptionJson, source });
     }
     await recordIssueChange(issue, { actorId, created: true, assigneeId: issue.assigneeId, mentionedIds: mentionedUserIds(input.descriptionJson) });
     publishChange("issue.created", { projectId, id: issue.id });
     return { ...issue, identifier: issueIdentifier(issue) };
 }
 
-export async function updateIssue(identifier: string, input: UpdateIssueInput, actorId: string) {
+export async function updateIssue(identifier: string, input: UpdateIssueInput, actorId: string, source?: ActionSource) {
     const current = await getIssueOrThrow(identifier);
     await ensureProjectMember(actorId, current.projectId);
     validateIssueImageUrls(input.descriptionJson);
@@ -292,7 +292,7 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
         .returning();
     if (!updated && writesDescription) throw new HttpError(409, "This issue description was updated elsewhere. Your draft has been kept.");
     if (!updated) throw new HttpError(404, "Issue not found");
-    if (writesDescription) await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: updated.descriptionJson });
+    if (writesDescription) await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: updated.descriptionJson, source });
 
     const activityMap = [
         ["columnId", "status_changed"],
@@ -304,7 +304,7 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
     ] as const;
     for (const [field, type] of activityMap) {
         if (field in input && current[field] !== input[field]) {
-            await db.insert(issueActivities).values({ issueId: current.id, actorId, type, payload: { field, from: current[field], to: input[field] } });
+            await db.insert(issueActivities).values({ issueId: current.id, actorId, type, payload: { field, from: current[field], to: input[field] }, ...(source && { source }) });
         }
     }
     if (categoryIds) {
@@ -312,7 +312,7 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
         if (removed.length > 0) await db.delete(issueLabels).where(and(eq(issueLabels.issueId, current.id), inArray(issueLabels.categoryId, removed)));
         if (added.length > 0) await db.insert(issueLabels).values(added.map((categoryId) => ({ issueId: current.id, categoryId }))).onConflictDoNothing();
         const changes = [...added.map((categoryId) => ({ type: "label_added" as const, categoryId })), ...removed.map((categoryId) => ({ type: "label_removed" as const, categoryId }))];
-        if (changes.length > 0) await db.insert(issueActivities).values(changes.map(({ type, categoryId }) => ({ issueId: current.id, actorId, type, payload: { categoryId } })));
+        if (changes.length > 0) await db.insert(issueActivities).values(changes.map(({ type, categoryId }) => ({ issueId: current.id, actorId, type, payload: { categoryId }, ...(source && { source }) })));
     }
     await recordIssueChange(current, {
         actorId,
@@ -436,7 +436,7 @@ async function threadOf(parentCommentId: string, issueId: string) {
     return parent.parentCommentId ?? parent.id;
 }
 
-export async function createIssueComment(identifier: string, input: CreateIssueCommentInput, authorId: string) {
+export async function createIssueComment(identifier: string, input: CreateIssueCommentInput, authorId: string, source?: ActionSource) {
     const issue = await getIssueOrThrow(identifier);
     await ensureProjectMember(authorId, issue.projectId);
     const threadId = input.parentCommentId ? await threadOf(input.parentCommentId, issue.id) : null;
@@ -444,7 +444,7 @@ export async function createIssueComment(identifier: string, input: CreateIssueC
     const threadParticipantIds = threadId
         ? [...new Set((await db.query.issueComments.findMany({ where: and(or(eq(issueComments.id, threadId), eq(issueComments.parentCommentId, threadId)), isNull(issueComments.deletedAt)), columns: { authorId: true } })).map((row) => row.authorId))]
         : [];
-    const [comment] = await db.insert(issueComments).values({ issueId: issue.id, authorId, parentCommentId: threadId, contentJson: input.contentJson }).returning();
+    const [comment] = await db.insert(issueComments).values({ issueId: issue.id, authorId, parentCommentId: threadId, contentJson: input.contentJson, ...(source && { source }) }).returning();
     await recordIssueChange(issue, { actorId: authorId, comment: { id: comment.id, created: true }, mentionedIds: mentionedUserIds(input.contentJson), threadParticipantIds });
     publishChange("comment.created", { projectId: issue.projectId, id: comment.id, issueId: issue.id });
     const created = await db.query.issueComments.findFirst({ where: eq(issueComments.id, comment.id), with: { author: { columns: PERSON } } });
@@ -533,15 +533,18 @@ export async function deleteIssueRelation(relationId: string, actorId: string) {
     for (const issueId of [relation.sourceIssueId, relation.targetIssueId]) publishChange("relation.deleted", { projectId: source.projectId, id: relationId, issueId });
 }
 
+const sameSource = (a: ActionSource | null | undefined, b: ActionSource | null | undefined) => (a?.via ?? null) === (b?.via ?? null) && (a?.client ?? null) === (b?.client ?? null);
+
 /**
  * Saves a description as a version. A save by the author of the latest version, within a few minutes of that
  * version's first save, updates it; anything else, and every restore, adds a version.
  */
-export async function recordDescriptionRevision(input: { issueId: string; revision: number; authorId: string; contentJson: StoredDocument; restoredFromId?: string }, now = new Date()) {
+export async function recordDescriptionRevision(input: { issueId: string; revision: number; authorId: string; contentJson: StoredDocument; restoredFromId?: string; source?: ActionSource }, now = new Date()) {
     const latest = input.restoredFromId
         ? undefined
         : await db.query.issueDescriptionRevisions.findFirst({ where: eq(issueDescriptionRevisions.issueId, input.issueId), orderBy: [desc(issueDescriptionRevisions.createdAt)] });
-    const grouped = latest && latest.authorId === input.authorId && !latest.restoredFromId && now.getTime() - latest.createdAt.getTime() < DESCRIPTION_REVISION_WINDOW_MS;
+    // An edit through a tool never folds into one made in the app, or the other way round, or the version would claim both.
+    const grouped = latest && latest.authorId === input.authorId && !latest.restoredFromId && sameSource(latest.source, input.source) && now.getTime() - latest.createdAt.getTime() < DESCRIPTION_REVISION_WINDOW_MS;
     if (grouped) {
         await db.update(issueDescriptionRevisions).set({ contentJson: input.contentJson, revision: input.revision, updatedAt: now }).where(eq(issueDescriptionRevisions.id, latest.id));
         return;

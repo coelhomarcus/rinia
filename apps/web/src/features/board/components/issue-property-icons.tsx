@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { Asterisk, Bot } from "lucide-react";
+import type { ActionSource } from "@rinia/shared";
 import { cx } from "@/utils/cx";
 
 /**
@@ -73,4 +75,34 @@ export function IssueAvatar({ name, avatarUrl, className }: { name: string; avat
     return <span title={name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
         {avatarUrl ? <img src={avatarUrl} alt={name} className="size-full object-cover" /> : name.charAt(0).toUpperCase()}
     </span>;
+}
+
+/** What a change made through a tool is called: the tools Rinia knows by name, otherwise what the tool called itself. */
+export function sourceLabel(source: ActionSource) {
+    if (source.client?.startsWith("claude-code")) return "Claude Code";
+    return source.client ?? "MCP";
+}
+
+/** The tool behind a change, as a round avatar: the Claude mark for Claude Code, a bot for any other tool. */
+export function SourceAvatar({ source, className }: { source: ActionSource; className?: string }) {
+    const claude = source.client?.startsWith("claude-code");
+    const Icon = claude ? Asterisk : Bot;
+    return <span title={sourceLabel(source)} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: claude ? "#d97757" : "#6b7280" }}>
+        <Icon className="size-[65%]" strokeWidth={2.5} aria-hidden="true" />
+    </span>;
+}
+
+/**
+ * The person who made a change. When a tool made it for them, their avatar and the tool's overlap as a group, so the
+ * feed shows both who it was for and what did the work.
+ */
+export function IssueAvatarGroup({ name, avatarUrl, source, className }: { name: string; avatarUrl?: string | null; source?: ActionSource | null; className?: string }) {
+    if (!source) return <IssueAvatar name={name} avatarUrl={avatarUrl} className={className} />;
+    const ring = "ring-2 ring-[var(--bg-surface-1)]";
+    return (
+        <span className="inline-flex shrink-0 items-center -space-x-1.5">
+            <IssueAvatar name={name} avatarUrl={avatarUrl} className={cx(className, ring)} />
+            <SourceAvatar source={source} className={cx(className, ring)} />
+        </span>
+    );
 }
