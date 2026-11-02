@@ -1,4 +1,4 @@
-import { useMemo, useState, type WheelEvent } from "react";
+import { useMemo, useState } from "react";
 import {
     type CollisionDetection,
     DndContext,
@@ -50,22 +50,6 @@ const collisionDetection: CollisionDetection = (args) => {
 
 /** Columns change size as issues enter and leave during a drag, so their rectangles must be measured continuously. */
 const measuring = { droppable: { strategy: MeasuringStrategy.Always } };
-
-/**
- * A mouse wheel only turns up and down, so over the board it moves the columns sideways whenever the column under the
- * pointer has nothing left to scroll that way. Without this, scrolling the board takes Shift or its scrollbar.
- */
-function scrollBoardSideways(event: WheelEvent<HTMLDivElement>) {
-    if (event.shiftKey || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    const board = event.currentTarget;
-    for (let node = event.target as HTMLElement | null; node && node !== board; node = node.parentElement) {
-        const canScroll = node.scrollHeight > node.clientHeight && /auto|scroll/.test(getComputedStyle(node).overflowY);
-        if (!canScroll) continue;
-        const atEnd = event.deltaY > 0 ? node.scrollTop + node.clientHeight >= node.scrollHeight - 1 : node.scrollTop <= 0;
-        if (!atEnd) return;
-    }
-    board.scrollLeft += event.deltaY;
-}
 
 export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all", hidden, hideColumn, showColumn }: {
     projectId: string;
@@ -271,7 +255,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                 onDragCancel={handleDragCancel}
             >
                 <div className="flex h-full min-w-0 gap-3">
-                <div onWheel={scrollBoardSideways} className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
+                <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
                     {shownColumns.map((column) => (
                         <Column
                             key={column.id}
