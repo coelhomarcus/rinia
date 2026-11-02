@@ -1,4 +1,4 @@
-import { DOCUMENT_FRAGMENT, documentSchema } from "@rinia/shared/src/document-extensions";
+import { DOCUMENT_FRAGMENT, documentSchema } from "@rinia/shared/src/rich-text-schema";
 import { isAllowedImageSource, type PresenceViewer, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
 import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { and, eq, isNull, sql } from "drizzle-orm";

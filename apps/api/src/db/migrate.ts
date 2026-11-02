@@ -29,7 +29,7 @@ async function migrateLegacyMarkdown() {
     description: string;
   }>) {
     await db.execute(
-      sql`UPDATE issues SET description_json = ${JSON.stringify(markdownToTiptap(row.description))}::jsonb WHERE id = ${row.id}`,
+      sql`UPDATE issues SET description_json = ${JSON.stringify(markdownToTiptap(row.description, "description"))}::jsonb WHERE id = ${row.id}`,
     );
   }
 

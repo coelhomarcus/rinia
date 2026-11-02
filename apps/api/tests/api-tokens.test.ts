@@ -252,5 +252,5 @@ test("an identifier that matches no issue is a 404, not a database error", async
 test("Markdown survives a round trip through the editor's JSON", () => {
     const markdown = "## Escopo\n\nUm **atalho** com `Cmd+K` e [link](https://example.com).\n\n- [x] feito\n- [ ] falta\n\n1. um\n2. dois\n\n> citação\n\n```ts\nconst a = 1;\n```";
     assert.equal(tiptapToMarkdown(markdownToTiptap(markdown)), markdown);
-    assert.equal(tiptapToMarkdown({ content: [{ type: "paragraph", content: [{ type: "mention", attrs: { id: ana.id, label: "ana" } }, { type: "text", text: " olha" }] }] }), "@ana olha");
+    assert.equal(tiptapToMarkdown({ content: [{ type: "paragraph", content: [{ type: "mention", attrs: { id: ana.id, label: "ana" } }, { type: "text", text: " olha" }] }] }), `[@ id="${ana.id}" label="ana"] olha`);
 });

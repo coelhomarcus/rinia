@@ -4,6 +4,7 @@
 @import "@fontsource/ibm-plex-mono";
 @import "./theme.css";
 @import "./typography.css";
+@import "./prose.css";
 
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
@@ -157,7 +158,6 @@ input[type="number"] {
     min-height: 9rem;
     outline: none;
     padding: 1rem;
-    color: var(--color-text-secondary);
 }
 
 .tiptap-editor .tiptap-toolbar {
@@ -179,45 +179,6 @@ input[type="number"] {
     outline-offset: -2px;
 }
 
-.tiptap-editor-document {
-    display: flex;
-    min-height: 100%;
-    flex-direction: column;
-}
-
-.tiptap-editor-document .tiptap-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    flex-shrink: 0;
-}
-
-.tiptap-editor-document > div:not(.tiptap-toolbar) {
-    display: flex;
-    min-height: 0;
-    flex: 1;
-    flex-direction: column;
-}
-
-.tiptap-editor-document .ProseMirror {
-    flex: 1;
-    width: 100%;
-    min-height: 100%;
-    padding: 24px 16px 64px;
-    font-size: 15px;
-    line-height: 1.75;
-}
-
-.tiptap-editor-document .tiptap-toolbar + .ProseMirror {
-    min-height: calc(100% - 40px);
-}
-
-@media (max-width: 767px) {
-    .tiptap-editor-document .ProseMirror {
-        padding: 20px 8px 48px;
-    }
-}
-
 .tiptap-editor-readonly .ProseMirror {
     min-height: 0;
     padding: 0;
@@ -230,97 +191,6 @@ input[type="number"] {
 
 .tiptap-editor-readonly .ProseMirror [data-type="taskItem"] > label {
     pointer-events: none;
-}
-
-.tiptap-editor .ProseMirror > * + * {
-    margin-top: 0.75rem;
-}
-
-.tiptap-editor .ProseMirror h1,
-.tiptap-editor .ProseMirror h2,
-.tiptap-editor .ProseMirror h3 {
-    color: var(--color-text-primary);
-    font-weight: 650;
-    line-height: 1.25;
-}
-
-.tiptap-editor .ProseMirror h1 {
-    font-size: 1.5rem;
-}
-
-.tiptap-editor .ProseMirror h2 {
-    font-size: 1.25rem;
-}
-
-.tiptap-editor .ProseMirror h3 {
-    font-size: 1.1rem;
-}
-
-.tiptap-editor .ProseMirror ul,
-.tiptap-editor .ProseMirror ol {
-    padding-left: 1.5rem;
-}
-
-.tiptap-editor .ProseMirror ul {
-    list-style: disc;
-}
-
-.tiptap-editor .ProseMirror ol {
-    list-style: decimal;
-}
-
-.tiptap-editor .ProseMirror blockquote {
-    border-left: 2px solid var(--color-border-brand);
-    color: var(--color-text-tertiary);
-    padding-left: 1rem;
-}
-
-.tiptap-editor .ProseMirror pre {
-    overflow-x: auto;
-    border-radius: 0.5rem;
-    background: var(--color-bg-secondary);
-    padding: 0.75rem 1rem;
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
-}
-
-.tiptap-editor .ProseMirror code {
-    border-radius: 0.25rem;
-    background: var(--color-bg-secondary);
-    padding: 0.1rem 0.25rem;
-    font-family: var(--font-mono);
-    font-size: 0.9em;
-}
-
-.tiptap-editor .ProseMirror pre code {
-    background: transparent;
-    padding: 0;
-}
-
-.tiptap-editor .ProseMirror a,
-.tiptap-editor .mention {
-    color: var(--color-fg-brand-primary);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-}
-
-.tiptap-editor .ProseMirror hr {
-    border-color: var(--color-border-secondary);
-}
-
-.tiptap-editor .ProseMirror ul[data-type="taskList"] {
-    list-style: none;
-    padding-left: 0;
-}
-
-.tiptap-editor .ProseMirror ul[data-type="taskList"] li {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
-}
-
-.tiptap-editor .ProseMirror ul[data-type="taskList"] li > label {
-    margin-top: 0.2rem;
 }
 
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
@@ -477,13 +347,12 @@ html[data-theme*="dark"] {
 
 /* Issue page: the description reads as page text, and comments stay compact. */
 .issue-description .tiptap-editor { min-height: 0; }
-.issue-description .ProseMirror { min-height: 3rem; padding: 0; font-size: 15px; line-height: 1.65; color: var(--color-text-secondary); }
+.issue-description .ProseMirror { min-height: 3rem; padding: 0; }
 .issue-description .ProseMirror:focus-visible,
 .issue-comment-composer .ProseMirror:focus-visible { outline: none; }
 .tiptap-editor.issue-comment-composer { min-height: 0; }
-.issue-comment-composer .ProseMirror { min-height: 2.5rem; padding: 0.75rem 1rem 0.25rem; font-size: 14px; }
-.issue-comment-body .ProseMirror { min-height: 0; padding: 0; font-size: 14px; }
+.issue-comment-composer .ProseMirror { min-height: 2.5rem; padding: 0.75rem 1rem 0.25rem; }
 /* The reply box sits on one line next to the avatar until there is more to say. */
 .tiptap-editor.issue-reply-composer { min-height: 0; }
-.issue-reply-composer .ProseMirror { min-height: 1.75rem; padding: 0.25rem 0; font-size: 14px; }
+.issue-reply-composer .ProseMirror { min-height: 1.75rem; padding: 0.25rem 0; }
 .issue-reply-composer .ProseMirror:focus-visible { outline: none; }

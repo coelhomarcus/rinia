@@ -1,5 +1,5 @@
 const errors = {
-        notAuthenticated: "Você não está autenticado", invalidSession: "Sessão inválida ou expirada", invalidData: "Confira os campos destacados.",
+        notAuthenticated: "Você não está autenticado", invalidSession: "Sessão inválida ou expirada", invalidData: "Confira os campos destacados.", unsupportedContent: "Este conteúdo tem blocos que este campo não aceita.",
         requestFailed: "Não foi possível concluir a solicitação.", internal: "Ocorreu um erro interno. Tente novamente.",
         tooLarge: "Este documento é grande demais para salvar. Divida o conteúdo em páginas menores.",
         projectNotFound: "Projeto não encontrado", issueNotFound: "Tarefa não encontrada", documentNotFound: "Documento não encontrado", viewNotFound: "View não encontrada",

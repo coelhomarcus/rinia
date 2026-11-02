@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { DOCUMENT_FRAGMENT, documentExtensions } from "@rinia/shared/src/document-extensions";
+import { useEffect, useRef, useState } from "react";
+import { DOCUMENT_FRAGMENT, documentExtensions } from "@rinia/shared/src/rich-text-schema";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Placeholder } from "@tiptap/extensions";
@@ -13,7 +13,11 @@ import { DocumentBlockControls } from "./document-block-controls";
 import "./document-editor.css";
 import { DocumentFormatMenu } from "./document-format-menu";
 import { DocumentImage } from "./document-image";
-import { type EditorCommand, documentMentionKey, documentSlashKey, documentSuggestions, executeBlockCommand, filterBlockCommands } from "./editor-suggestions";
+import { type EditorCommand, executeBlockCommand, filterBlockCommands } from "@/features/editor/commands";
+import "@/features/editor/editor-ui.css";
+import { MarkdownTablePaste } from "@/features/editor/markdown-paste";
+import { TableControls } from "@/features/editor/table-controls";
+import { documentMentionKey, documentSlashKey, documentSuggestions } from "./editor-suggestions";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n/i18n";
 
@@ -25,7 +29,7 @@ const SlashCommands = Extension.create({
                 editor: this.editor,
                 pluginKey: documentSlashKey,
                 char: "/",
-                items: ({ query }) => filterBlockCommands(query),
+                items: ({ query }) => filterBlockCommands(query, "document"),
                 allow: ({ state }) => {
                     const allowed = state.selection.empty && !state.selection.$from.parent.type.spec.code;
                     return allowed;
@@ -137,10 +141,11 @@ export function DocumentEditor({
     const { t } = useTranslation();
     const membersRef = useRef(members);
     membersRef.current = members;
+    const [container, setContainer] = useState<HTMLDivElement | null>(null);
     const editor = useEditor(
         {
             immediatelyRender: false,
-            editorProps: { attributes: { "aria-label": t("editor.documentContent"), role: "textbox", "aria-multiline": "true", spellcheck: "true" } },
+            editorProps: { attributes: { class: "rinia-prose", "data-profile": "document", "aria-label": t("editor.documentContent"), role: "textbox", "aria-multiline": "true", spellcheck: "true" } },
             extensions: [
                 documentExtensions.starterKit.configure({ dropcursor: { color: "var(--bg-accent-primary)", width: 2 } }),
                 documentExtensions.link,
@@ -161,6 +166,7 @@ export function DocumentEditor({
                     },
                 }),
                 SlashCommands,
+                MarkdownTablePaste.configure({ profile: "document" }),
                 HeadingEnter,
                 Collaboration.configure({ document: provider.doc, field: DOCUMENT_FRAGMENT }),
                 CollaborationCaret.configure({ provider, user: { id: user.id, name: user.name }, render: renderCaret, selectionRender: renderSelection }),
@@ -213,6 +219,7 @@ export function DocumentEditor({
     }, [editor]);
     return (
         <div
+            ref={setContainer}
             className="document-editor"
             onClick={(event) => {
                 if (event.target === event.currentTarget) editor?.commands.focus("end");
@@ -222,6 +229,7 @@ export function DocumentEditor({
                 <>
                     <DocumentBlockControls editor={editor} />
                     <DocumentFormatMenu editor={editor} />
+                    <TableControls editor={editor} container={container} />
                 </>
             )}
             <EditorContent editor={editor} className="document-editor-content" />

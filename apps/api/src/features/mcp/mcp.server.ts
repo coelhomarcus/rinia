@@ -20,10 +20,19 @@ export interface McpActor {
     client?: string | null;
 }
 
+/** What the converter in @rinia/shared reads and writes, so agents send what the editors show. */
+const MARKDOWN_GUIDE = `Markdown (GitHub-flavoured) supports: headings # to ### (#### and deeper become ###), **bold**, *italic*, ~~strike~~, \`code\`, [links](https://...),
+bullet, numbered and task lists (- [ ] / - [x]) nested by indentation, > quotes, fenced code blocks with a language, --- dividers,
+tables (| a | b | with a | --- | --- | row; use <br> for a line break inside a cell and \\| for a pipe), and images ![alt](https://...) in descriptions and pages
+(in comments an image becomes a link). A line break inside a paragraph is kept. Mention someone with [@ id="<user id>" label="<name>"], as get_issue returns them.
+HTML is shown as text.`;
+
 const INSTRUCTIONS = `Rinia is a project tracker. Projects are named by a short key such as RIN, and issues by their identifier, such as RIN-4.
 Each project has its own states (the board's columns, such as "A fazer" or "Em andamento"), labels and members; list_projects shows them.
 People are named by username, and "me" is the person who owns the API token. Descriptions, comments and pages are Markdown.
-Every result carries a url that opens it in Rinia.`;
+Every result carries a url that opens it in Rinia.
+
+${MARKDOWN_GUIDE}`;
 
 const SCOPES = ["open", "active", "backlog", "closed", "all"] as const;
 const PRIORITY_RANK: Record<IssuePriority, number> = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
@@ -340,7 +349,7 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
             inputSchema: {
                 project: z.string().describe("Project key, such as RIN."),
                 title: z.string(),
-                description: z.string().optional().describe("Markdown."),
+                description: z.string().optional().describe("Markdown, including tables and task lists."),
                 state: z.string().optional(),
                 assignee: z.string().nullable().optional().describe('A username, or "me".'),
                 priority: z.enum(issuePriorityValues).optional(),
@@ -358,7 +367,7 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
                 const input = createIssueSchema.parse({
                     columnId,
                     title: args.title,
-                    descriptionJson: args.description ? markdownToTiptap(args.description) : undefined,
+                    descriptionJson: args.description ? markdownToTiptap(args.description, "description") : undefined,
                     assigneeId: args.assignee === undefined ? undefined : resolveAssignee(space, args.assignee),
                     priority: args.priority,
                     categoryIds: args.labels ? resolveLabels(space, args.labels) : undefined,
@@ -379,7 +388,7 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
             inputSchema: {
                 issue: z.string().describe("Issue identifier, such as RIN-4."),
                 title: z.string().optional(),
-                description: z.string().optional().describe("Markdown. Replaces the whole description."),
+                description: z.string().optional().describe("Markdown, including tables and task lists. Replaces the whole description."),
                 state: z.string().optional().describe('A state by name, such as "Em andamento" or "Concluído".'),
                 assignee: z.string().nullable().optional().describe('A username, "me", or null to unassign.'),
                 priority: z.enum(issuePriorityValues).optional(),
@@ -396,7 +405,7 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
                 const touchesLabels = args.labels !== undefined || args.addLabels !== undefined || args.removeLabels !== undefined;
                 const patch: UpdateIssueInput = {
                     title: args.title,
-                    ...(args.description === undefined ? {} : { descriptionJson: markdownToTiptap(args.description), expectedDescriptionRevision: issue.descriptionRevision }),
+                    ...(args.description === undefined ? {} : { descriptionJson: markdownToTiptap(args.description, "description"), expectedDescriptionRevision: issue.descriptionRevision }),
                     columnId: args.state ? resolveState(space, args.state) : undefined,
                     assigneeId: args.assignee === undefined ? undefined : resolveAssignee(space, args.assignee),
                     priority: args.priority,
@@ -424,14 +433,14 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
             description: "Adds a comment to an issue, or a reply to one of its comments.",
             inputSchema: {
                 issue: z.string().describe("Issue identifier, such as RIN-4."),
-                body: z.string().min(1).describe("Markdown."),
+                body: z.string().min(1).describe("Markdown, including tables and task lists. Images become links."),
                 replyTo: z.string().uuid().optional().describe("Id of the comment to reply to, from get_issue."),
             },
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
                 const { issue, space } = await issueByIdentifier(args.issue);
-                const comment = await createIssueComment(issue.id, { contentJson: markdownToTiptap(args.body), parentCommentId: args.replyTo }, user.sub, source);
+                const comment = await createIssueComment(issue.id, { contentJson: markdownToTiptap(args.body, "comment"), parentCommentId: args.replyTo }, user.sub, source);
                 const identifier = space.identifier(issue);
                 return { id: comment?.id, issue: identifier, author: comment?.author.username, createdAt: comment?.createdAt, url: issueUrl(identifier, issue.title) };
         },
@@ -445,13 +454,13 @@ export function createMcpServer({ user, baseUrl, client = null }: McpActor) {
             inputSchema: {
                 project: z.string().describe("Project key, such as RIN."),
                 title: z.string(),
-                content: z.string().optional().describe("Markdown."),
+                content: z.string().optional().describe("Markdown, including tables, task lists and images."),
             },
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
                 const space = await projectByKey(args.project);
-                const input = createDocumentSchema.parse({ title: args.title, contentJson: markdownToTiptap(args.content) });
+                const input = createDocumentSchema.parse({ title: args.title, contentJson: markdownToTiptap(args.content, "document") });
                 const document = await createDocument(space.project.id, user.sub, input);
                 return { id: document.id, title: document.title, project: space.project.issueKey, url: link(appPaths.document(space.project.issueKey, { id: document.id, title: document.title })) };
         },

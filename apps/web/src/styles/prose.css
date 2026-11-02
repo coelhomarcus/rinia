@@ -1,0 +1,319 @@
+/*
+ * Rich text, the same in every place it appears: pages, issue descriptions, comments, version history, and the read-only
+ * views of each. Editors put `.rinia-prose` on their ProseMirror element and read-only views on their wrapper, with
+ * `data-profile` choosing the scale. Editor-only details (placeholders, collaboration carets, block controls, image and
+ * column resizing) stay with each editor.
+ */
+.rinia-prose {
+    --prose-size: 16px;
+    --prose-leading: 26px;
+    --prose-gap: 8px;
+    --prose-h1: 24px;
+    --prose-h1-leading: 32px;
+    --prose-h1-gap: 24px;
+    --prose-h2: 20px;
+    --prose-h2-leading: 28px;
+    --prose-h2-gap: 20px;
+    --prose-h3: 18px;
+    --prose-h3-leading: 26px;
+    --prose-h3-gap: 16px;
+    --prose-code-size: 14px;
+    color: var(--txt-primary);
+    font-size: var(--prose-size);
+    line-height: var(--prose-leading);
+    overflow-wrap: anywhere;
+}
+.rinia-prose[data-profile="document"] {
+    --prose-leading: 1.75;
+    --prose-h1: 30px;
+    --prose-h1-leading: 1.35;
+    --prose-h1-gap: 32px;
+    --prose-h2: 24px;
+    --prose-h2-leading: 1.4;
+    --prose-h2-gap: 24px;
+    --prose-h3: 20px;
+    --prose-h3-leading: 1.5;
+    --prose-h3-gap: 20px;
+}
+.rinia-prose[data-profile="comment"] {
+    --prose-size: 14px;
+    --prose-leading: 22px;
+    --prose-gap: 6px;
+    --prose-h1: 20px;
+    --prose-h1-leading: 28px;
+    --prose-h1-gap: 16px;
+    --prose-h2: 17px;
+    --prose-h2-leading: 24px;
+    --prose-h2-gap: 12px;
+    --prose-h3: 15px;
+    --prose-h3-leading: 22px;
+    --prose-h3-gap: 10px;
+    --prose-code-size: 13px;
+}
+
+.rinia-prose > * {
+    margin-block: var(--prose-gap);
+}
+.rinia-prose > :first-child {
+    margin-top: 0;
+}
+.rinia-prose > :last-child {
+    margin-bottom: 0;
+}
+.rinia-prose p {
+    min-height: var(--prose-leading);
+}
+.rinia-prose h1,
+.rinia-prose h2,
+.rinia-prose h3 {
+    color: var(--txt-primary);
+    font-weight: 600;
+}
+.rinia-prose h1 {
+    margin-top: var(--prose-h1-gap);
+    font-size: var(--prose-h1);
+    line-height: var(--prose-h1-leading);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+.rinia-prose h2 {
+    margin-top: var(--prose-h2-gap);
+    font-size: var(--prose-h2);
+    line-height: var(--prose-h2-leading);
+    letter-spacing: -0.015em;
+}
+.rinia-prose h3 {
+    margin-top: var(--prose-h3-gap);
+    font-size: var(--prose-h3);
+    line-height: var(--prose-h3-leading);
+}
+.rinia-prose > :first-child:is(h1, h2, h3) {
+    margin-top: 0;
+}
+.rinia-prose strong {
+    font-weight: 650;
+}
+
+.rinia-prose ul,
+.rinia-prose ol {
+    padding-left: 1.5em;
+}
+.rinia-prose ul {
+    list-style: disc;
+}
+.rinia-prose ol {
+    list-style: decimal;
+}
+.rinia-prose li > * {
+    margin-block: 0;
+}
+.rinia-prose li p {
+    margin: 0;
+}
+.rinia-prose ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+}
+.rinia-prose ul[data-type="taskList"] ul[data-type="taskList"] {
+    padding-left: 1.5em;
+}
+.rinia-prose ul[data-type="taskList"] > li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5em;
+}
+.rinia-prose ul[data-type="taskList"] > li > label {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    height: var(--prose-leading);
+    user-select: none;
+}
+.rinia-prose ul[data-type="taskList"] > li > div {
+    flex: 1;
+    min-width: 0;
+}
+.rinia-prose ul[data-type="taskList"] > li[data-checked="true"] > div {
+    color: var(--txt-tertiary);
+    text-decoration: line-through;
+}
+.rinia-prose input[type="checkbox"] {
+    width: 1em;
+    height: 1em;
+    accent-color: var(--bg-accent-primary);
+    cursor: pointer;
+}
+
+.rinia-prose blockquote {
+    padding: 2px 0 2px 1em;
+    border-left: 3px solid var(--border-strong);
+    color: var(--txt-secondary);
+}
+.rinia-prose blockquote > * {
+    margin-block: var(--prose-gap);
+}
+.rinia-prose blockquote > :first-child {
+    margin-top: 0;
+}
+.rinia-prose blockquote > :last-child {
+    margin-bottom: 0;
+}
+.rinia-prose pre {
+    overflow-x: auto;
+    border-radius: 6px;
+    padding: 12px 16px;
+    background: var(--bg-layer-1);
+    border: 1px solid var(--border-subtle);
+    font-family: var(--font-code);
+    font-size: var(--prose-code-size);
+    line-height: 1.6;
+    white-space: pre;
+    overflow-wrap: normal;
+}
+.rinia-prose code {
+    border-radius: 4px;
+    background: var(--bg-layer-1);
+    padding: 1px 4px;
+    font-family: var(--font-code);
+    font-size: 0.875em;
+}
+.rinia-prose pre code {
+    padding: 0;
+    background: transparent;
+    font-size: inherit;
+}
+.rinia-prose a {
+    color: var(--txt-accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.rinia-prose hr {
+    margin-block: calc(var(--prose-gap) * 2.5);
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+}
+.rinia-prose .mention {
+    border-radius: 4px;
+    padding: 1px 4px;
+    color: var(--txt-accent-primary);
+    background: var(--bg-accent-subtle);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* Images: the editors draw them through a resizable view; read-only views draw a plain image at the saved width. */
+.rinia-prose img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+.rinia-prose .document-image {
+    display: block;
+    width: 100%;
+}
+.rinia-prose .document-image figure {
+    position: relative;
+    min-width: 0;
+    max-width: 100%;
+    margin: calc(var(--prose-gap) * 2) 0;
+}
+.rinia-prose .document-image img {
+    width: 100%;
+}
+
+/* Tables scroll sideways inside their wrapper instead of widening the page. */
+.rinia-prose .tableWrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    margin-block: calc(var(--prose-gap) * 2);
+    overscroll-behavior-x: contain;
+}
+.rinia-prose table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin: 0;
+}
+.rinia-prose .tableWrapper:not(:has(.column-resize-handle)) table {
+    width: 100%;
+}
+.rinia-prose td,
+.rinia-prose th {
+    position: relative;
+    min-width: 100px;
+    border: 1px solid var(--border-strong);
+    padding: 6px 10px;
+    vertical-align: top;
+    text-align: left;
+    overflow-wrap: break-word;
+}
+.rinia-prose th {
+    background: var(--bg-layer-1);
+    font-weight: 600;
+}
+.rinia-prose td > *,
+.rinia-prose th > * {
+    margin: 0;
+}
+.rinia-prose td > * + *,
+.rinia-prose th > * + * {
+    margin-top: var(--prose-gap);
+}
+.rinia-prose .selectedCell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--bg-accent-primary) 14%, transparent);
+    outline: 1px solid var(--border-accent-strong);
+    outline-offset: -1px;
+}
+.rinia-prose .column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: -2px;
+    width: 4px;
+    background: var(--bg-accent-primary);
+    pointer-events: none;
+}
+.rinia-prose.resize-cursor,
+.rinia-prose .resize-cursor {
+    cursor: col-resize;
+}
+
+/* Buttons that add a row or a column, shown along a table's bottom and right edges while it is hovered. */
+.rich-table-add {
+    position: absolute;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--txt-tertiary);
+    background: var(--bg-layer-1);
+    border: 1px solid var(--border-subtle);
+    opacity: 0.85;
+    cursor: pointer;
+}
+.rich-table-add:hover,
+.rich-table-add:focus-visible {
+    color: var(--txt-primary);
+    background: var(--bg-layer-2-hover);
+    opacity: 1;
+}
+.rich-table-add-row {
+    height: 16px;
+}
+.rich-table-add-column {
+    width: 16px;
+}
+@media (pointer: coarse) {
+    .rich-table-add-row {
+        height: 28px;
+    }
+    .rich-table-add-column {
+        width: 28px;
+    }
+}

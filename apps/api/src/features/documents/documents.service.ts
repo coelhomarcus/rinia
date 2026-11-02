@@ -3,6 +3,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { projectDocuments, projectMembers, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { publishChange } from "../realtime/realtime.service";
 import { documentRooms } from "./document-rooms";
@@ -43,6 +44,7 @@ export async function createDocument(
   userId: string,
   input: CreateDocumentInput,
 ) {
+  assertRichText(input.contentJson, "document");
   const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { locale: true } });
   const title = input.title?.trim() || EMPTY_DOCUMENT_TITLES[resolveLocale(user?.locale)];
   const [document] = await db

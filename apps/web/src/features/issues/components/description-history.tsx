@@ -9,7 +9,7 @@ import { IssueAvatarGroup, sourceLabel } from "@/features/board/components/issue
 import { cx } from "@/utils/cx";
 import type { DescriptionRevision } from "../api";
 import { useDescriptionRevisions } from "../hooks/use-issues";
-import { RichTextEditor } from "./rich-text-editor";
+import { RichTextView } from "@/features/editor/rich-text-view";
 
 function formatVersionDate(value: string, locale: string) {
     return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -118,7 +118,7 @@ export function DescriptionHistorySheet({
                         </div>
                         <div key={selected.id} className="animate-enter min-h-0 flex-1 overflow-y-auto px-4 py-4">
                             {selected.contentJson.content?.length ? (
-                                <RichTextEditor toolbar={false} variant="description" content={selected.contentJson} editable={false} />
+                                <RichTextView profile="description" content={selected.contentJson} />
                             ) : (
                                 <p className="text-[13px] text-placeholder">{t("issue.emptyVersion")}</p>
                             )}

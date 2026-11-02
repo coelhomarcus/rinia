@@ -2,11 +2,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Popover } from "@base-ui/react/popover";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { Bold, Code2, Italic, Link2, Strikethrough, Table2 } from "lucide-react";
+import { Bold, Code2, Italic, Link2, Strikethrough } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { TableActionsMenu } from "@/features/editor/table-menu";
 import { useTranslation } from "react-i18next";
-import type { TranslationKey } from "@/i18n/resources";
 
 export function DocumentFormatMenu({ editor }: { editor: Editor }) {
     const { t } = useTranslation();
@@ -151,41 +151,7 @@ export function DocumentFormatMenu({ editor }: { editor: Editor }) {
                     </Popover.Positioner>
                 </Popover.Portal>
             </Popover.Root>
-            {marks.table && (
-                <Popover.Root>
-                    <Popover.Trigger className="document-format-button" aria-label={t("editor.tableActions")}>
-                        <Table2 className="size-4" />
-                    </Popover.Trigger>
-                    <Popover.Portal>
-                        <Popover.Positioner side="bottom" sideOffset={8} collisionPadding={12} className="document-overlay">
-                            <Popover.Popup finalFocus={() => editor.view.dom} className="document-popover w-60">
-                                <Popover.Title className="mb-2 px-2 text-xs font-medium text-tertiary">{t("editor.table")}</Popover.Title>
-                                <div className="flex flex-col">
-                                    {[
-                                        ["editor.addRowAbove", () => editor.chain().focus().addRowBefore().run()],
-                                        ["editor.addRowBelow", () => editor.chain().focus().addRowAfter().run()],
-                                        ["editor.addColumnBefore", () => editor.chain().focus().addColumnBefore().run()],
-                                        ["editor.addColumnAfter", () => editor.chain().focus().addColumnAfter().run()],
-                                        ["editor.toggleHeaderRow", () => editor.chain().focus().toggleHeaderRow().run()],
-                                        ["editor.deleteRow", () => editor.chain().focus().deleteRow().run()],
-                                        ["editor.deleteColumn", () => editor.chain().focus().deleteColumn().run()],
-                                        ["editor.deleteTable", () => editor.chain().focus().deleteTable().run()],
-                                    ].map(([label, action]) => (
-                                        <button
-                                            key={String(label)}
-                                            className="document-menu-item"
-                                            onMouseDown={(event) => event.preventDefault()}
-                                            onClick={action as () => void}
-                                        >
-                                            {t(String(label) as TranslationKey)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </Popover.Popup>
-                        </Popover.Positioner>
-                    </Popover.Portal>
-                </Popover.Root>
-            )}
+            {marks.table && <TableActionsMenu editor={editor} />}
         </BubbleMenu>
     );
 }
