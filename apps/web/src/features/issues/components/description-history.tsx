@@ -5,7 +5,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Sheet } from "@/components/base/sheet/sheet";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { IssueAvatar } from "@/features/board/components/issue-property-icons";
+import { IssueAvatarGroup, sourceLabel } from "@/features/board/components/issue-property-icons";
 import { cx } from "@/utils/cx";
 import type { DescriptionRevision } from "../api";
 import { useDescriptionRevisions } from "../hooks/use-issues";
@@ -77,10 +77,11 @@ export function DescriptionHistorySheet({
                                         onClick={() => setSelectedId(revision.id)}
                                         className={cx("flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition-colors duration-150", active ? "bg-layer-1-selected" : "hover:bg-layer-transparent-hover")}
                                     >
-                                        <IssueAvatar name={revision.author.name} avatarUrl={revision.author.avatarUrl} className="mt-0.5 size-5 text-[10px]" />
+                                        <IssueAvatarGroup name={revision.author.name} avatarUrl={revision.author.avatarUrl} source={revision.source} className="mt-0.5 size-5 text-[10px]" />
                                         <span className="flex min-w-0 flex-1 flex-col">
                                             <span className="flex items-center gap-1.5 text-[13px] text-primary">
                                                 <span className="truncate">{revision.author.name}</span>
+                                                {revision.source && <span className="shrink-0 text-[12px] text-tertiary">{t("issue.viaSource", { client: sourceLabel(revision.source) })}</span>}
                                                 {index === 0 && <span className="shrink-0 rounded bg-layer-2 px-1 text-[10px] text-tertiary">{t("issue.currentVersion")}</span>}
                                             </span>
                                             <time dateTime={revision.updatedAt} className="text-[12px] text-tertiary">{formatVersionDate(revision.updatedAt, i18n.language)}</time>

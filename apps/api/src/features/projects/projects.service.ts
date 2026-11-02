@@ -253,6 +253,20 @@ export async function addProjectMember(projectId: string, username: string) {
     return { ...user, role: member.role, joinedAt: member.joinedAt };
 }
 
+/** What the add-member form previews before it adds anyone: who a username belongs to, and whether they are already in. */
+export async function lookupProjectMember(projectId: string, username: string) {
+    const user = await db.query.users.findFirst({
+        where: eq(users.username, username),
+        columns: { id: true, name: true, username: true, avatarUrl: true },
+    });
+    if (!user) return { user: null, isMember: false };
+
+    const membership = await db.query.projectMembers.findFirst({
+        where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, user.id)),
+    });
+    return { user, isMember: !!membership };
+}
+
 export async function removeProjectMember(projectId: string, userId: string) {
     const target = await db.query.projectMembers.findFirst({
         where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),

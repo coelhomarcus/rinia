@@ -1,4 +1,5 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { cleanClientName } from "@rinia/shared";
 import { Router, type Request } from "express";
 import { env } from "../../config/env";
 import { asyncHandler } from "../../middleware/async-handler";
@@ -8,6 +9,20 @@ import { createMcpServer } from "./mcp.server";
 /** Links in results open where the request came in, unless APP_URL says where Rinia lives. */
 function appBaseUrl(req: Request) {
     return env.APP_URL ?? `${req.protocol}://${req.get("host")}`;
+}
+
+/** HTTP libraries and browsers say nothing about which tool is behind them. */
+const GENERIC_USER_AGENT = /^(node|undici|axios|curl|wget|python|aiohttp|httpx|go-http-client|okhttp|got|fetch|mozilla)\b/i;
+
+/**
+ * The tool behind a request. An `initialize` message names it as `clientInfo.name`; later requests in this stateless
+ * server do not, so they fall back to the first product in the User-Agent unless that is only an HTTP library.
+ */
+function mcpClient(req: Request): string | null {
+    const info = (req.body as { method?: unknown; params?: { clientInfo?: { name?: unknown } } } | undefined);
+    if (info?.method === "initialize") return cleanClientName(info.params?.clientInfo?.name);
+    const product = req.get("user-agent")?.trim().split(/[\s/]/)[0] ?? "";
+    return GENERIC_USER_AGENT.test(product) ? null : cleanClientName(product);
 }
 
 /**
@@ -25,7 +40,7 @@ mcpRouter.use((_req, res, next) => {
 mcpRouter.post(
     "/",
     asyncHandler(async (req, res) => {
-        const server = createMcpServer({ user: req.user!, baseUrl: appBaseUrl(req) });
+        const server = createMcpServer({ user: req.user!, baseUrl: appBaseUrl(req), client: mcpClient(req) });
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
         res.on("close", () => {
             void transport.close();

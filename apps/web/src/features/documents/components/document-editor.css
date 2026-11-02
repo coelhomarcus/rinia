@@ -395,6 +395,13 @@
     user-select: none;
     pointer-events: none;
 }
+/* A line someone else is typing in: edits to it are held back until they stop. */
+.document-editor .ProseMirror .document-line-locked {
+    border-radius: 2px;
+    box-shadow: -3px 0 0 var(--lock-color);
+    background: color-mix(in srgb, var(--lock-color) 6%, transparent);
+    cursor: not-allowed;
+}
 .collaboration-carets__selection {
     background: color-mix(in srgb, var(--caret-color) 22%, transparent);
 }

@@ -3,8 +3,11 @@ import { DOCUMENT_FRAGMENT, documentExtensions } from "@rinia/shared/src/documen
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Placeholder } from "@tiptap/extensions";
+import { Plugin } from "@tiptap/pm/state";
 import { EditorContent, Extension, useEditor } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
+import { setMeta, yCursorPluginKey, ySyncPluginKey } from "@tiptap/y-tiptap";
+import { documentLineLock } from "../collab/line-lock";
 import type { DocumentProvider } from "../collab/document-provider";
 import { DocumentBlockControls } from "./document-block-controls";
 import "./document-editor.css";
@@ -75,6 +78,27 @@ const HeadingEnter = Extension.create({
     },
 });
 
+/**
+ * Other people's cursors are widgets that ProseMirror carries along while this tab types. A cursor sitting exactly
+ * where someone types is pushed ahead with the new text, so it lands on their cursor and stays there until that
+ * person edits or moves. Reading the cursors from awareness again after each local edit puts them back where they are.
+ */
+const RemoteCaretRefresh = Extension.create({
+    name: "documentRemoteCaretRefresh",
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                view: () => ({
+                    update: (view, previous) => {
+                        if (view.state.doc === previous.doc || ySyncPluginKey.getState(view.state)?.isChangeOrigin) return;
+                        setMeta(view, yCursorPluginKey, { awarenessUpdated: true });
+                    },
+                }),
+            }),
+        ];
+    },
+});
+
 /** Cursors of up to five colours repeat across people; the same person has the same colour for everyone. */
 const CURSOR_COLORS = ["var(--brand-600)", "var(--blue-600)", "var(--green-600)", "var(--amber-600)", "var(--red-600)"];
 export function cursorColor(userId: string) {
@@ -140,6 +164,8 @@ export function DocumentEditor({
                 HeadingEnter,
                 Collaboration.configure({ document: provider.doc, field: DOCUMENT_FRAGMENT }),
                 CollaborationCaret.configure({ provider, user: { id: user.id, name: user.name }, render: renderCaret, selectionRender: renderSelection }),
+                RemoteCaretRefresh,
+                documentLineLock(provider, cursorColor),
             ],
         },
         [provider],

@@ -9,6 +9,7 @@ import {
     getProjectById,
     getProjectByKey,
     listProjectMembers,
+    lookupProjectMember,
     listProjectsForUser,
     removeProjectMember,
     updateProject,
@@ -63,6 +64,11 @@ export const addMember = asyncHandler<{ projectId: string }>(async (req, res) =>
     const input = addProjectMemberSchema.parse(req.body);
     const member = await addProjectMember(req.params.projectId, input.username);
     res.status(201).json({ member });
+});
+
+export const lookupMember = asyncHandler<{ projectId: string }>(async (req, res) => {
+    const { username } = addProjectMemberSchema.parse({ username: req.query.username });
+    res.json(await lookupProjectMember(req.params.projectId, username));
 });
 
 export const removeMember = asyncHandler<{ projectId: string; userId: string }>(async (req, res) => {
