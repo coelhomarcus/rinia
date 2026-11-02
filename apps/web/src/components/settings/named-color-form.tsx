@@ -5,7 +5,7 @@ import { Input } from "@/components/base/input/input";
 import { ApiError } from "@/lib/api-client";
 import { SettingColorPicker } from "./setting-color-picker";
 
-/** Inline editor used by the ordered workflow and the flat label list. */
+/** Inline editor used by the ordered workflow and the flat label list. It takes the place of a row in their card. */
 export function NamedColorForm({
     initialName = "",
     initialColor,
@@ -27,7 +27,7 @@ export function NamedColorForm({
     const [error, setError] = useState<string | null>(null);
     return (
         <form
-            className="space-y-3 rounded-sm border border-subtle bg-surface-1 px-3.5 py-3"
+            className="flex flex-col gap-3 py-3"
             onSubmit={async (event) => {
                 event.preventDefault();
                 if (pending) return;

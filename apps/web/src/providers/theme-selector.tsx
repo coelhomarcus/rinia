@@ -21,7 +21,7 @@ export function ThemeSelector() {
     return (
         <Select
             size="sm"
-            className="w-56"
+            className="w-48"
             aria-label={t("profile.theme")}
             selectedKey={preference}
             onSelectionChange={(value) => {

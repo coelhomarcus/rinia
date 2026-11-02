@@ -9,7 +9,7 @@ const settings = {
         noLabels: "Nenhuma etiqueta ainda", createLabelHint: "Crie uma etiqueta para organizar as tarefas deste projeto.", deleteLabel: "Excluir etiqueta", deleteLabelDescription: "A etiqueta “{{name}}” será removida de todas as tarefas. As tarefas não serão excluídas.", couldNotDeleteLabel: "Não foi possível excluir a etiqueta.",
         searchMembers: "Buscar membros", addMember: "Adicionar membro", addMemberDescription: "Adicione um usuário existente do Rinia a este projeto.", loadingMembers: "Carregando membros…", couldNotLoadMembers: "Não foi possível carregar os membros do projeto.",
         noMembersFound: "Nenhum membro encontrado", noMembers: "Nenhum membro ainda", tryMemberSearch: "Tente outro nome, usuário ou e-mail.", inviteTeammates: "Adicione pessoas para colaborar neste projeto.",
-        name: "Nome", role: "Função", joinedOn: "Entrou em", actions: "Ações", owner: "Proprietário", member: "Membro", removeMember: "Remover membro", removeMemberDescription: "{{name}} (@{{username}}) perderá o acesso a este projeto. Você poderá adicioná-lo novamente depois.",
+        name: "Nome", role: "Função", joinedOnDate: "Entrou em {{date}}", actions: "Ações", owner: "Proprietário", member: "Membro", removeMember: "Remover membro", removeMemberDescription: "{{name}} (@{{username}}) perderá o acesso a este projeto. Você poderá adicioná-lo novamente depois.",
         couldNotRemoveMember: "Não foi possível remover o membro.", couldNotAddMember: "Não foi possível adicionar o membro.", projectDetailsSaved: "Dados do projeto salvos.", couldNotSaveProject: "Não foi possível salvar o projeto.",
         loadingProject: "Carregando projeto…", couldNotLoadProject: "Não foi possível carregar o projeto.", changeProjectIcon: "Alterar ícone do projeto", projectIcon: "Ícone do projeto", loadingIcons: "Carregando ícones…", projectIdRename: "Alterar o ID renomeia o identificador de todas as tarefas. Links antigos continuam funcionando.",
         deleteProjectDescription: "Exclua permanentemente este projeto e todos os seus dados e recursos. Não será possível recuperar projetos excluídos.",
@@ -21,7 +21,7 @@ const settings = {
         labelsSummary: "Etiquetas disponíveis para as tarefas deste projeto", labelCount_one: "{{count}} etiqueta", labelCount_other: "{{count}} etiquetas",
         identifier: "Identificador", identifierHint: "Usado nos IDs das tarefas", repositoryHint: "Aparece no cabeçalho do projeto", bannerHint: "Exibido no card do projeto",
         descriptionHint: "Um resumo curto exibido na página do projeto", descriptionPlaceholder: "ex.: App web para clientes e sua API",
-        dangerZone: "Zona de perigo", administrationDescription: "Configurações que valem para toda a instância.", data: "Dados", interfaceAndLanguage: "Interface e idioma",
+        dangerZone: "Zona de perigo", administrationDescription: "Configurações que valem para toda a instância.", data: "Dados", interfaceAndTheme: "Interface e tema",
     } as const;
 
 export default settings;

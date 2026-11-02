@@ -5,7 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
-import { SettingsControl, SettingsGroup, settingsWideFieldClass } from "@/components/settings/settings-layout";
+import { SettingsControl, SettingsGroup, settingsFieldClass } from "@/components/settings/settings-layout";
 import { AvatarUrlPicker } from "@/components/appearance/avatar-url-picker";
 import { AUTH_QUERY_KEY, updateProfile } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -46,21 +46,21 @@ export const UserProfilePanel = () => {
                         name="avatarUrl"
                         render={({ field: avatar }) => (
                             <AvatarUrlPicker value={avatar.value} initials={initials} onChange={avatar.onChange} disabled={mutation.isPending}>
-                                <Avatar key={previewUrl} src={previewUrl || undefined} initials={initials} size="md" />
+                                <Avatar key={previewUrl} src={previewUrl || undefined} initials={initials} size="sm" />
                             </AvatarUrlPicker>
                         )}
                     />
                 </SettingsControl>
                 <SettingsControl title={t("profile.email")}>
-                    <span className="truncate text-[13px] text-secondary">{user.email}</span>
+                    <span className="truncate text-md text-secondary">{user.email}</span>
                 </SettingsControl>
-                <SettingsControl stacked title={t("profile.fullName")}>
+                <SettingsControl title={t("profile.fullName")}>
                     <Controller control={control} name="name" render={({ field: name }) => (
-                        <input {...name} required disabled={mutation.isPending} aria-label={t("profile.fullName")} className={settingsWideFieldClass} />
+                        <input {...name} required disabled={mutation.isPending} aria-label={t("profile.fullName")} className={settingsFieldClass} />
                     )} />
                 </SettingsControl>
-                <SettingsControl stacked title={t("profile.username")} description={t("profile.usernameHint")}>
-                    <input value={user.username} disabled aria-label={t("profile.username")} className={settingsWideFieldClass} />
+                <SettingsControl title={t("profile.username")} description={t("profile.usernameHint")}>
+                    <input value={user.username} disabled aria-label={t("profile.username")} className={settingsFieldClass} />
                 </SettingsControl>
             </SettingsGroup>
             <div className="mt-4 flex flex-col gap-3">

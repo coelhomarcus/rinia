@@ -9,7 +9,7 @@ const settings = {
         noLabels: "No labels yet", createLabelHint: "Create a label to organize issues in this project.", deleteLabel: "Delete label", deleteLabelDescription: "The label “{{name}}” will be removed from all issues. The issues will not be deleted.", couldNotDeleteLabel: "Could not delete the label.",
         searchMembers: "Search members", addMember: "Add member", addMemberDescription: "Add an existing Rinia user to this project.", loadingMembers: "Loading members…", couldNotLoadMembers: "Could not load the project members.",
         noMembersFound: "No members found", noMembers: "No members yet", tryMemberSearch: "Try a different name, username, or email.", inviteTeammates: "Add teammates to collaborate on this project.",
-        name: "Name", role: "Role", joinedOn: "Joined on", actions: "Actions", owner: "Owner", member: "Member", removeMember: "Remove member", removeMemberDescription: "{{name}} (@{{username}}) will lose access to this project. You can add them again later.",
+        name: "Name", role: "Role", joinedOnDate: "Joined {{date}}", actions: "Actions", owner: "Owner", member: "Member", removeMember: "Remove member", removeMemberDescription: "{{name}} (@{{username}}) will lose access to this project. You can add them again later.",
         couldNotRemoveMember: "Could not remove the member.", couldNotAddMember: "Could not add the member.", projectDetailsSaved: "Project details saved.", couldNotSaveProject: "Could not save the project.",
         loadingProject: "Loading project…", couldNotLoadProject: "Could not load the project.", changeProjectIcon: "Change project icon", projectIcon: "Project icon", loadingIcons: "Loading icons…", projectIdRename: "Changing it renames every issue identifier. Old links keep working.",
         deleteProjectDescription: "Permanently remove this project and all of its data and resources. Deleted projects cannot be recovered.",
@@ -21,7 +21,7 @@ const settings = {
         labelsSummary: "Labels available to this project's issues", labelCount_one: "{{count}} label", labelCount_other: "{{count}} labels",
         identifier: "Identifier", identifierHint: "Used in issue IDs", repositoryHint: "Linked from the project header", bannerHint: "Shown on the project card",
         descriptionHint: "A short summary shown on the project page", descriptionPlaceholder: "e.g. Customer-facing web app and its API",
-        dangerZone: "Danger zone", administrationDescription: "Settings that apply to the whole instance.", data: "Data", interfaceAndLanguage: "Interface and language",
+        dangerZone: "Danger zone", administrationDescription: "Settings that apply to the whole instance.", data: "Data", interfaceAndTheme: "Interface and theme",
     } as const;
 
 export default settings;

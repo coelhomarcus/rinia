@@ -19,7 +19,7 @@ export function CopyField({ value, label, language = "text" }: { value: string; 
     const text = cx(
         "min-w-0 flex-1 px-3 py-[5px] font-mono text-[12px] leading-5 text-primary select-all",
         html && "twinkleplop",
-        multiline ? "py-2.5 whitespace-pre-wrap break-all" : "truncate",
+        multiline ? "py-2 whitespace-pre-wrap break-all" : "truncate",
     );
     return (
         <div className="flex w-full min-w-0 items-start rounded-lg border border-subtle bg-layer-2">

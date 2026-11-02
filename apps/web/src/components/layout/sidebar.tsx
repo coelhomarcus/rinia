@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { Blocks, ChevronDown, Circle, House, KeyRound, Layers, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
+import { Blocks, ChevronDown, ChevronLeft, Circle, House, KeyRound, Layers, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AppIcons } from "@/components/foundations/icons";
 import type { AppIcon } from "@/components/foundations/icons";
@@ -254,13 +254,13 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
     const backProject = projects?.find((project) => project.id === projectId);
 
     return (
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-3 pb-4">
-            <Link to={backProject ? urls.project(backProject.issueKey) : "/"} className={`${itemClass(false)} mb-3`}>
-                <AppIcons.Back className="size-4" />
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-4">
+            <Link to={backProject ? urls.project(backProject.issueKey) : "/"} className={`${itemClass(false)} mb-3 gap-2 text-secondary`}>
+                <ChevronLeft className="size-4 shrink-0" />
                 {t("nav.backToApp")}
             </Link>
-            <label className="mb-2 flex h-8 w-full items-center gap-2 rounded-md border border-subtle bg-layer-1 px-2 text-[13px] focus-within:border-accent-strong">
-                <Search className="size-3.5 shrink-0 text-placeholder" />
+            <label className="mb-4 flex h-7 w-full items-center gap-2 rounded-md border border-subtle bg-layer-1 px-2 text-[13px] focus-within:border-accent-strong">
+                <Search className="size-4 shrink-0 text-placeholder" />
                 <input
                     type="search"
                     value={query}
@@ -294,8 +294,8 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
 
 function SettingsNavSection({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <div className="mt-4">
-            <p className="px-2 pb-1.5 text-[12px] text-tertiary">{label}</p>
+        <div className="mt-2 first-of-type:mt-0">
+            <p className="flex h-7 items-center px-2 text-[13px] text-tertiary">{label}</p>
             <div className="flex flex-col gap-px">{children}</div>
         </div>
     );

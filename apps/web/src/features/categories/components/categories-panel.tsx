@@ -8,7 +8,7 @@ import { ErrorMessage } from "@/components/feedback/error-message";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { NamedColorForm } from "@/components/settings/named-color-form";
-import { SettingsHeading } from "@/components/settings/settings-layout";
+import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "../hooks/use-categories";
@@ -27,7 +27,7 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
     const pending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
     return (
-        <div className="space-y-6">
+        <div>
             <SettingsHeading
                 title={t("settings.labels")}
                 description={t("settings.createLabelsDescription")}
@@ -37,29 +37,32 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                     </Button>
                 }
             />
-            {error && <Alert tone="error">{error}</Alert>}
-            {editor === "new" && (
-                <NamedColorForm
-                    key="new"
-                    label={t("settings.labelName")}
-                    initialColor={CATEGORY_COLORS[0]}
-                    submitLabel={t("settings.addLabel")}
-                    onSave={(input) => createMutation.mutateAsync({ ...input, color: input.color ?? CATEGORY_COLORS[0] })}
-                    onClose={() => setEditor(null)}
-                />
+            {error && (
+                <div className="mb-4">
+                    <Alert tone="error">{error}</Alert>
+                </div>
             )}
             {isLoading && <LoadingState label={t("settings.loadingLabels")} />}
             {isError && <ErrorMessage message={t("settings.couldNotLoadLabels")} />}
-            {categories?.length === 0 && editor !== "new" && (
-                <EmptyState title={t("settings.noLabels")} description={t("settings.createLabelHint")} />
-            )}
-            <ul className="space-y-2">
-                {categories?.map((category) => {
-                    const editable = isProjectOwner || category.createdBy === user?.id;
-                    return (
-                        <li key={category.id}>
-                            {editor === category.id ? (
+            {categories?.length === 0 && editor !== "new" && <EmptyState title={t("settings.noLabels")} description={t("settings.createLabelHint")} />}
+            {(!!categories?.length || editor === "new") && (
+                <SettingsCard>
+                    {editor === "new" && (
+                        <NamedColorForm
+                            key="new"
+                            label={t("settings.labelName")}
+                            initialColor={CATEGORY_COLORS[0]}
+                            submitLabel={t("settings.addLabel")}
+                            onSave={(input) => createMutation.mutateAsync({ ...input, color: input.color ?? CATEGORY_COLORS[0] })}
+                            onClose={() => setEditor(null)}
+                        />
+                    )}
+                    {categories?.map((category) => {
+                        const editable = isProjectOwner || category.createdBy === user?.id;
+                        if (editor === category.id)
+                            return (
                                 <NamedColorForm
+                                    key={category.id}
                                     label={t("settings.labelName")}
                                     initialName={category.name}
                                     initialColor={category.color}
@@ -67,44 +70,41 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                                     onSave={(input) => updateMutation.mutateAsync({ categoryId: category.id, input })}
                                     onClose={() => setEditor(null)}
                                 />
-                            ) : (
-                                <div className="group flex min-h-9 items-center justify-between gap-3 rounded-sm border border-subtle bg-surface-1 px-3 py-1.5">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: category.color ?? CATEGORY_COLORS[0] }} />
-                                        <span className="truncate text-sm text-secondary">{category.name}</span>
-                                    </div>
-                                    {editable && (
-                                        <div className="flex shrink-0 items-center gap-1 opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">
-                                            <ButtonUtility
-                                                icon={Pencil}
-                                                size="sm"
-                                                color="tertiary"
-                                                tooltip={`${t("common.edit")} ${category.name}`}
-                                                isDisabled={pending || !!editor}
-                                                onClick={() => setEditor(category.id)}
-                                            />
-                                            <ConfirmDialog
-                                                trigger={<ButtonUtility icon={Trash2} size="sm" color="tertiary" tooltip={t("settings.deleteLabel")} isDisabled={pending} />}
-                                                title={t("settings.deleteLabel")}
-                                                description={t("settings.deleteLabelDescription", { name: category.name })}
-                                                confirmLabel={t("settings.deleteLabel")}
-                                                isPending={deleteMutation.isPending}
-                                                onConfirm={() => {
-                                                    setError(null);
-                                                    deleteMutation.mutate(category.id, {
-                                                        onError: (reason) =>
-                                                            setError(reason instanceof ApiError ? reason.message : t("settings.couldNotDeleteLabel")),
-                                                    });
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </li>
-                    );
-                })}
-            </ul>
+                            );
+                        return (
+                            <SettingsItemRow
+                                key={category.id}
+                                dense
+                                leading={
+                                    <span className="grid size-4 shrink-0 place-items-center">
+                                        <span className="size-2.5 rounded-full" style={{ backgroundColor: category.color ?? CATEGORY_COLORS[0] }} />
+                                    </span>
+                                }
+                                title={category.name}
+                            >
+                                {editable && (
+                                    <SettingsRowActions>
+                                        <ButtonUtility icon={Pencil} size="sm" color="tertiary" tooltip={`${t("common.edit")} ${category.name}`} isDisabled={pending || !!editor} onClick={() => setEditor(category.id)} />
+                                        <ConfirmDialog
+                                            trigger={<ButtonUtility icon={Trash2} size="sm" color="tertiary" tooltip={t("settings.deleteLabel")} isDisabled={pending} />}
+                                            title={t("settings.deleteLabel")}
+                                            description={t("settings.deleteLabelDescription", { name: category.name })}
+                                            confirmLabel={t("settings.deleteLabel")}
+                                            isPending={deleteMutation.isPending}
+                                            onConfirm={() => {
+                                                setError(null);
+                                                deleteMutation.mutate(category.id, {
+                                                    onError: (reason) => setError(reason instanceof ApiError ? reason.message : t("settings.couldNotDeleteLabel")),
+                                                });
+                                            }}
+                                        />
+                                    </SettingsRowActions>
+                                )}
+                            </SettingsItemRow>
+                        );
+                    })}
+                </SettingsCard>
+            )}
         </div>
     );
 };

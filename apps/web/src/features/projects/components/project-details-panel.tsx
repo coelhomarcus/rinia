@@ -149,7 +149,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
 function Field({ error, children }: { error?: FieldError; children: ReactNode }) {
     const { t } = useTranslation();
     return (
-        <div className="flex w-full flex-col gap-1 sm:w-64">
+        <div className="flex w-full flex-col gap-1 sm:w-56">
             {children}
             {error?.message && <p className="text-xs text-danger-primary">{translateValidationMessage(error.message, t)}</p>}
         </div>
