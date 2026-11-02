@@ -29,6 +29,8 @@ export const CreateProjectModal = () => {
     });
     const projectName = watch("name");
     const generatedIssueKey = suggestProjectKey(projectName);
+    const issueKey = watch("issueKey");
+    const iconAppearance = watch("iconAppearance");
 
     return (
         <ModalDialog trigger={<Button iconLeading={Plus}>{t("nav.newProject")}</Button>} title={t("nav.newProject")} size="2xl">
@@ -103,7 +105,17 @@ export const CreateProjectModal = () => {
                     />
                     <ControlledTextarea control={control} name="description" label={t("projects.description")} rows={3} />
                     <ControlledInput control={control} name="repositoryUrl" label={t("projects.repository")} placeholder="https://github.com/..." />
-                    <Controller control={control} name="cover" render={({ field }) => <GradientPicker cover={field.value} onChange={field.onChange} />} />
+                    <Controller
+                        control={control}
+                        name="cover"
+                        render={({ field }) => (
+                            <GradientPicker
+                                cover={field.value}
+                                onChange={field.onChange}
+                                preview={{ name: projectName.trim() || t("projects.projectName"), issueKey: issueKey || (projectName.trim() ? generatedIssueKey : "PRJ"), icon: iconAppearance }}
+                            />
+                        )}
+                    />
 
                     {formState.errors.root && <p className="text-sm text-danger-primary">{formState.errors.root.message}</p>}
 

@@ -40,6 +40,7 @@ test("project appearance validates custom icons and remote covers while keeping 
     assert.equal(createProjectSchema.safeParse({ name: "My project", iconAppearance: { type: "icon", key: "unknown" } }).success, false);
     assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { url: "https://images.example.test/banner.jpg", position: { x: 50, y: 50 } } }).success, false);
     assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { type: "gradient", key: "unknown" } }).success, false);
+    assert.equal(createProjectSchema.safeParse({ name: "My project", cover: { type: "gradient", key: "blueprint" } }).success, true);
 });
 
 test("custom key is persisted verbatim without querying automatic suggestions", async () => {
