@@ -202,10 +202,10 @@ class DocumentRoom {
     }
 
     private identify(connection: RoomConnection, state: unknown) {
-        const given = (state && typeof state === "object" ? state : {}) as { user?: { color?: unknown }; cursor?: unknown };
+        const given = (state && typeof state === "object" ? state : {}) as { user?: { color?: unknown }; cursor?: unknown; typing?: unknown };
         const color = typeof given.user?.color === "string" && COLOR_PATTERN.test(given.user.color) ? given.user.color : undefined;
         const { id, name, username, avatarUrl } = connection.user;
-        return { user: { id, name, username, avatarUrl, color }, cursor: given.cursor ?? null };
+        return { user: { id, name, username, avatarUrl, color }, cursor: given.cursor ?? null, typing: given.typing === true };
     }
 
     private broadcast(message: Uint8Array, except?: RoomConnection) {

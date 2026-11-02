@@ -7,6 +7,7 @@ import { Plugin } from "@tiptap/pm/state";
 import { EditorContent, Extension, useEditor } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
 import { setMeta, yCursorPluginKey, ySyncPluginKey } from "@tiptap/y-tiptap";
+import { documentLineLock } from "../collab/line-lock";
 import type { DocumentProvider } from "../collab/document-provider";
 import { DocumentBlockControls } from "./document-block-controls";
 import "./document-editor.css";
@@ -164,6 +165,7 @@ export function DocumentEditor({
                 Collaboration.configure({ document: provider.doc, field: DOCUMENT_FRAGMENT }),
                 CollaborationCaret.configure({ provider, user: { id: user.id, name: user.name }, render: renderCaret, selectionRender: renderSelection }),
                 RemoteCaretRefresh,
+                documentLineLock(provider, cursorColor),
             ],
         },
         [provider],
