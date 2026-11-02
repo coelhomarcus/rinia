@@ -1137,7 +1137,16 @@ function IssueProperties({
                 </Link>
             </PropertyGroup>
 
-            <p className="px-2 text-[12px] text-placeholder">{t("issue.createdByOn", { name: issue.createdBy.name, date: created })}</p>
+            {/* Read only, so it is plain text: no hover, focus or shortcut like the editable fields above. */}
+            <PropertyGroup title={t("issue.creator")}>
+                <div className="flex min-h-8 min-w-0 items-center gap-2.5 px-2 py-1">
+                    <PropertyIcon>{avatar(issue.createdBy)}</PropertyIcon>
+                    <div className="min-w-0">
+                        <p className="truncate text-[13px] font-medium text-secondary" title={issue.createdBy.name}>{issue.createdBy.name}</p>
+                        <p className="truncate text-[12px] text-placeholder" title={formatFullIssueDate(issue.createdAt, i18n.language)}>{t("issue.createdOn", { date: created })}</p>
+                    </div>
+                </div>
+            </PropertyGroup>
             {error && <p role="alert" className="animate-enter px-2 text-xs text-danger-primary">{error}</p>}
         </div>
     );

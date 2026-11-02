@@ -23,7 +23,7 @@ const issue = {
         changeStatus: "Mudar estado…", setPriority: "Definir prioridade…", assignTo: "Atribuir a…", setEstimate: "Estimar…",
         setParent: "Definir tarefa pai…", addLabelPlaceholder: "Adicionar etiqueta…", assign: "Atribuir", estimateAction: "Estimar",
         addSubIssue: "Adicionar subtarefa", subIssueTitle: "Título da subtarefa", couldNotCreateSubIssue: "Não foi possível criar a subtarefa.",
-        createdByOn: "Criada por {{name}} em {{date}}", labels: "Etiquetas",
+        creator: "Criador", createdOn: "Criada em {{date}}", labels: "Etiquetas",
         noPriority: "Sem prioridade", setPriorityAction: "Definir prioridade",
         dueDate: "Data de entrega", setDueDate: "Definir data de entrega", dueDateAction: "Definir data de entrega", clearDueDate: "Limpar data", dueDateValue: "Entrega em {{date}}",
         dueToday: "Hoje", dueTomorrow: "Amanhã", dueNextWeek: "Próxima semana", previousMonth: "Mês anterior", nextMonth: "Próximo mês",

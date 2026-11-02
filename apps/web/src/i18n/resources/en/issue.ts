@@ -23,7 +23,7 @@ const issue = {
         changeStatus: "Change status…", setPriority: "Set priority…", assignTo: "Assign to…", setEstimate: "Estimate…",
         setParent: "Set parent issue…", addLabelPlaceholder: "Add label…", assign: "Assign", estimateAction: "Estimate",
         addSubIssue: "Add sub-issue", subIssueTitle: "Sub-issue title", couldNotCreateSubIssue: "Could not create the sub-issue.",
-        createdByOn: "Created by {{name}} on {{date}}", labels: "Labels",
+        creator: "Creator", createdOn: "Created on {{date}}", labels: "Labels",
         noPriority: "No priority", setPriorityAction: "Set priority",
         dueDate: "Due date", setDueDate: "Set due date", dueDateAction: "Set due date", clearDueDate: "Clear due date", dueDateValue: "Due {{date}}",
         dueToday: "Today", dueTomorrow: "Tomorrow", dueNextWeek: "Next week", previousMonth: "Previous month", nextMonth: "Next month",
