@@ -35,8 +35,6 @@ type GroupBy = "status" | "project" | "none";
 
 /** States and labels belong to each project, so across projects the ones that share a name are filtered and grouped together. */
 const nameKey = (name: string) => name.trim().toLowerCase();
-/** Groups by state run from what is in motion to what is done: active states, then the backlog, then closed ones. */
-const BUCKET_ORDER = { active: 0, backlog: 1, closed: 2 } as const;
 
 export const MyIssuesPage = () => {
     const { t, i18n } = useTranslation();
@@ -81,7 +79,7 @@ export const MyIssuesPage = () => {
 
     const groups = useMemo(() => {
         if (groupBy === "none") return [{ key: "all", label: null as string | null, column: null as MyIssue["column"] | null, project: null as MyIssue["project"] | null, rows }];
-        const grouped = new Map<string, { key: string; label: string; column: MyIssue["column"] | null; project: MyIssue["project"] | null; rows: PresenceRow<MyIssue>[]; rank: [number, number | string] }>();
+        const grouped = new Map<string, { key: string; label: string; column: MyIssue["column"] | null; project: MyIssue["project"] | null; rows: PresenceRow<MyIssue>[]; rank: number | string }>();
         for (const row of rows) {
             const issue = row.item;
             const key = groupBy === "status" ? nameKey(issue.column.name) : issue.projectId;
@@ -91,13 +89,14 @@ export const MyIssuesPage = () => {
                 column: groupBy === "status" ? issue.column : null,
                 project: groupBy === "project" ? issue.project : null,
                 rows: [],
-                rank: groupBy === "status" ? [BUCKET_ORDER[columnBucket(issue.column.name)], issue.column.position] : [0, issue.project.name.toLowerCase()],
+                // Status groups follow the order of the project columns, as the board does; a state shared by projects takes its lowest position.
+                rank: groupBy === "status" ? issue.column.position : issue.project.name.toLowerCase(),
             };
-            if (groupBy === "status" && issue.column.position < Number(group.rank[1])) group.rank = [group.rank[0], issue.column.position];
+            if (groupBy === "status" && issue.column.position < Number(group.rank)) group.rank = issue.column.position;
             group.rows.push(row);
             grouped.set(key, group);
         }
-        return [...grouped.values()].sort((left, right) => left.rank[0] - right.rank[0] || (left.rank[1] < right.rank[1] ? -1 : left.rank[1] > right.rank[1] ? 1 : 0));
+        return [...grouped.values()].sort((left, right) => (left.rank < right.rank ? -1 : left.rank > right.rank ? 1 : 0));
     }, [groupBy, rows, t]);
     const orderedIssues = useMemo(() => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.rows.filter((row) => !row.leaving).map((row) => row.item))), [collapsedGroups, groups]);
 
@@ -289,14 +288,15 @@ function collectOptions(issues: MyIssue[]) {
     const labels = new Map<string, MyIssue["categories"][number]>();
     const projects = new Map<string, MyIssue["project"]>();
     for (const issue of issues) {
-        if (!statuses.has(nameKey(issue.column.name))) statuses.set(nameKey(issue.column.name), issue.column);
+        const known = statuses.get(nameKey(issue.column.name));
+        if (!known || issue.column.position < known.position) statuses.set(nameKey(issue.column.name), issue.column);
         if (issue.assignee) assignees.set(issue.assignee.id, issue.assignee);
         for (const item of issue.categories) if (!labels.has(nameKey(item.name))) labels.set(nameKey(item.name), item);
         projects.set(issue.project.id, issue.project);
     }
     const byName = <T extends { name: string }>(items: Iterable<T>) => [...items].sort((left, right) => left.name.localeCompare(right.name));
     return {
-        statuses: [...statuses.values()].sort((left, right) => BUCKET_ORDER[columnBucket(left.name)] - BUCKET_ORDER[columnBucket(right.name)] || left.position - right.position),
+        statuses: [...statuses.values()].sort((left, right) => left.position - right.position),
         assignees: byName(assignees.values()),
         labels: byName(labels.values()),
         projects: byName(projects.values()),
