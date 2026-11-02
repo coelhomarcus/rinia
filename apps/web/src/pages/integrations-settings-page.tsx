@@ -7,8 +7,11 @@ import { IntegrationTile } from "@/features/integrations/components/integration-
 import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
 
-/** Compact cards of one height once they sit side by side, as in Linear's catalog; hovering lightens the card and nothing else moves. */
-const cardClass = "flex flex-col gap-3 overflow-hidden @sm:h-39 rounded-lg border border-subtle bg-layer-1 p-4";
+/**
+ * Compact cards of one height once they sit side by side, as in Linear's catalog; hovering lightens the card and nothing
+ * else moves. The height is a minimum: a long tagline above a "coming soon" badge grows its row instead of being cut.
+ */
+const cardClass = "flex flex-col gap-3 overflow-hidden @sm:min-h-39 rounded-lg border border-subtle bg-layer-1 p-4";
 
 /** Every integration, by category, as cards. The ones not built yet are listed too, marked as coming soon. */
 export function IntegrationsSettingsPage() {
