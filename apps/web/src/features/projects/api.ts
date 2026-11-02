@@ -19,7 +19,7 @@ export interface Project {
 
 export type ProjectSummary = Omit<Project, "pageContent">;
 export interface ProjectMemberPreview { id: string; name: string; avatarUrl: string | null }
-export type ProjectCardSummary = ProjectSummary & { memberCount: number; memberPreview: ProjectMemberPreview[] };
+export type ProjectCardSummary = ProjectSummary & { memberCount: number; memberPreview: ProjectMemberPreview[]; owner: ProjectMemberPreview | null };
 
 export interface ProjectMember {
     id: string;

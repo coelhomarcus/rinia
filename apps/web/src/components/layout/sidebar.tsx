@@ -17,6 +17,7 @@ import { Presence } from "@/components/base/presence";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import type { ProjectCardSummary } from "@/features/projects/api";
 import { useProjects } from "@/features/projects/hooks/use-projects";
+import { groupProjectsByOwner, type ProjectGroup } from "@/features/projects/lib/project-groups";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
 import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
@@ -81,16 +82,20 @@ function openStoredId(key: string, setter: Dispatch<SetStateAction<Set<string>>>
     });
 }
 
-type SidebarSections = { projects: boolean; favorites: boolean };
+/** `projects` is the viewer's own group; `owners` holds the other owners' groups, by owner id, when they differ from open. */
+type SidebarSections = { projects: boolean; favorites: boolean; owners: Record<string, boolean> };
 
 function readSections(): SidebarSections {
-    const sections = { projects: true, favorites: true };
+    const sections: SidebarSections = { projects: true, favorites: true, owners: {} };
     try {
-        const stored = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "null") as { projects?: boolean; teams?: boolean; favorites?: boolean } | null;
+        const stored = JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? "null") as { projects?: boolean; teams?: boolean; favorites?: boolean; owners?: unknown } | null;
         if (stored && typeof stored === "object") {
             if (typeof stored.projects === "boolean") sections.projects = stored.projects;
             else if (typeof stored.teams === "boolean") sections.projects = stored.teams;
             if (typeof stored.favorites === "boolean") sections.favorites = stored.favorites;
+            if (stored.owners && typeof stored.owners === "object") {
+                for (const [key, open] of Object.entries(stored.owners)) if (typeof open === "boolean") sections.owners[key] = open;
+            }
         }
     } catch {
         /* ignore invalid storage */
@@ -103,6 +108,7 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { data: projects } = useProjects();
+    const { user } = useAuth();
     const currentProject = useCurrentProject();
     const routeProjectId = currentProject?.id ?? "";
     const projectId = routeProjectId || readOpenProjectId() || "";
@@ -125,13 +131,25 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
 
     useMigrateLegacyFavorites();
 
-    function toggleSection(section: keyof SidebarSections) {
+    function saveSections(update: (current: SidebarSections) => SidebarSections) {
         setSections((current) => {
-            const next = { ...current, [section]: !current[section] };
+            const next = update(current);
             localStorage.setItem(SECTIONS_KEY, JSON.stringify(next));
             return next;
         });
     }
+
+    function toggleSection(section: "projects" | "favorites") {
+        saveSections((current) => ({ ...current, [section]: !current[section] }));
+    }
+
+    const groupOpen = (group: ProjectGroup) => (group.mine ? sections.projects : sections.owners[group.key] ?? true);
+    function toggleGroup(group: ProjectGroup) {
+        if (group.mine) return toggleSection("projects");
+        saveSections((current) => ({ ...current, owners: { ...current.owners, [group.key]: !(current.owners[group.key] ?? true) } }));
+    }
+
+    const projectGroups = groupProjectsByOwner(projects ?? [], user?.id, t);
 
     function go(path: string) {
         onNavigate?.();
@@ -174,18 +192,22 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                             <span className="truncate">{t("nav.allProjects")}</span>
                         </Link>
                         <FavoritesNav open={sections.favorites} onToggle={() => toggleSection("favorites")} />
-                        <SectionLabel label={t("nav.yourProjects")} open={sections.projects} onToggle={() => toggleSection("projects")} />
-                        <Collapse open={sections.projects}>
-                        {(projects ?? []).map((project) => (
-                            <ProjectNavItem
-                                key={project.id}
-                                project={project}
-                                currentProjectId={routeProjectId}
-                                open={openProjects.has(project.id)}
-                                onToggle={() => toggleStoredId(OPEN_PROJECTS_KEY, setOpenProjects, project.id)}
-                            />
+                        {projectGroups.map((group) => (
+                            <div key={group.key}>
+                                <SectionLabel label={group.label} open={groupOpen(group)} onToggle={() => toggleGroup(group)} />
+                                <Collapse open={groupOpen(group)}>
+                                    {group.projects.map((project) => (
+                                        <ProjectNavItem
+                                            key={project.id}
+                                            project={project}
+                                            currentProjectId={routeProjectId}
+                                            open={openProjects.has(project.id)}
+                                            onToggle={() => toggleStoredId(OPEN_PROJECTS_KEY, setOpenProjects, project.id)}
+                                        />
+                                    ))}
+                                </Collapse>
+                            </div>
                         ))}
-                        </Collapse>
                     </div>
                 </>
             )}
@@ -250,6 +272,7 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
     // Connections to other tools live apart from the person's own settings.
     const integrationLinks = [link(urls.integrations(), t("nav.allIntegrations"), Blocks), link(urls.apiTokens(), t("nav.apiTokens"), KeyRound)].filter(Boolean);
     const projectLinks = (projects ?? []).filter((project) => matches(project.name));
+    const projectGroups = groupProjectsByOwner(projectLinks, user?.id, t);
     const admin = user?.isAdmin ? [link("/settings/admin", t("nav.administration"), ShieldCheck)].filter(Boolean) : [];
     const backProject = projects?.find((project) => project.id === projectId);
 
@@ -272,9 +295,9 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
             </label>
             {personal.length > 0 && <SettingsNavSection label={t("nav.personal")}>{personal}</SettingsNavSection>}
             {integrationLinks.length > 0 && <SettingsNavSection label={t("nav.integrations")}>{integrationLinks}</SettingsNavSection>}
-            {projectLinks.length > 0 && (
-                <SettingsNavSection label={t("nav.yourProjects")}>
-                    {projectLinks.map((project) => {
+            {projectGroups.map((group) => (
+                <SettingsNavSection key={group.key} label={group.label}>
+                    {group.projects.map((project) => {
                         const path = urls.projectSettings(project.issueKey);
                         const active = location.pathname === path || location.pathname.startsWith(`${path}/`);
                         return (
@@ -285,7 +308,7 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
                         );
                     })}
                 </SettingsNavSection>
-            )}
+            ))}
             {admin.length > 0 && <SettingsNavSection label={t("nav.administration")}>{admin}</SettingsNavSection>}
             {query && personal.length + integrationLinks.length + projectLinks.length + admin.length === 0 && <p className="px-2 py-3 text-[13px] text-placeholder">{t("nav.noSettingsFound")}</p>}
         </div>

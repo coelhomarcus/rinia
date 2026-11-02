@@ -4,12 +4,17 @@ import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Topbar } from "@/components/layout/topbar";
 import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
 import { ProjectCard } from "@/features/projects/components/project-card";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import type { ProjectCardSummary } from "@/features/projects/api";
 import { useProjects } from "@/features/projects/hooks/use-projects";
+import { groupProjectsByOwner } from "@/features/projects/lib/project-groups";
 import { useTranslation } from "react-i18next";
 
 export const ProjectsPage = () => {
     const { data: projects, isLoading, isError } = useProjects();
     const { t } = useTranslation();
+    const { user } = useAuth();
+    const groups = groupProjectsByOwner(projects ?? [], user?.id, t);
 
     return (
         <div className="flex h-full min-h-0 flex-col">
@@ -23,11 +28,25 @@ export const ProjectsPage = () => {
                     <EmptyState title={t("projects.noProjects")} description={t("projects.createFirst")} action={<CreateProjectModal />} />
                 )}
 
-                {projects && projects.length > 0 && <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{projects.map((project) => <ProjectCard key={project.id} project={project} />)}</div>}
+                {groups.length === 1 && <ProjectGrid projects={groups[0].projects} />}
+                {groups.length > 1 && (
+                    <div className="flex flex-col gap-6">
+                        {groups.map((group) => (
+                            <section key={group.key} aria-label={group.label}>
+                                <h2 className="mb-2 px-1 text-[13px] font-medium text-tertiary">{group.label}</h2>
+                                <ProjectGrid projects={group.projects} />
+                            </section>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
+
+function ProjectGrid({ projects }: { projects: ProjectCardSummary[] }) {
+    return <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{projects.map((project) => <ProjectCard key={project.id} project={project} />)}</div>;
+}
 
 function ProjectListSkeleton() {
     const { t } = useTranslation();

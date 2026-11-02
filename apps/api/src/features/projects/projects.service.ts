@@ -112,22 +112,26 @@ export async function listProjectsForUser(userId: string, isAdmin: boolean) {
               with: { project: { columns: PROJECT_LIST_COLUMNS } },
           })).map((membership) => membership.project);
 
-    if (projectList.length === 0) return projectList.map((project) => ({ ...withParsedCover(project), memberCount: 0, memberPreview: [] }));
+    type MemberPreview = { id: string; name: string; avatarUrl: string | null };
+    if (projectList.length === 0) return projectList.map((project) => ({ ...withParsedCover(project), memberCount: 0, memberPreview: [], owner: null as MemberPreview | null }));
     const projectIds = projectList.map((project) => project.id);
     const memberships = await db.query.projectMembers.findMany({
         where: inArray(projectMembers.projectId, projectIds),
         orderBy: [projectMembers.joinedAt],
         with: { user: { columns: { id: true, name: true, avatarUrl: true } } },
     });
-    const memberMap = new Map<string, Array<{ id: string; name: string; avatarUrl: string | null }>>();
+    const memberMap = new Map<string, MemberPreview[]>();
+    // Lets the sidebar group projects by whose they are.
+    const ownerMap = new Map<string, MemberPreview>();
     for (const membership of memberships) {
         const members = memberMap.get(membership.projectId) ?? [];
         members.push(membership.user);
         memberMap.set(membership.projectId, members);
+        if (membership.role === "owner" && !ownerMap.has(membership.projectId)) ownerMap.set(membership.projectId, membership.user);
     }
     return projectList.map((project) => {
         const members = memberMap.get(project.id) ?? [];
-        return { ...withParsedCover(project), memberCount: members.length, memberPreview: members.slice(0, 3) };
+        return { ...withParsedCover(project), memberCount: members.length, memberPreview: members.slice(0, 3), owner: ownerMap.get(project.id) ?? null };
     });
 }
 
