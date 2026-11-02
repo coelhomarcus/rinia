@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { projectGradientKeys } from "../project-banners";
 
 /** A remote image accepted by the application. Files are rendered by the browser; the API never fetches them. */
 export const remoteImageUrlSchema = z
@@ -28,16 +27,4 @@ export const emojiIconSchema = z.object({ type: z.literal("emoji"), value: emoji
 export const imageIconSchema = z.object({ type: z.literal("image"), url: remoteImageUrlSchema });
 export const entityIconSchema = z.discriminatedUnion("type", [catalogIconSchema, emojiIconSchema, imageIconSchema]);
 
-/** `gradient` is the historical type name; the key picks any banner in `projectBanners`, gradient or not. */
-export const projectCoverSchema = z.object({
-    type: z.literal("gradient"),
-    key: z.enum(projectGradientKeys),
-});
-
 export type EntityIcon = z.infer<typeof entityIconSchema>;
-export type ProjectCover = z.infer<typeof projectCoverSchema>;
-
-export function parseProjectCover(value: unknown): ProjectCover | null {
-    const parsed = projectCoverSchema.safeParse(value);
-    return parsed.success ? parsed.data : null;
-}

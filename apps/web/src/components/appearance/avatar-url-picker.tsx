@@ -17,7 +17,7 @@ interface AvatarUrlPickerProps {
     children: ReactNode;
 }
 
-/** A profile-photo control that mirrors the cover picker: stage an URL, then apply it to the form. */
+/** A profile-photo control: stage an URL, then apply it to the form. */
 export function AvatarUrlPicker({ value, initials, onChange, disabled, children }: AvatarUrlPickerProps) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);

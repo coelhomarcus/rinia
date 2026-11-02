@@ -29,7 +29,7 @@ Rinia is a self-hosted platform where a team plans work, writes about it, and sh
   A block editor with slash commands, tables, images, and mentions. People edit the same page at the same time, with live cursors and a lock on the line someone is typing in. Pages work offline and sync when you are back.
 
 - **Projects and teams**
-  Give every project an icon and a cover, shape its states and labels, and add members by username with a preview of who you are adding. Deletes can be undone.
+  Give every project an icon, shape its states and labels, and add members by username with a preview of who you are adding. Deletes can be undone.
 
 - **Realtime**
   Boards, lists, comments, and pages update as teammates work, and you see who else is on the page.

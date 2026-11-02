@@ -1,5 +1,5 @@
 const nav = {
-        projects: "Projetos", allProjects: "Todos os projetos", projectSettings: "Configurações do projeto", overview: "Visão geral", projectSections: "Seções do projeto",
+        projects: "Projetos", projectSettings: "Configurações do projeto", overview: "Visão geral", projectSections: "Seções do projeto",
         issues: "Tarefas", documents: "Documentos", settings: "Configurações", config: "Config.", profile: "Perfil",
         expand: "Expandir navegação", expandProject: "Expandir", collapseProject: "Recolher",
         expandPages: "Mostrar páginas", collapsePages: "Ocultar páginas", newIssue: "Nova tarefa", newProject: "Novo projeto",

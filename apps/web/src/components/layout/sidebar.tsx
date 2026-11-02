@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { Blocks, ChevronDown, ChevronLeft, Circle, House, KeyRound, Layers, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
+import { Blocks, ChevronDown, ChevronLeft, Circle, House, KeyRound, Layers, Plus, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AppIcons } from "@/components/foundations/icons";
 import type { AppIcon } from "@/components/foundations/icons";
@@ -16,6 +16,7 @@ import { getInitials } from "@/components/base/avatar/utils";
 import { Collapse } from "@/components/base/collapse";
 import { UNMOUNT_AFTER } from "@/components/base/motion";
 import { Presence } from "@/components/base/presence";
+import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import type { ProjectCardSummary, ProjectMemberPreview } from "@/features/projects/api";
 import { useProjects } from "@/features/projects/hooks/use-projects";
@@ -152,6 +153,10 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
     }
 
     const projectGroups = groupProjectsByOwner(projects ?? [], user?.id, t);
+    // The viewer's own group is always shown, even empty, because its header is where projects are created.
+    if (user && projects && !projectGroups.some((group) => group.mine)) {
+        projectGroups.unshift({ key: user.id, label: t("nav.yourProjects"), mine: true, owner: { id: user.id, name: user.name, avatarUrl: user.avatarUrl }, projects: [] });
+    }
 
     function go(path: string) {
         onNavigate?.();
@@ -189,14 +194,10 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                             <AppIcons.MyIssues className="size-4 shrink-0" />
                             <span className="truncate">{t("nav.myIssues")}</span>
                         </Link>
-                        <Link to="/" className={itemClass(location.pathname === "/")} aria-current={location.pathname === "/" ? "page" : undefined}>
-                            <AppIcons.Projects className="size-4 shrink-0" />
-                            <span className="truncate">{t("nav.allProjects")}</span>
-                        </Link>
                         <FavoritesNav open={sections.favorites} onToggle={() => toggleSection("favorites")} />
                         {projectGroups.map((group) => (
                             <div key={group.key}>
-                                <SectionLabel label={group.label} owner={group.owner} open={groupOpen(group)} onToggle={() => toggleGroup(group)} />
+                                <SectionLabel label={group.label} owner={group.owner} open={groupOpen(group)} onToggle={() => toggleGroup(group)} action={group.mine ? <NewProjectButton /> : undefined} />
                                 <Collapse open={groupOpen(group)}>
                                     <div className="pl-2">
                                         {group.projects.map((project) => (
@@ -328,20 +329,42 @@ function SettingsNavSection({ label, children }: { label: string; children: Reac
     );
 }
 
-function SectionLabel({ label, owner, open, onToggle }: { label: string; owner?: ProjectMemberPreview | null; open: boolean; onToggle: () => void }) {
+function SectionLabel({ label, owner, open, onToggle, action }: { label: string; owner?: ProjectMemberPreview | null; open: boolean; onToggle: () => void; action?: ReactNode }) {
     return (
-        <button
-            type="button"
-            aria-expanded={open}
-            onClick={onToggle}
-            className="group/section mt-5 mb-0.5 flex h-6 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-tertiary hover:text-secondary"
-        >
-            {owner && (
-                <Avatar src={owner.avatarUrl ?? undefined} initials={getInitials(owner.name)} size="xs" className="size-4" contentClassName="[&>span]:text-[8px]" />
-            )}
-            {label}
-            <span className="text-placeholder group-hover/section:text-tertiary"><Caret open={open} /></span>
-        </button>
+        <div className="group/label mt-5 mb-0.5 flex h-6 items-center justify-between gap-1">
+            <button
+                type="button"
+                aria-expanded={open}
+                onClick={onToggle}
+                className="group/section flex h-6 min-w-0 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-tertiary hover:text-secondary"
+            >
+                {owner && (
+                    <Avatar src={owner.avatarUrl ?? undefined} initials={getInitials(owner.name)} size="xs" className="size-4" contentClassName="[&>span]:text-[8px]" />
+                )}
+                <span className="truncate">{label}</span>
+                <span className="text-placeholder group-hover/section:text-tertiary"><Caret open={open} /></span>
+            </button>
+            {action}
+        </div>
+    );
+}
+
+/** Opens the new-project form from the viewer's own projects header. */
+function NewProjectButton() {
+    const { t } = useTranslation();
+    return (
+        <CreateProjectModal
+            trigger={
+                <button
+                    type="button"
+                    aria-label={t("nav.newProject")}
+                    title={t("nav.newProject")}
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-tertiary opacity-0 transition-opacity duration-150 group-hover/label:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100 data-[popup-open]:opacity-100"
+                >
+                    <Plus className="size-3.5" />
+                </button>
+            }
+        />
     );
 }
 

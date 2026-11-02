@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emojiIconSchema, iconColorSchema, imageIconSchema, projectCoverSchema } from "./appearance";
+import { emojiIconSchema, iconColorSchema, imageIconSchema } from "./appearance";
 
 const repositoryUrlSchema = z
     .union([z.string().trim().url("Invalid URL"), z.literal("")])
@@ -115,7 +115,6 @@ const projectInputSchema = z.object({
     repositoryUrl: repositoryUrlSchema,
     icon: iconSchema,
     iconAppearance: projectIconAppearanceSchema.nullable().optional(),
-    cover: projectCoverSchema.nullable().optional(),
 }).superRefine((value, context) => {
     if (value.icon !== undefined && value.iconAppearance !== undefined) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["iconAppearance"], message: "Use either icon or iconAppearance, not both" });
@@ -131,7 +130,6 @@ export const updateProjectSchema = z.object({
     repositoryUrl: repositoryUrlSchema,
     icon: iconSchema,
     iconAppearance: projectIconAppearanceSchema.nullable().optional(),
-    cover: projectCoverSchema.nullable().optional(),
 }).superRefine((value, context) => {
     if (value.icon !== undefined && value.iconAppearance !== undefined) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["iconAppearance"], message: "Use either icon or iconAppearance, not both" });
