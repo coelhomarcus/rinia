@@ -72,7 +72,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const assignee = searchParams.get("assignee") ?? "";
     const labelFilter = useMemo(() => readLabels(searchParams.get("label")), [searchParams]);
     const due = searchParams.get("due") ?? "";
-    const scope = readScope(savedView ? searchParams.get("scope") : (params.scope ?? null));
+    const scope = savedView ? readSavedScope(searchParams.get("scope")) : readScope(params.scope ?? null);
     const { view, setView } = useIssueView(projectId!, { saved: !!savedView });
     // The screen as a view would save it: the address's parameters, plus the scope and layout that may live elsewhere.
     const screenFilters = useMemo<SavedViewFilters | null>(() => {
@@ -320,9 +320,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 {view && (
                     <div className="animate-enter flex min-w-0 items-center gap-1 max-sm:shrink-0">
                         {([
+                                ["all", t("issue.allIssues")],
                                 ["active", t("issue.active")],
                                 ...(showBacklog ? [["backlog", t("issue.backlog")] as const] : []),
-                                ["all", t("issue.allIssues")],
                             ] as const).map(([value, label]) => (
                                 <button key={value} type="button" aria-pressed={!savedView && scope === value} className={pillTab(!savedView && scope === value)} onClick={() => setScope(value)}>
                                     {label}
@@ -486,7 +486,13 @@ function readGroup(value: string | null): GroupBy {
     return "status";
 }
 
+/** The plain issue list opens on every issue; the scope is only in the address when it narrows the list. */
 function readScope(value: string | null): Scope {
+    return value === "backlog" || value === "active" ? value : "all";
+}
+
+/** Saved views leave the scope out when it is active, so views saved before "all" became the default keep their meaning. */
+function readSavedScope(value: string | null): Scope {
     return value === "backlog" || value === "all" ? value : "active";
 }
 
