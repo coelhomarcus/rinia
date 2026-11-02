@@ -22,7 +22,7 @@ import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { PresenceAvatars } from "@/features/realtime/components/presence-avatars";
 import { useChannelPresence, useRealtimeChannels } from "@/features/realtime/use-realtime";
-import { IssueAvatar, IssueAvatarGroup, PriorityIcon, SourceAvatar, StateIcon, sourceLabel } from "@/features/board/components/issue-property-icons";
+import { IssueAvatar, IssueAvatarGroup, PriorityIcon, StateIcon, sourceLabel } from "@/features/board/components/issue-property-icons";
 import { useColumns } from "@/features/board/hooks/use-board";
 import { columnBucket, defaultIssueColumn } from "@/features/board/column-bucket";
 import { dueState as getDueState, dueStateClass, formatDueDate } from "@/features/issues/lib/due-date";
@@ -62,12 +62,13 @@ import { ReactionChips, ReactionPicker } from "./comment-reactions";
 import { DescriptionHistorySheet } from "./description-history";
 import { fetchIssueClipboardContent } from "../lib/issue-clipboard";
 import { issueDescriptionDrafts, issueDraftKey } from "../lib/issue-description-drafts";
+import { formatDistanceToNow, formatFullIssueDate } from "../lib/relative-time";
 import { DueDatePopover } from "./due-date-picker";
 import { LabelChip, LabelsPicker, resolveLabels, useLabelToggle } from "./labels-picker";
 import { EMPTY_TIPTAP_DOCUMENT, RichTextEditor, type MentionItem } from "./rich-text-editor";
+import { TimelineActivity, type ActivityEntry, type TimelineLookups } from "./timeline-activity";
 import { useTranslation } from "react-i18next";
 import { translateStatusName } from "@/i18n/status-label";
-import type { TranslationKey } from "@/i18n/resources";
 
 const propertyButton =
     "flex h-8 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium text-secondary outline-none transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover disabled:opacity-60 data-[popup-open]:bg-layer-transparent-hover";
@@ -75,22 +76,6 @@ const menuItemClass = "flex h-8 w-full cursor-pointer items-center gap-2.5 round
 const popupMotion = "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0";
 
 type PropertyMenuId = "state" | "priority" | "assignee" | "estimate" | "due" | "parent" | "label";
-
-const activityLabelKeys: Record<string, TranslationKey> = {
-    created: "issue.createdThisIssue",
-    status_changed: "issue.changedStatus",
-    priority_changed: "issue.changedPriority",
-    assignee_changed: "issue.changedAssignee",
-    category_changed: "issue.changedCategory",
-    cycle_changed: "issue.changedCycle",
-    estimate_changed: "issue.changedEstimate",
-    due_date_changed: "issue.changedDueDate",
-    parent_changed: "issue.changedParent",
-    relation_added: "issue.addedRelation",
-    relation_removed: "issue.removedRelation",
-    label_added: "issue.addedLabel",
-    label_removed: "issue.removedLabel",
-};
 
 export const IssueView = () => {
     const { t } = useTranslation();
@@ -1348,15 +1333,7 @@ function IssueRelations({
     );
 }
 
-type ActivityEntry = { id: string; type: string; createdAt: string; actor: { name: string; avatarUrl: string | null }; source?: ActionSource | null; payload: Record<string, unknown> };
 type CommentEntry = { id: string; contentJson: TiptapDocument; authorId: string; author: { name: string; username?: string; avatarUrl: string | null }; source?: ActionSource | null; createdAt: string; updatedAt: string; reactions: ReactionGroup[]; parentCommentId: string | null };
-interface TimelineLookups {
-    columns: Array<{ id: string; name: string; color?: string | null }>;
-    members: Array<{ id: string; name: string }>;
-    categories: Array<{ id: string; name: string; color: string | null }>;
-    projectIssues: Array<{ id: string; identifier: string; title: string }>;
-}
-
 /** Activity and comments in one chronological feed, followed by the comment composer. */
 function IssueTimeline({
     activity,
@@ -1456,27 +1433,6 @@ function IssueTimeline({
             </div>
             {error && <p role="alert" className="animate-enter mt-2 text-xs text-danger-primary">{error}</p>}
         </section>
-    );
-}
-
-function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; lookups: TimelineLookups }) {
-    const { t, i18n } = useTranslation();
-    const statusTo = entry.type === "status_changed" ? lookups.columns.find((column) => column.id === entry.payload.to) : undefined;
-    const label = entry.type === "label_added" || entry.type === "label_removed" ? lookups.categories.find((category) => category.id === entry.payload.categoryId) : undefined;
-    return (
-        <li className="animate-enter flex items-center gap-2.5 py-1.5 pl-1 text-[13px] text-tertiary">
-            <span className="grid h-5 min-w-5 shrink-0 place-items-center">
-                {statusTo ? <StateIcon name={statusTo.name} color={statusTo.color} /> : <IssueAvatarGroup name={entry.actor.name} avatarUrl={entry.actor.avatarUrl} source={entry.source} className="size-4 text-[9px]" />}
-            </span>
-            <p className="min-w-0 flex-1">
-                <span className="font-medium text-secondary">{entry.actor.name}</span>
-                {statusTo && entry.source && <SourceAvatar source={entry.source} className="ml-1 size-4 align-middle" />}{" "}{activityLabelKeys[entry.type] ? t(activityLabelKeys[entry.type]) : entry.type}
-                {label && <> <LabelChip label={label} className="inline-flex max-w-40 align-middle" /></>}
-                {formatActivityChange(entry.payload, { ...lookups, columns: lookups.columns.map((column) => ({ ...column, name: translateStatusName(column.name, t) })) }, t("issue.noneValue"), i18n.language)}
-                <span className="text-placeholder"> · </span>
-                <time className="text-placeholder" title={formatFullIssueDate(entry.createdAt, i18n.language)} dateTime={entry.createdAt}>{formatDistanceToNow(entry.createdAt, i18n.language)}</time>
-            </p>
-        </li>
     );
 }
 
@@ -1671,39 +1627,6 @@ function IssueLoadingSkeleton() {
             </div>
         </main>
     );
-}
-
-function formatFullIssueDate(value: string, locale: string) {
-    return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-}
-
-function formatActivityChange(payload: Record<string, unknown>, lookups: {
-    columns: Array<{ id: string; name: string }>;
-    members: Array<{ id: string; name: string }>;
-    categories: Array<{ id: string; name: string }>;
-    projectIssues: Array<{ id: string; identifier: string; title: string }>;
-}, noneLabel: string, locale: string) {
-    if (!("from" in payload) && !("to" in payload)) return "";
-    const field = String(payload.field ?? "");
-    const resolve = (value: unknown) => {
-        if (value === null || value === undefined || value === "") return noneLabel;
-        if (field === "dueDate") return formatDueDate(String(value), locale);
-        const options = field === "columnId" ? lookups.columns : field === "assigneeId" ? lookups.members : field === "categoryId" ? lookups.categories : field === "parentIssueId" ? lookups.projectIssues : [];
-        const match = options.find((option) => option.id === value);
-        if (match && "identifier" in match) return match.identifier;
-        if (match) return match.name;
-        return String(value);
-    };
-    return ` · ${resolve(payload.from)} → ${resolve(payload.to)}`;
-}
-
-function formatDistanceToNow(value: string, locale: string) {
-    const minutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60000));
-    const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-    if (minutes < 60) return formatter.format(-minutes, "minute");
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return formatter.format(-hours, "hour");
-    return formatter.format(-Math.round(hours / 24), "day");
 }
 
 function hasMeaningfulTiptapContent(document: TiptapDocument) {
