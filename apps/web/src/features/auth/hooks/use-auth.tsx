@@ -6,6 +6,9 @@ import { AUTH_QUERY_KEY, type AuthUser, fetchMe } from "../api";
 interface AuthContextValue {
     user: AuthUser | null;
     isLoading: boolean;
+    /** The session could not be checked because the server was unreachable, as when the app opens offline. */
+    unreachable: boolean;
+    retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -22,14 +25,17 @@ async function fetchMeOrNull(): Promise<AuthUser | null> {
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, error, refetch } = useQuery({
         queryKey: AUTH_QUERY_KEY,
         queryFn: fetchMeOrNull,
         retry: false,
         staleTime: Infinity,
     });
+    // A failed fetch never reached the server, and a 5xx (often the proxy while the app restarts) says nothing about
+    // the session either; neither should send someone to the sign-in page.
+    const unreachable = !data && !!error && (!(error instanceof ApiError) || error.status >= 500);
 
-    return <AuthContext value={{ user: data ?? null, isLoading }}>{children}</AuthContext>;
+    return <AuthContext value={{ user: data ?? null, isLoading, unreachable, retry: () => void refetch() }}>{children}</AuthContext>;
 };
 
 export const useAuth = (): AuthContextValue => {

@@ -5,6 +5,7 @@ import { Outlet, useLocation } from "react-router";
 import { NetworkStatus } from "@/components/feedback/network-status";
 import { WorkspaceLoadingFallback } from "@/components/feedback/workspace-loading-fallback";
 import { AppCommandsProvider } from "@/features/commands/app-commands";
+import { AppBadge } from "@/features/pwa/app-badge";
 import { RealtimeProvider } from "@/features/realtime/realtime-provider";
 import { Sidebar } from "./sidebar";
 import { useTranslation } from "react-i18next";
@@ -74,6 +75,7 @@ export const AppShell = () => {
                 </Dialog.Root>
                 <NetworkStatus />
                 <RealtimeProvider />
+                <AppBadge />
             </div>
             </AppCommandsProvider>
         </NavigationContext.Provider>

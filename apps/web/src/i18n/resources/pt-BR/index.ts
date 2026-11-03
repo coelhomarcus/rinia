@@ -23,6 +23,7 @@ import agent from "./agent";
 import integrations from "./integrations";
 import oauth from "./oauth";
 import commands from "./commands";
+import pwa from "./pwa";
 
 export const ptBR = {
     common,
@@ -50,4 +51,5 @@ export const ptBR = {
     integrations,
     oauth,
     commands,
+    pwa,
 } as const;

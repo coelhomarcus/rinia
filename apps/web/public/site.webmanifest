@@ -1,19 +1,47 @@
 {
+    "id": "/",
     "name": "Rinia",
     "short_name": "Rinia",
+    "description": "Projetos, tarefas e documentos da sua equipe, no mesmo lugar.",
+    "lang": "pt-BR",
+    "dir": "ltr",
+    "start_url": "/?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#090909",
+    "background_color": "#090909",
+    "categories": ["productivity", "business"],
+    "prefer_related_applications": false,
     "icons": [
+        { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+        { "src": "/pwa/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+        { "src": "/pwa/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+        { "src": "/pwa/icon-monochrome-512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
+    ],
+    "shortcuts": [
         {
-            "src": "/icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
+            "name": "Inbox",
+            "short_name": "Inbox",
+            "description": "Notificações das tarefas que você acompanha",
+            "url": "/inbox?source=pwa-shortcut",
+            "icons": [{ "src": "/pwa/shortcut-inbox.png", "sizes": "96x96", "type": "image/png" }]
         },
         {
-            "src": "/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
+            "name": "Minhas tarefas",
+            "short_name": "Minhas tarefas",
+            "description": "Tarefas atribuídas a você",
+            "url": "/my-issues?source=pwa-shortcut",
+            "icons": [{ "src": "/pwa/shortcut-my-issues.png", "sizes": "96x96", "type": "image/png" }]
+        },
+        {
+            "name": "Nova tarefa",
+            "short_name": "Nova tarefa",
+            "description": "Criar uma tarefa no último projeto aberto",
+            "url": "/my-issues?new=issue&source=pwa-shortcut",
+            "icons": [{ "src": "/pwa/shortcut-new-issue.png", "sizes": "96x96", "type": "image/png" }]
         }
-    ],
-    "theme_color": "#0f1011",
-    "background_color": "#0f1011",
-    "display": "standalone"
+    ]
 }

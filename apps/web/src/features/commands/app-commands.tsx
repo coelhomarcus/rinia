@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { defaultIssueColumn } from "@/features/board/column-bucket";
 import { useColumns } from "@/features/board/hooks/use-board";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
@@ -68,6 +68,21 @@ export function AppCommandsProvider({ children }: { children: ReactNode }) {
     useHotkeys("g>i", () => navigate(urls.inbox()), globalHotkey);
     useHotkeys("g>m", () => navigate(urls.myIssues()), globalHotkey);
     useHotkeys("g>s", () => navigate("/settings/profile"), globalHotkey);
+
+    // `?new=issue` (the installed app's "New issue" shortcut) opens the new-issue modal once the projects are known.
+    const [searchParams, setSearchParams] = useSearchParams();
+    const wantsNewIssue = searchParams.get("new") === "issue";
+    useEffect(() => {
+        if (!wantsNewIssue || !projects) return;
+        createIssue();
+        setSearchParams(
+            (current) => {
+                current.delete("new");
+                return current;
+            },
+            { replace: true },
+        );
+    }, [createIssue, projects, setSearchParams, wantsNewIssue]);
 
     // `?` is read from the character typed, so it works on every keyboard layout.
     useEffect(() => {
