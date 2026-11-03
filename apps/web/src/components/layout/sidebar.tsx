@@ -1,13 +1,10 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Blocks, ChevronDown, ChevronLeft, Circle, House, KeyRound, Layers, Plus, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useLocation } from "react-router";
 import { AppIcons } from "@/components/foundations/icons";
 import type { AppIcon } from "@/components/foundations/icons";
 import { SidebarAccount } from "./sidebar-account";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useColumns } from "@/features/board/hooks/use-board";
-import { defaultIssueColumn } from "@/features/board/column-bucket";
-import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
 import type { Favorite } from "@/features/favorites/api";
 import { useFavorites, useMigrateLegacyFavorites, useRemoveFavorite } from "@/features/favorites/hooks/use-favorites";
 import { useUnreadNotificationCount } from "@/features/notifications/hooks/use-notifications";
@@ -22,11 +19,11 @@ import type { ProjectCardSummary, ProjectMemberPreview } from "@/features/projec
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { groupProjectsByOwner, type ProjectGroup } from "@/features/projects/lib/project-groups";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
+import { LAST_PROJECT_KEY, OPEN_PROJECTS_KEY, readIdSet, readOpenProjectId } from "@/features/projects/lib/last-project";
+import { useAppCommands } from "@/features/commands/app-commands";
 import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
 
-const OPEN_PROJECTS_KEY = "rinia-open-projects";
-const LAST_PROJECT_KEY = "rinia-last-project";
 const SECTIONS_KEY = "rinia-sidebar-sections";
 const ITEM = "flex h-7 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150";
 const IDLE = "text-tertiary hover:bg-layer-transparent-hover hover:text-primary";
@@ -46,24 +43,10 @@ function itemClass(active: boolean, extra = "") {
     return `${ITEM} ${active ? ACTIVE : IDLE} ${extra}`;
 }
 
-function readIdSet(key: string): Set<string> {
-    try {
-        const stored = JSON.parse(localStorage.getItem(key) ?? "null");
-        if (Array.isArray(stored)) return new Set(stored.filter((id): id is string => typeof id === "string"));
-    } catch {
-        /* ignore invalid storage */
-    }
-    return new Set();
-}
-
 function persistIdSet(key: string, ids: Set<string>) {
     localStorage.setItem(key, JSON.stringify([...ids]));
 }
 
-/** The project the user was last in, used when leaving settings and as the default for new issues. */
-function readOpenProjectId(): string | null {
-    return localStorage.getItem(LAST_PROJECT_KEY) || ([...readIdSet(OPEN_PROJECTS_KEY)].at(-1) ?? null);
-}
 
 function toggleStoredId(key: string, setter: Dispatch<SetStateAction<Set<string>>>, id: string) {
     setter((current) => {
@@ -106,17 +89,15 @@ function readSections(): SidebarSections {
     return sections;
 }
 
-export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavigate?: () => void }) {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     const location = useLocation();
-    const navigate = useNavigate();
     const { t } = useTranslation();
+    const commands = useAppCommands();
     const { data: projects } = useProjects();
     const { user } = useAuth();
     const currentProject = useCurrentProject();
     const routeProjectId = currentProject?.id ?? "";
     const projectId = routeProjectId || readOpenProjectId() || "";
-    const { data: columns } = useColumns(routeProjectId);
-    const [creatingProjectId, setCreatingProjectId] = useState<string | null>(null);
     const [openProjects, setOpenProjects] = useState(() => {
         const ids = readIdSet(OPEN_PROJECTS_KEY);
         if (routeProjectId) ids.add(routeProjectId);
@@ -124,7 +105,6 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
     });
     const [sections, setSections] = useState(readSections);
     const settings = location.pathname.includes("/settings");
-    useEffect(() => setCreatingProjectId(null), [routeProjectId]);
     useEffect(() => {
         if (!routeProjectId) return;
         // Visiting a project expands it without closing the others.
@@ -158,13 +138,6 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
         projectGroups.unshift({ key: user.id, label: t("nav.yourProjects"), mine: true, owner: { id: user.id, name: user.name, avatarUrl: user.avatarUrl }, projects: [] });
     }
 
-    function go(path: string) {
-        onNavigate?.();
-        navigate(path);
-    }
-
-    const createTarget = routeProjectId || readOpenProjectId() || projects?.[0]?.id || "";
-
     return (
         <div className="flex h-full flex-col select-none">
             {settings ? (
@@ -173,7 +146,7 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                 <>
                     <div className="flex h-12 shrink-0 items-center gap-1 px-3">
                         <SidebarAccount variant="header" />
-                        <button type="button" aria-label={t("nav.search")} className="flex size-7 items-center justify-center rounded-md text-tertiary hover:bg-layer-transparent-hover hover:text-primary" onClick={(event) => { event.stopPropagation(); onSearch(); }}>
+                        <button type="button" aria-label={t("nav.search")} className="flex size-7 items-center justify-center rounded-md text-tertiary hover:bg-layer-transparent-hover hover:text-primary" onClick={(event) => { event.stopPropagation(); onNavigate?.(); commands.openPalette(); }}>
                             <Search className="size-4" />
                         </button>
                         <button
@@ -182,7 +155,8 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                             className="flex size-7 items-center justify-center rounded-lg bg-layer-1 text-tertiary hover:bg-layer-1-hover hover:text-primary"
                             onClick={(event) => {
                                 event.stopPropagation();
-                                if (createTarget) setCreatingProjectId(createTarget);
+                                onNavigate?.();
+                                commands.createIssue();
                             }}
                         >
                             <SquarePen className="size-4" />
@@ -216,20 +190,6 @@ export function Sidebar({ onSearch, onNavigate }: { onSearch: () => void; onNavi
                     </div>
                 </>
             )}
-            {creatingProjectId && defaultIssueColumn(columns) && creatingProjectId === routeProjectId && (
-                <IssueQuickCreateModal
-                    projectId={creatingProjectId}
-                    columnId={defaultIssueColumn(columns)!.id}
-                    onClose={() => setCreatingProjectId(null)}
-                    onCreated={(identifier) => {
-                        setCreatingProjectId(null);
-                        go(urls.issue(identifier));
-                    }}
-                />
-            )}
-            {creatingProjectId && creatingProjectId !== routeProjectId && (
-                <CreateElsewhere projectId={creatingProjectId} onClose={() => setCreatingProjectId(null)} onCreated={(identifier) => go(urls.issue(identifier))} />
-            )}
         </div>
     );
 }
@@ -251,13 +211,6 @@ function InboxLink() {
             />
         </Link>
     );
-}
-
-function CreateElsewhere({ projectId, onClose, onCreated }: { projectId: string; onClose: () => void; onCreated: (identifier: string) => void }) {
-    const { data: columns } = useColumns(projectId);
-    const column = defaultIssueColumn(columns);
-    if (!column) return null;
-    return <IssueQuickCreateModal projectId={projectId} columnId={column.id} onClose={onClose} onCreated={onCreated} />;
 }
 
 function SettingsNav({ projectId, projects }: { projectId: string; projects: ProjectCardSummary[] | undefined }) {

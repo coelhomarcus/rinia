@@ -22,6 +22,7 @@ import realtime from "./realtime";
 import agent from "./agent";
 import integrations from "./integrations";
 import oauth from "./oauth";
+import commands from "./commands";
 
 export const en = {
     common,
@@ -48,4 +49,5 @@ export const en = {
     agent,
     integrations,
     oauth,
+    commands,
 } as const;
