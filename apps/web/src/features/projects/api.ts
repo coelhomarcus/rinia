@@ -1,4 +1,4 @@
-import type { CreateProjectInput, EntityIcon, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
+import type { CreateProjectInput, EntityIcon, ProjectStats, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
 import { apiClient } from "@/lib/api-client";
 
 export interface Project {
@@ -78,4 +78,10 @@ export function lookupProjectMember(projectId: string, username: string): Promis
 
 export function removeProjectMember(projectId: string, userId: string): Promise<void> {
     return apiClient.delete<void>(`/projects/${projectId}/members/${userId}`);
+}
+
+/** The overview's activity numbers, with days counted in the viewer's time zone. */
+export function getProjectStats(projectId: string, days: number, timeZone: string): Promise<ProjectStats> {
+    const query = new URLSearchParams({ days: String(days), tz: timeZone });
+    return apiClient.get<{ stats: ProjectStats }>(`/projects/${projectId}/stats?${query}`).then((res) => res.stats);
 }

@@ -1,4 +1,4 @@
-import { addProjectMemberSchema, createProjectSchema, updateProjectPageSchema, updateProjectSchema } from "@rinia/shared";
+import { addProjectMemberSchema, createProjectSchema, projectStatsQuerySchema, updateProjectPageSchema, updateProjectSchema } from "@rinia/shared";
 import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
@@ -15,6 +15,7 @@ import {
     updateProject,
     updateProjectPage,
 } from "./projects.service";
+import { getProjectStats } from "./project-stats.service";
 
 export const create = asyncHandler(async (req, res) => {
     const input = createProjectSchema.parse(req.body);
@@ -74,4 +75,9 @@ export const lookupMember = asyncHandler<{ projectId: string }>(async (req, res)
 export const removeMember = asyncHandler<{ projectId: string; userId: string }>(async (req, res) => {
     await removeProjectMember(req.params.projectId, req.params.userId);
     res.status(204).send();
+});
+
+export const stats = asyncHandler<{ projectId: string }>(async (req, res) => {
+    const query = projectStatsQuerySchema.parse(req.query);
+    res.json({ stats: await getProjectStats(req.params.projectId, query) });
 });

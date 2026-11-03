@@ -24,6 +24,7 @@ import integrations from "./integrations";
 import oauth from "./oauth";
 import commands from "./commands";
 import pwa from "./pwa";
+import projectStats from "./projectStats";
 
 export const ptBR = {
     common,
@@ -52,4 +53,5 @@ export const ptBR = {
     oauth,
     commands,
     pwa,
+    projectStats,
 } as const;

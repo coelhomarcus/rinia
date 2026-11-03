@@ -282,6 +282,33 @@ html[data-theme*="dark"] {
     --button-secondary-highlight: rgb(255 255 255 / 0.07);
 }
 
+/*
+ * Chart colours. Two categorical series (blue, then orange, in that order) and a one-hue blue ramp for the
+ * contribution map, checked for colour-blind separation and contrast on each theme's surface. In dark mode the ramp
+ * runs the other way, so more activity is always the brighter cell.
+ */
+html:not([data-theme*="dark"]) {
+    --chart-series-1: #2a78d6;
+    --chart-series-2: #eb6834;
+    --chart-grid: #e6e6e6;
+    --chart-heat-0: #ebebeb;
+    --chart-heat-1: #86b6ef;
+    --chart-heat-2: #3987e5;
+    --chart-heat-3: #1c5cab;
+    --chart-heat-4: #0d366b;
+}
+
+html[data-theme*="dark"] {
+    --chart-series-1: #3987e5;
+    --chart-series-2: #d95926;
+    --chart-grid: #2a2a2a;
+    --chart-heat-0: #222222;
+    --chart-heat-1: #184f95;
+    --chart-heat-2: #2a78d6;
+    --chart-heat-3: #6da7ec;
+    --chart-heat-4: #b7d3f6;
+}
+
 @layer base {
     html { color-scheme: light; background: var(--bg-canvas); }
     html[data-theme*="dark"] { color-scheme: dark; }

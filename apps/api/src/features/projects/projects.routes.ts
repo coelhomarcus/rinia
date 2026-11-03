@@ -22,6 +22,7 @@ import {
   listMembers,
   remove,
   removeMember,
+  stats,
   update,
   updatePage,
 } from "./projects.controller";
@@ -38,6 +39,7 @@ projectsRouter.get("/:projectId", requireProjectMember, getOne);
 projectsRouter.patch("/:projectId", requireProjectOwner, update);
 projectsRouter.delete("/:projectId", requireProjectOwner, remove);
 projectsRouter.patch("/:projectId/page", requireProjectMember, updatePage);
+projectsRouter.get("/:projectId/stats", requireProjectMember, stats);
 projectsRouter.use(
   "/:projectId/documents",
   asyncHandler<{ projectId: string }>(async (req, _res, next) => {
