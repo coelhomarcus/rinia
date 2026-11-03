@@ -1,11 +1,11 @@
 import { Suspense, createContext, useContext, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { useHotkeys } from "react-hotkeys-hook";
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { NetworkStatus } from "@/components/feedback/network-status";
 import { WorkspaceLoadingFallback } from "@/components/feedback/workspace-loading-fallback";
-import { ProjectSearchModal } from "@/features/projects/components/project-search-modal";
+import { AppCommandsProvider } from "@/features/commands/app-commands";
+import { AppBadge } from "@/features/pwa/app-badge";
 import { RealtimeProvider } from "@/features/realtime/realtime-provider";
 import { Sidebar } from "./sidebar";
 import { useTranslation } from "react-i18next";
@@ -20,11 +20,9 @@ const readWidth = () => {
 
 export const AppShell = () => {
     const location = useLocation();
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const [width, setWidth] = useState(readWidth);
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [searchOpen, setSearchOpen] = useState(false);
     const [resizing, setResizing] = useState(false);
     useEffect(() => {
         setMobileOpen(false);
@@ -32,19 +30,10 @@ export const AppShell = () => {
     useEffect(() => {
         localStorage.setItem("rinia-sidebar-width", String(width));
     }, [width]);
-    useHotkeys(
-        "mod+k",
-        (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setSearchOpen(true);
-        },
-        { enableOnFormTags: true, enableOnContentEditable: true, eventListenerOptions: { capture: true } },
-    );
-    useHotkeys("g>s", () => navigate("/settings/profile"), { enableOnFormTags: false, enableOnContentEditable: false });
     const openNavigation = () => setMobileOpen(true);
     return (
         <NavigationContext.Provider value={{ openNavigation }}>
+            <AppCommandsProvider>
             {/* While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes. */}
             <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-canvas text-primary ${resizing ? "cursor-ew-resize select-none" : ""}`}>
                 <aside
@@ -54,7 +43,7 @@ export const AppShell = () => {
                 >
                     <div className="flex h-full min-h-0 flex-col overflow-hidden" style={{ width }}>
                         <div className="min-h-0 flex-1">
-                            <Sidebar onSearch={() => setSearchOpen(true)} />
+                            <Sidebar />
                         </div>
                     </div>
                 </aside>
@@ -80,14 +69,15 @@ export const AppShell = () => {
                         <Dialog.Backdrop className="fixed inset-0 z-40 bg-backdrop transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
                         <Dialog.Popup className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
                             <Dialog.Title className="sr-only">{t("nav.navigation")}</Dialog.Title>
-                            <Sidebar onSearch={() => { setSearchOpen(true); setMobileOpen(false); }} onNavigate={() => setMobileOpen(false)} />
+                            <Sidebar onNavigate={() => setMobileOpen(false)} />
                         </Dialog.Popup>
                     </Dialog.Portal>
                 </Dialog.Root>
-                {searchOpen && <ProjectSearchModal onClose={() => setSearchOpen(false)} />}
                 <NetworkStatus />
                 <RealtimeProvider />
+                <AppBadge />
             </div>
+            </AppCommandsProvider>
         </NavigationContext.Provider>
     );
 };

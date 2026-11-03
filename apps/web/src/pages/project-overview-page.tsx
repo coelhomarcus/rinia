@@ -13,6 +13,7 @@ import { useCreateDocument, useDocuments } from "@/features/documents/hooks/use-
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
 import { ProjectIconControl } from "@/features/projects/components/project-appearance-controls";
 import { ProjectHomeTabs } from "@/features/projects/components/project-home-tabs";
+import { ProjectActivity } from "@/features/projects/components/overview/project-activity";
 import { ProjectIcon, projectIconColor } from "@/features/projects/components/project-icon";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { useProject } from "@/features/projects/hooks/use-project";
@@ -61,6 +62,8 @@ export const ProjectOverviewPage = () => {
                                 <h1 className="min-w-0 truncate text-[26px] leading-8 font-semibold tracking-tight text-primary">{project.name}</h1>
                             </div>
                             <ProjectDescription projectId={projectId} description={project.description ?? ""} editable={isProjectOwner} />
+
+                            <ProjectActivity projectId={projectId} />
 
                             <section className="mt-12" aria-labelledby="project-resources">
                                 <div className="flex items-center justify-between gap-3">

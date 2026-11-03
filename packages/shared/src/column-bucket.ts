@@ -16,3 +16,9 @@ export function columnBucket(name: string): ColumnBucket {
 export function defaultIssueColumn<T extends { name: string }>(columns: T[] | undefined): T | undefined {
     return columns?.find((column) => columnBucket(column.name) === "active") ?? columns?.[0];
 }
+
+/** A closed state that means the work was done, unlike cancelled or duplicate. Moving an issue here completes it. */
+export function isDoneColumn(name: string): boolean {
+    const normalized = name.toLowerCase();
+    return normalized.includes("done") || normalized.includes("conclu");
+}

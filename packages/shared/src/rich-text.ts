@@ -453,3 +453,24 @@ function blocksMarkdown(nodes: RichTextNode[] = []): string {
 export function tiptapToMarkdown(document: { content?: unknown[] } | null | undefined): string {
     return blocksMarkdown((document?.content ?? []) as RichTextNode[]);
 }
+
+/**
+ * Repairs content saved by the first Markdown import, which had no tables: a table became one paragraph whose text
+ * kept the newlines and pipes. Each top-level paragraph with newlines in its text is read back as Markdown, and if
+ * that Markdown holds a table, the paragraph is replaced by what the current import makes of it. Returns null when
+ * nothing changed, so running it twice does nothing the second time.
+ */
+export function repairLegacyMarkdownTables(document: TiptapDocument, profile: MarkdownProfile): TiptapDocument | null {
+    const blocks = (document.content ?? []) as RichTextNode[];
+    let changed = false;
+    const content = blocks.flatMap((block) => {
+        if (block.type !== "paragraph" || !block.content?.some((node) => node.type === "text" && node.text?.includes("\n"))) return [block];
+        const source = inlineMarkdown(block.content);
+        if (!source.split("\n").some((line, index, lines) => isMarkdownTable(`${line}\n${lines[index + 1] ?? ""}`))) return [block];
+        const repaired = (markdownToTiptap(source, profile).content ?? []) as RichTextNode[];
+        if (!repaired.some((node) => node.type === "table")) return [block];
+        changed = true;
+        return repaired;
+    });
+    return changed ? { ...document, content } : null;
+}

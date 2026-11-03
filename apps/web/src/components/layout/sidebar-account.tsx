@@ -1,5 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, MonitorDown, Settings } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -7,6 +7,7 @@ import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { cx } from "@/utils/cx";
 import { AUTH_QUERY_KEY, logout } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useInstallPrompt } from "@/features/pwa/install-prompt";
 import { clearDocumentDrafts } from "@/features/documents/sessions";
 import { issueDescriptionDrafts } from "@/features/issues/lib/issue-description-drafts";
 import { useTranslation } from "react-i18next";
@@ -16,6 +17,7 @@ export function SidebarAccount({ variant = "icon" }: { variant?: "icon" | "row" 
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const installPrompt = useInstallPrompt();
     const mutation = useMutation({
         mutationFn: logout,
         onSuccess: async () => {
@@ -75,6 +77,12 @@ export function SidebarAccount({ variant = "icon" }: { variant?: "icon" | "row" 
                             <span className="flex-1">{t("nav.settings")}</span>
                             <span className="text-[11px] text-placeholder">G S</span>
                         </Menu.Item>
+                        {installPrompt.available && (
+                            <Menu.Item className={item} onClick={() => void installPrompt.install()}>
+                                <MonitorDown className="size-4" />
+                                {t("pwa.installApp")}
+                            </Menu.Item>
+                        )}
                         <Menu.Separator className="my-1 border-t border-subtle" />
                         <Menu.Item className={item} disabled={mutation.isPending} onClick={() => mutation.mutate()}>
                             <LogOut className="size-4" />

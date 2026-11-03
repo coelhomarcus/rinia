@@ -72,6 +72,7 @@ import { EMPTY_TIPTAP_DOCUMENT, RichTextEditor, type MentionItem } from "./rich-
 import { TimelineActivity, type ActivityEntry, type TimelineLookups } from "./timeline-activity";
 import { useTranslation } from "react-i18next";
 import { translateStatusName } from "@/i18n/status-label";
+import { useIssueMenuRequests } from "@/features/commands/issue-menu-requests";
 
 const propertyButton =
     "flex h-8 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium text-secondary outline-none transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover disabled:opacity-60 data-[popup-open]:bg-layer-transparent-hover";
@@ -128,6 +129,8 @@ export const IssueView = () => {
     useHotkeys("e", () => setOpenMenu("estimate"), propertyHotkey);
     useHotkeys("l", () => setOpenMenu("label"), propertyHotkey);
     useHotkeys("shift+d", () => setOpenMenu("due"), propertyHotkey);
+    // The command palette opens the same menus.
+    useIssueMenuRequests((menu) => setOpenMenu(menu));
 
     // Keep the URL canonical: an identifier from before a key change, a missing or stale title slug,
     // or a lowercase identifier all become `/issue/KEY-12/current-title`.

@@ -68,8 +68,20 @@ app.use("/api", (_req, res) => {
 // Resolved from cwd, not __dirname (see the note in db/migrate.ts) — the Dockerfile
 // sets WORKDIR=/app/apps/api, so this points to apps/web/dist in both development and production.
 const webDist = path.resolve(process.cwd(), "../web/dist");
-app.use(express.static(webDist));
+app.use(
+    express.static(webDist, {
+        setHeaders: (res, filePath) => {
+            const file = path.relative(webDist, filePath).split(path.sep).join("/");
+            // Vite names these after their content, so they never change and can be kept for a year.
+            if (file.startsWith("assets/")) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            // The page, the manifest and the service worker must be checked on every visit, or updates never arrive.
+            else if (file === "index.html" || file === "sw.js" || file === "site.webmanifest") res.setHeader("Cache-Control", "no-cache");
+            if (file === "site.webmanifest") res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
+        },
+    }),
+);
 app.get("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.join(webDist, "index.html"));
 });
 

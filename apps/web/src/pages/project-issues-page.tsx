@@ -7,6 +7,7 @@ import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
 import { Layers, Plus, Users, X } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { urls } from "@/lib/urls";
+import { listStep } from "@/features/commands/shortcuts";
 import { cx } from "@/utils/cx";
 import { useRouteProject } from "@/features/projects/route-project";
 import { Button } from "@/components/base/buttons/button";
@@ -188,9 +189,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             if (orderedIssues.length === 0 || reorder.activeIssue) return;
 
             const currentIndex = orderedIssues.findIndex((issue) => issue.id === selectedIssueId);
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            const direction = listStep(event);
+            if (direction) {
                 event.preventDefault();
-                const direction = event.key === "ArrowDown" ? 1 : -1;
                 const nextIndex = currentIndex < 0 ? (direction === 1 ? 0 : orderedIssues.length - 1) : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
                 const nextIssue = orderedIssues[nextIndex];
                 setSelectedIssueId(nextIssue.id);

@@ -29,6 +29,7 @@ import { useProjects } from "@/features/projects/hooks/use-projects";
 import { useRealtimeChannels } from "@/features/realtime/use-realtime";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { listStep } from "@/features/commands/shortcuts";
 
 type OrderBy = Exclude<IssueOrder, "position">;
 type GroupBy = "status" | "project" | "none";
@@ -105,9 +106,9 @@ export const MyIssuesPage = () => {
             const target = event.target as HTMLElement | null;
             if (target?.matches("input, textarea, select, [contenteditable='true']") || orderedIssues.length === 0) return;
             const currentIndex = orderedIssues.findIndex((issue) => issue.id === selectedIssueId);
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            const direction = listStep(event);
+            if (direction) {
                 event.preventDefault();
-                const direction = event.key === "ArrowDown" ? 1 : -1;
                 const nextIndex = currentIndex < 0 ? (direction === 1 ? 0 : orderedIssues.length - 1) : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
                 const next = orderedIssues[nextIndex];
                 setSelectedIssueId(next.id);

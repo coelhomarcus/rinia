@@ -11,6 +11,9 @@ import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { LanguageProvider } from "@/i18n/language-provider";
 import { AppRoutes } from "@/routes";
+import { ServiceWorkerUpdates } from "@/features/pwa/service-worker-updates";
+// Imported first thing so the browser's one-time install offer is not missed.
+import "@/features/pwa/install-prompt";
 import "@/styles/globals.css";
 
 // Development-only element picker for agents. Vite replaces `import.meta.env.DEV` with `false` in builds, so production never ships it.
@@ -28,6 +31,7 @@ createRoot(document.getElementById("root")!).render(
                             <BrowserRouter>
                                 <RouteProvider>
                                     <ToastProvider>
+                                        <ServiceWorkerUpdates />
                                         <ContextMenuProvider>
                                             <AppRoutes />
                                         </ContextMenuProvider>

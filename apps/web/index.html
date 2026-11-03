@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
     <head>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#090909" />
         <script>
             (function () {
                 var key = "rinia-theme";
@@ -17,15 +19,41 @@
                 root.setAttribute("data-theme-preference", preference);
                 root.style.colorScheme = resolved.indexOf("dark") !== -1 ? "dark" : "light";
                 root.classList.toggle("dark-mode", resolved.indexOf("dark") !== -1);
+                // The browser and installed-app title bar take this colour; applyTheme keeps it in sync afterwards.
+                var themeColor = document.querySelector('meta[name="theme-color"]');
+                if (themeColor) themeColor.setAttribute("content", resolved.indexOf("dark") !== -1 ? "#090909" : "#f4f4f5");
+                try {
+                    var locale = localStorage.getItem("rinia.locale.anonymous");
+                    if (locale === "en" || locale === "pt-BR") root.lang = locale;
+                } catch (e) {}
             })();
         </script>
+        <meta name="description" content="Projetos, tarefas e documentos da sua equipe, no mesmo lugar." />
+        <meta name="application-name" content="Rinia" />
+
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content="Rinia" />
-        <meta name="theme-color" content="#0f1011" />
+
+        <!-- Installed on iOS: opens full screen with its own title, under a black status bar. -->
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="Rinia" />
+
+        <!-- Link previews. -->
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Rinia" />
+        <meta property="og:title" content="Rinia" />
+        <meta property="og:description" content="Projetos, tarefas e documentos da sua equipe, no mesmo lugar." />
+        <meta property="og:image" content="/pwa/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Rinia" />
+        <meta name="twitter:description" content="Projetos, tarefas e documentos da sua equipe, no mesmo lugar." />
+        <meta name="twitter:image" content="/pwa/og-image.png" />
 
         <title>Rinia</title>
     </head>

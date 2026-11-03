@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     type CollisionDetection,
     DndContext,
@@ -34,6 +34,7 @@ import { Column } from "./column";
 import { columnBucket } from "../column-bucket";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
+import { isTypingTarget } from "@/features/commands/shortcuts";
 import { IssueCardContent } from "./issue-card";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/feedback/toaster";
@@ -88,6 +89,27 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
         useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
     );
+
+    // J and K move the focus through the cards, column by column; Enter opens the focused card and X selects it.
+    const boardRef = useRef<HTMLDivElement>(null);
+    const dragging = activeIssue !== null;
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            const key = event.key.toLowerCase();
+            if ((key !== "j" && key !== "k") || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
+            if (dragging || isTypingTarget(event.target) || !boardRef.current) return;
+            const cards = [...boardRef.current.querySelectorAll<HTMLElement>("[data-issue-id] > [data-issue-context]")];
+            if (cards.length === 0) return;
+            event.preventDefault();
+            const step = key === "j" ? 1 : -1;
+            const current = cards.findIndex((card) => card.contains(document.activeElement));
+            const next = cards[current < 0 ? (step === 1 ? 0 : cards.length - 1) : Math.min(Math.max(current + step, 0), cards.length - 1)]!;
+            next.focus();
+            next.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [dragging]);
 
     const categoriesById = useMemo(() => new Map((categories ?? []).map((category) => [category.id, category])), [categories]);
     const membersById = useMemo(() => new Map((members ?? []).map((member) => [member.id, member])), [members]);
@@ -254,7 +276,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
             >
-                <div className="flex h-full min-w-0 gap-3">
+                <div ref={boardRef} className="flex h-full min-w-0 gap-3">
                 <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
                     {shownColumns.map((column) => (
                         <Column
