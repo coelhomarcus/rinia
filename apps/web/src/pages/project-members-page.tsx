@@ -10,7 +10,6 @@ import { ErrorMessage } from "@/components/feedback/error-message";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
-import { ProjectHomeTabs } from "@/features/projects/components/project-home-tabs";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { useProjectMembers, useRemoveProjectMember } from "@/features/projects/hooks/use-project-members";
 import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
@@ -19,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useRouteProject } from "@/features/projects/route-project";
 
 export const ProjectMembersPage = () => {
-    const { projectId, projectKey } = useRouteProject();
+    const { projectId } = useRouteProject();
     const { t, i18n } = useTranslation();
     const { data: members, isLoading, isError } = useProjectMembers(projectId);
     const { isProjectOwner } = useProjectPermissions(projectId);
@@ -31,11 +30,9 @@ export const ProjectMembersPage = () => {
     return (
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <ProjectWorkspaceHeader projectId={projectId} activeView="members" />
-            <ProjectHomeTabs
-                projectKey={projectKey}
-                current="members"
-                actions={
-                    isProjectOwner && (
+            <main className="min-h-0 flex-1 overflow-y-auto px-3 pt-3">
+                {isProjectOwner && (
+                    <div className="mb-2 flex justify-end px-3">
                         <ModalDialog
                             trigger={<Button size="sm" color="secondary" iconLeading={Plus}>{t("settings.addMember")}</Button>}
                             title={t("settings.addMember")}
@@ -43,10 +40,8 @@ export const ProjectMembersPage = () => {
                         >
                             {({ close }) => <AddMemberForm projectId={projectId} onClose={close} />}
                         </ModalDialog>
-                    )
-                }
-            />
-            <main className="min-h-0 flex-1 overflow-y-auto px-3">
+                    </div>
+                )}
                 {removeMember.isError && (
                     <div className="mb-3">
                         <Alert tone="error">{removeMember.error instanceof ApiError ? removeMember.error.message : t("settings.couldNotRemoveMember")}</Alert>

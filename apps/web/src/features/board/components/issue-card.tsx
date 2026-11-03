@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useLocation } from "react-router";
@@ -87,12 +87,36 @@ export const IssueCardContent = ({ issue, status, statuses = [], categories = []
     </>;
 };
 
-interface IssueCardProps extends IssueCardContentProps {
+interface IssueCardProps extends Omit<IssueCardContentProps, "onUpdate"> {
     projectId: string;
+    /** Stable across renders (the board keeps one), so the card's content can skip re-rendering while dragging. */
+    onUpdateIssue: (identifier: string, input: UpdateIssueInput) => void;
     onClick: () => void;
 }
 
-export const IssueCard = ({ issue, status, statuses, categories, assignee, people, labels, onUpdate, closed, projectId, onClick }: IssueCardProps) => {
+const sameLabels = (a: IssueCardContentProps["categories"] = [], b: IssueCardContentProps["categories"] = []) =>
+    a.length === b.length && a.every((label, index) => label.id === b[index]?.id && label.name === b[index]?.name && label.color === b[index]?.color);
+
+/**
+ * The card's content, which only changes with its issue and the lookups it shows. While a card is dragged, dnd-kit
+ * re-renders every sortable card on the board many times a second; this keeps those renders to the thin wrapper.
+ */
+const CardContent = memo(
+    IssueCardContent,
+    (prev, next) =>
+        prev.issue === next.issue &&
+        prev.status === next.status &&
+        prev.statuses === next.statuses &&
+        prev.assignee === next.assignee &&
+        prev.people === next.people &&
+        prev.labels === next.labels &&
+        prev.closed === next.closed &&
+        prev.onUpdate === next.onUpdate &&
+        sameLabels(prev.categories, next.categories),
+);
+
+export const IssueCard = ({ issue, status, statuses, categories, assignee, people, labels, onUpdateIssue, closed, projectId, onClick }: IssueCardProps) => {
+    const onUpdate = useCallback((input: UpdateIssueInput) => onUpdateIssue(issue.identifier, input), [issue.identifier, onUpdateIssue]);
     const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id });
 
     const location = useLocation();
@@ -140,7 +164,7 @@ export const IssueCard = ({ issue, status, statuses, categories, assignee, peopl
                     checked && "border-accent-strong bg-accent-subtle/40",
                 )}
             >
-                <IssueCardContent issue={issue} status={status} statuses={statuses} categories={categories} assignee={assignee} people={people} labels={labels} onUpdate={onUpdate} closed={closed} />
+                <CardContent issue={issue} status={status} statuses={statuses} categories={categories} assignee={assignee} people={people} labels={labels} onUpdate={onUpdate} closed={closed} />
             </div>
             <ContextMenuButton
                 entity={{ type: "issue", projectId, identifier: issue.identifier, title: issue.title }}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     type CollisionDetection,
     DndContext,
@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useNavigate } from "react-router";
+import type { UpdateIssueInput } from "@rinia/shared";
 import { useRouteProject } from "@/features/projects/route-project";
 import { urls } from "@/lib/urls";
 import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
@@ -51,6 +52,9 @@ const collisionDetection: CollisionDetection = (args) => {
 
 /** Columns change size as issues enter and leave during a drag, so their rectangles must be measured continuously. */
 const measuring = { droppable: { strategy: MeasuringStrategy.Always } };
+const NO_ISSUES: Issue[] = [];
+/** One empty list for every lookup still loading, so memoized columns see the same array. */
+const NONE: never[] = [];
 
 export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all", hidden, hideColumn, showColumn }: {
     projectId: string;
@@ -111,6 +115,11 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [dragging]);
 
+    // Kept stable so the cards' content is not re-rendered on every frame of a drag (see IssueCard).
+    const { mutate: mutateIssue } = updateIssue;
+    const onUpdateIssue = useCallback((identifier: string, input: UpdateIssueInput) => mutateIssue({ identifier, input }), [mutateIssue]);
+    const onOpenIssue = useCallback((identifier: string) => navigate(urls.issue(identifier)), [navigate]);
+
     const categoriesById = useMemo(() => new Map((categories ?? []).map((category) => [category.id, category])), [categories]);
     const membersById = useMemo(() => new Map((members ?? []).map((member) => [member.id, member])), [members]);
 
@@ -123,13 +132,33 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
 
     useRegisterVisibleIssues(useMemo(() => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)), [board, shownColumns]));
 
-    function hideColumnWithUndo(columnId: string) {
+    // The column callbacks read the latest props through a ref, so they stay stable and memoized columns can skip renders.
+    const latest = useRef({ hideColumn, showColumn, showToast, t, projectKey, navigate });
+    latest.current = { hideColumn, showColumn, showToast, t, projectKey, navigate };
+    const hideColumnWithUndo = useCallback((columnId: string) => {
+        const { hideColumn, showColumn, showToast, t } = latest.current;
         hideColumn(columnId);
         showToast({
             title: t("projects.columnHidden"),
             action: { label: t("issue.undo"), onClick: () => showColumn(columnId) },
         });
-    }
+    }, []);
+    const manageStates = useCallback(() => latest.current.navigate(urls.projectSettings(latest.current.projectKey, "states")), []);
+
+    // One list per column, reused while its cards are unchanged: a card moving between two columns re-renders those
+    // two, not the whole board.
+    const columnCache = useRef(new Map<string, Issue[]>());
+    const issuesByColumn = useMemo(() => {
+        const grouped = new Map<string, Issue[]>();
+        for (const issue of board) grouped.set(issue.columnId, [...(grouped.get(issue.columnId) ?? []), issue]);
+        const next = new Map<string, Issue[]>();
+        for (const [columnId, list] of grouped) {
+            const previous = columnCache.current.get(columnId);
+            next.set(columnId, previous && previous.length === list.length && previous.every((issue, index) => issue === list[index]) ? previous : list);
+        }
+        columnCache.current = next;
+        return next;
+    }, [board]);
 
     /** Resolves the target column: `over` is the column itself (card area) or a card inside it. */
     function resolveColumnId(overId: string, list: Issue[]): string | undefined {
@@ -282,18 +311,18 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                         <Column
                             key={column.id}
                             column={column}
-                            statuses={columns ?? []}
-                            issues={board.filter((issue) => issue.columnId === column.id)}
+                            statuses={columns ?? NONE}
+                            issues={issuesByColumn.get(column.id) ?? NO_ISSUES}
                             projectId={projectId}
                             categoriesById={categoriesById}
                             membersById={membersById}
-                            people={members ?? []}
-                            labels={categories ?? []}
-                            onUpdateIssue={(identifier, input) => updateIssue.mutate({ identifier, input })}
-                            onOpenIssue={(identifier) => navigate(urls.issue(identifier))}
-                            onCreateIssue={(columnId) => setCreateColumnId(columnId)}
+                            people={members ?? NONE}
+                            labels={categories ?? NONE}
+                            onUpdateIssue={onUpdateIssue}
+                            onOpenIssue={onOpenIssue}
+                            onCreateIssue={setCreateColumnId}
                             onHide={hideColumnWithUndo}
-                            onManageStates={() => navigate(urls.projectSettings(projectKey, "states"))}
+                            onManageStates={manageStates}
                         />
                     ))}
                 </div>

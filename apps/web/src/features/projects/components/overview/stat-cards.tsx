@@ -8,7 +8,7 @@ export function StatCards({ stats }: { stats: ProjectStats }) {
     const number = new Intl.NumberFormat(i18n.language);
     const cards = [
         { id: "open", label: t("projectStats.openIssues"), value: number.format(stats.openIssues), muted: false },
-        { id: "completed", label: t("projectStats.completedRecent", { days: stats.days }), value: number.format(stats.completedInPeriod), muted: false },
+        { id: "completed", label: t("projectStats.completedSince"), value: number.format(stats.completedInPeriod), muted: false },
         { id: "longest", label: t("projectStats.longestStreak"), value: t("projectStats.streakDays", { count: stats.longestStreak }), muted: false },
         { id: "current", label: t("projectStats.currentStreak"), value: t("projectStats.streakDays", { count: stats.currentStreak }), muted: stats.currentStreak === 0 },
     ];

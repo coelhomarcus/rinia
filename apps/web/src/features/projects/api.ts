@@ -80,8 +80,8 @@ export function removeProjectMember(projectId: string, userId: string): Promise<
     return apiClient.delete<void>(`/projects/${projectId}/members/${userId}`);
 }
 
-/** The overview's activity numbers, with days counted in the viewer's time zone. */
-export function getProjectStats(projectId: string, days: number, timeZone: string): Promise<ProjectStats> {
-    const query = new URLSearchParams({ days: String(days), tz: timeZone });
+/** The overview's activity numbers since the project was created, with days counted in the viewer's time zone. */
+export function getProjectStats(projectId: string, timeZone: string): Promise<ProjectStats> {
+    const query = new URLSearchParams({ tz: timeZone });
     return apiClient.get<{ stats: ProjectStats }>(`/projects/${projectId}/stats?${query}`).then((res) => res.stats);
 }

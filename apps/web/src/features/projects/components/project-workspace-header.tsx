@@ -15,6 +15,7 @@ import { PresenceAvatars } from "@/features/realtime/components/presence-avatars
 import { ProjectIcon } from "./project-icon";
 import { useTranslation } from "react-i18next";
 import { urls } from "@/lib/urls";
+import { repositoryHost } from "@/features/projects/lib/repository";
 
 export function ProjectWorkspaceHeader({
     projectId,
@@ -83,7 +84,7 @@ export function ProjectWorkspaceHeader({
                 {viewers && <PresenceAvatars viewers={viewers} />}
                 {actions}
                 {!actions && project?.repositoryUrl && (
-                    <ButtonUtility icon={AppIcons.ExternalLink} color="tertiary" tooltip={t("projects.openRepository")} href={project.repositoryUrl} target="_blank" rel="noopener noreferrer" />
+                    <RepositoryButton url={project.repositoryUrl} />
                 )}
                 {!actions && isProjectOwner && project && (
                     <Link to={urls.projectSettings(project.issueKey, "general")} aria-label={t("nav.projectSettings")} className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover">
@@ -93,4 +94,11 @@ export function ProjectWorkspaceHeader({
             </div>
         </header>
     );
+}
+
+/** Opens the project's repository, with its host's mark (GitHub, GitLab) or a generic arrow for anything else. */
+function RepositoryButton({ url }: { url: string }) {
+    const { t } = useTranslation();
+    const host = repositoryHost(url);
+    return <ButtonUtility icon={host.icon} color="tertiary" tooltip={host.name ? t("projects.openRepositoryOn", { host: host.name }) : t("projects.openRepository")} href={url} target="_blank" rel="noopener noreferrer" />;
 }

@@ -19,7 +19,6 @@ import { DocumentProvider, type DocumentProviderState } from "@/features/documen
 import { DocumentEditor } from "@/features/documents/components/document-editor";
 import { documentKey, documentsKey, useCreateDocument, useDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { getDocumentSession } from "@/features/documents/sessions";
-import { ProjectHomeTabs } from "@/features/projects/components/project-home-tabs";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { sourceLabel } from "@/features/board/components/issue-property-icons";
@@ -53,8 +52,7 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
     return (
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <ProjectWorkspaceHeader projectId={projectId} activeView="documents" hideSection favorite={null} />
-            <ProjectHomeTabs projectKey={projectKey} current="documents" />
-            <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 lg:px-5">
+            <main className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-3 lg:px-5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="w-64 max-w-full">
                         <Input size="sm" aria-label={t("documents.searchPages")} icon={Search} placeholder={`${t("documents.searchPages")}…`} value={search} onChange={setSearch} />

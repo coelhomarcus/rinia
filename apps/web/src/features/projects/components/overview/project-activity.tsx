@@ -1,25 +1,35 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { useProjectStats } from "../../hooks/use-project-stats";
+import { formatDay } from "./chart-utils";
 import { CompletedAreaChart } from "./completed-area-chart";
+import { bucketPeriod } from "./period-buckets";
+import { PeoplePerformance } from "./people-performance";
+import { useProjectMembers } from "../../hooks/use-project-members";
 import { ContributionHeatmap } from "./contribution-heatmap";
 import { CreatedBarChart } from "./created-bar-chart";
 import { StatCards } from "./stat-cards";
 
-/** The overview's activity: the headline numbers, the year's contribution map, and the last 30 days as charts. */
+/** The overview's activity since the project was created: headline numbers, the year's map, charts and each person's work. */
 export function ProjectActivity({ projectId }: { projectId: string }) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { data: stats, isLoading, isError } = useProjectStats(projectId);
+    const { data: members } = useProjectMembers(projectId);
+    const series = useMemo(() => (stats ? bucketPeriod(stats.period) : null), [stats]);
 
     return (
         <section className="mt-12" aria-labelledby="project-activity">
-            <h2 id="project-activity" className="text-[17px] font-medium text-primary">
-                {t("projectStats.title")}
-            </h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h2 id="project-activity" className="text-[17px] font-medium text-primary">
+                    {t("projectStats.title")}
+                </h2>
+                {stats && <p className="text-xs text-tertiary">{t("projectStats.since", { date: formatDay(stats.periodStart, i18n.language, { day: "numeric", month: "short", year: "numeric" }) })}</p>}
+            </div>
             {isLoading ? (
                 <ActivitySkeleton />
-            ) : isError || !stats ? (
+            ) : isError || !stats || !series ? (
                 <div className="mt-3">
                     <ErrorMessage message={t("projectStats.loadFailed")} />
                 </div>
@@ -27,8 +37,9 @@ export function ProjectActivity({ projectId }: { projectId: string }) {
                 <div className="mt-4 flex flex-col gap-10">
                     <StatCards stats={stats} />
                     <ContributionHeatmap activity={stats.activity} />
-                    <CompletedAreaChart period={stats.period} />
-                    <CreatedBarChart period={stats.period} />
+                    <CompletedAreaChart {...series} />
+                    <CreatedBarChart {...series} />
+                    <PeoplePerformance people={stats.people} members={members} />
                 </div>
             )}
         </section>

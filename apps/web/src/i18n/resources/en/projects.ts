@@ -8,7 +8,7 @@ const projects = {
         mainDocument: "Keep the project's main document in one place.", createProject: "Create project", projectName: "Project name", projectId: "Project ID",
         projectIdHint: "Used as the prefix for issue identifiers.", projectIssueKeyHint: "2–8 letters or numbers, used in issue identifiers. Leave blank to generate automatically.", description: "Description", describeProject: "Describe your project...", repository: "Repository URL", icon: "Project icon",
         chooseIcon: "Choose project icon", chooseAnIcon: "Choose an icon", loadingIcons: "Loading icons…", deleteDescription: "All issues, documents, states, labels, and memberships in {{name}} will be permanently deleted. This cannot be undone.", enterProjectName: "Enter the project name", couldNotDelete: "Could not delete the project. Try again.",
-        projectCreated: "Project created.", projectKeyInUse: "Project ID is already in use.", deleteProject: "Delete project", openRepository: "Open repository", couldNotCreate: "Could not create the project.",
+        projectCreated: "Project created.", projectKeyInUse: "Project ID is already in use.", deleteProject: "Delete project", openRepository: "Open repository", openRepositoryOn: "Open on {{host}}", repositoryLink: "Repository", couldNotCreate: "Could not create the project.",
         noDescription: "No description", updatedAt: "Updated {{date}}",
         homeResources: "Project resources", homeResourcesHint: "Add documents to keep what the team needs to know in one place.", viewMembers: "View members",
         addDescription: "Add a description…", goTo: "Go to",
