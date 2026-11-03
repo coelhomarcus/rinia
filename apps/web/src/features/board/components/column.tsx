@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { EyeOff, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -41,7 +41,8 @@ interface ColumnProps {
     onManageStates: () => void;
 }
 
-export const Column = ({ column, statuses, issues, projectId, categoriesById, membersById, people, labels, onUpdateIssue, onOpenIssue, onCreateIssue, onHide, onManageStates }: ColumnProps) => {
+/** Memoized: while a card is dragged, only the columns it leaves and enters get new props. */
+export const Column = memo(function Column({ column, statuses, issues, projectId, categoriesById, membersById, people, labels, onUpdateIssue, onOpenIssue, onCreateIssue, onHide, onManageStates }: ColumnProps) {
     const { t } = useTranslation();
     const { setNodeRef: setDropRef, isOver } = useDroppable({ id: column.id });
 
@@ -174,7 +175,7 @@ export const Column = ({ column, statuses, issues, projectId, categoriesById, me
                             people={people}
                             labels={labels}
                             closed={columnBucket(column.name) === "closed"}
-                            onUpdate={(input) => onUpdateIssue(issue.identifier, input)}
+                            onUpdateIssue={onUpdateIssue}
                             onClick={() => onOpenIssue(issue.identifier)}
                         />
                     ))}
@@ -187,4 +188,4 @@ export const Column = ({ column, statuses, issues, projectId, categoriesById, me
             </div>
         </div>
     );
-};
+});

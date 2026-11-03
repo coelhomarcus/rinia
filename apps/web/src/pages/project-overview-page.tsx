@@ -3,6 +3,7 @@ import { AddOutline as Plus } from "@makeplane/propel/icons";
 import { ChevronRight, FileText } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { urls } from "@/lib/urls";
+import { repositoryHost } from "@/features/projects/lib/repository";
 import { useRouteProject } from "@/features/projects/route-project";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Skeleton } from "@/components/base/feedback/skeleton";
@@ -12,7 +13,6 @@ import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { useCreateDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
 import { ProjectIconControl } from "@/features/projects/components/project-appearance-controls";
-import { ProjectHomeTabs } from "@/features/projects/components/project-home-tabs";
 import { ProjectActivity } from "@/features/projects/components/overview/project-activity";
 import { ProjectIcon, projectIconColor } from "@/features/projects/components/project-icon";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
@@ -42,7 +42,6 @@ export const ProjectOverviewPage = () => {
     return (
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <ProjectWorkspaceHeader projectId={projectId} activeView="overview" />
-            <ProjectHomeTabs projectKey={projectKey} current="overview" />
             <main className="min-h-0 w-full flex-1 overflow-y-auto">
                 {isLoading ? (
                     <OverviewSkeleton />
@@ -146,6 +145,8 @@ export const ProjectOverviewPage = () => {
                                     {isProjectOwner && <GoTo to={urls.projectSettings(projectKey, "general")} icon={AppIcons.Settings} label={t("nav.projectSettings")} />}
                                     <GoTo to={urls.issues(projectKey)} icon={AppIcons.Issues} label={t("nav.issues")} />
                                     <GoTo to={urls.documents(projectKey)} icon={AppIcons.Documents} label={t("nav.documents")} />
+                                    <GoTo to={urls.members(projectKey)} icon={AppIcons.MyIssues} label={t("settings.members")} />
+                                    {project.repositoryUrl && <RepositoryLink url={project.repositoryUrl} />}
                                 </nav>
                             </section>
                         </aside>
@@ -216,5 +217,19 @@ function GoTo({ to, icon: Icon, label }: { to: string; icon: typeof AppIcons.Iss
             <Icon className="size-4 text-tertiary" />
             {label}
         </Link>
+    );
+}
+
+/** The repository, named after its host (GitHub, GitLab…) with that host's mark, opening in a new tab. */
+function RepositoryLink({ url }: { url: string }) {
+    const { t } = useTranslation();
+    const host = repositoryHost(url);
+    const Icon = host.icon;
+    return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="flex h-8 items-center gap-2.5 rounded-md px-1.5 text-[13px] text-secondary hover:bg-layer-transparent-hover hover:text-primary">
+            <Icon className="size-4 text-tertiary" />
+            <span className="min-w-0 flex-1 truncate">{host.name ?? t("projects.repositoryLink")}</span>
+            <AppIcons.ExternalLink className="size-3.5 shrink-0 text-placeholder" aria-hidden="true" />
+        </a>
     );
 }

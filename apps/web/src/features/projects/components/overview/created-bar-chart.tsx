@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from "react";
-import type { ProjectPeriodDay } from "@rinia/shared";
+import type { Granularity, PeriodBucket } from "./period-buckets";
 import { useTranslation } from "react-i18next";
-import { ChartHeader, ChartTable, ChartTooltip, formatDay, niceMax, useElementWidth } from "./chart-utils";
+import { axisStartLabel, bucketLabel, ChartHeader, ChartTable, ChartTooltip, niceMax, useElementWidth } from "./chart-utils";
 
 const HEIGHT = 150;
 const PAD = { top: 10, right: 10, bottom: 22, left: 30 };
@@ -19,30 +19,33 @@ export function roundedTopBar(x: number, y: number, width: number, height: numbe
     return `M${x},${y + height}V${y + r}Q${x},${y} ${x + r},${y}H${x + width - r}Q${x + width},${y} ${x + width},${y + r}V${y + height}Z`;
 }
 
-/** Issues created per day over the period, stacked by where they were created: in the app, or through MCP. */
-export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
+const PER = { day: "projectStats.perDay", week: "projectStats.perWeek", month: "projectStats.perMonth" } as const;
+
+/** Issues created since the project began, per day, week or month, stacked by where: in the app, or through MCP. */
+export function CreatedBarChart({ buckets, granularity }: { buckets: PeriodBucket[]; granularity: Granularity }) {
     const { t, i18n } = useTranslation();
     const [ref, width] = useElementWidth<HTMLDivElement>();
     const [hover, setHover] = useState<number | null>(null);
     const number = new Intl.NumberFormat(i18n.language);
     const labels = { createdWeb: t("projectStats.seriesWeb"), createdMcp: t("projectStats.seriesMcp") };
+    const title = `${t("projectStats.createdTitle")} · ${t(PER[granularity])}`;
 
     const totals = { createdWeb: 0, createdMcp: 0 };
-    for (const day of period) {
+    for (const day of buckets) {
         totals.createdWeb += day.createdWeb;
         totals.createdMcp += day.createdMcp;
     }
     const totalCreated = totals.createdWeb + totals.createdMcp;
-    const top = niceMax(Math.max(0, ...period.map((day) => day.createdWeb + day.createdMcp)));
+    const top = niceMax(Math.max(0, ...buckets.map((day) => day.createdWeb + day.createdMcp)));
     const plotWidth = Math.max(0, width - PAD.left - PAD.right);
     const plotHeight = HEIGHT - PAD.top - PAD.bottom;
     const baseline = PAD.top + plotHeight;
-    const slot = period.length ? plotWidth / period.length : 0;
+    const slot = buckets.length ? plotWidth / buckets.length : 0;
     // Thin bars: never wider than 24px, and always at least the surface gap apart.
     const barWidth = Math.max(1, Math.min(24, slot * 0.6, slot - SEGMENT_GAP));
     const scale = (value: number) => (value / top) * plotHeight;
     const y = (value: number) => baseline - scale(value);
-    const last = period.length - 1;
+    const last = buckets.length - 1;
 
     function onKeyDown(event: KeyboardEvent<SVGSVGElement>) {
         const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
@@ -52,11 +55,11 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
         setHover((current) => Math.max(0, Math.min(last, (current ?? last) + step)));
     }
 
-    const hovered = hover === null ? undefined : period[hover];
+    const hovered = hover === null ? undefined : buckets[hover];
 
     return (
-        <section aria-label={t("projectStats.createdTitle")} className="min-w-0">
-            <ChartHeader title={t("projectStats.createdTitle")} figure={t("projectStats.createdTotal", { count: totalCreated })}>
+        <section aria-label={title} className="min-w-0">
+            <ChartHeader title={title} figure={t("projectStats.createdTotal", { count: totalCreated })}>
                 <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary">
                     {SERIES.map((series) => (
                         <li key={series.key} className="flex items-center gap-1.5">
@@ -89,7 +92,7 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
                                 )}
                             </g>
                         ))}
-                        {period.map((day, index) => {
+                        {buckets.map((day, index) => {
                             const left = PAD.left + index * slot + (slot - barWidth) / 2;
                             const webHeight = scale(day.createdWeb);
                             const mcpHeight = scale(day.createdMcp);
@@ -97,7 +100,7 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
                             const mcpDrawn = day.createdWeb > 0 ? Math.max(0, mcpHeight - SEGMENT_GAP) : mcpHeight;
                             const dimmed = hover !== null && hover !== index;
                             return (
-                                <g key={day.date} opacity={dimmed ? 0.45 : 1} className="transition-opacity duration-100">
+                                <g key={day.start} opacity={dimmed ? 0.45 : 1} className="transition-opacity duration-100">
                                     {day.createdWeb > 0 && (
                                         <path d={day.createdMcp > 0 ? `M${left},${baseline}V${baseline - webHeight}H${left + barWidth}V${baseline}Z` : roundedTopBar(left, baseline - webHeight, barWidth, webHeight, RADIUS)} fill={SERIES[0].color} />
                                     )}
@@ -107,10 +110,10 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
                                 </g>
                             );
                         })}
-                        {period.length > 0 && (
+                        {buckets.length > 0 && (
                             <>
                                 <text x={PAD.left} y={HEIGHT - 4} className="fill-[var(--txt-tertiary)] text-[11px]">
-                                    {formatDay(period[0]!.date, i18n.language)}
+                                    {axisStartLabel(buckets, granularity, i18n.language)}
                                 </text>
                                 <text x={PAD.left + plotWidth} y={HEIGHT - 4} textAnchor="end" className="fill-[var(--txt-tertiary)] text-[11px]">
                                     {t("projectStats.today")}
@@ -125,7 +128,7 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
                         y={y((hovered.createdWeb + hovered.createdMcp) / 2)}
                         width={width}
                         height={HEIGHT}
-                        title={formatDay(hovered.date, i18n.language, { weekday: "short", day: "numeric", month: "short" })}
+                        title={bucketLabel(hovered, granularity, i18n.language)}
                         rows={[
                             ...SERIES.map((series) => ({ key: series.key, label: labels[series.key], value: number.format(hovered[series.key]), color: series.color })),
                             { key: "total", label: t("projectStats.total"), value: number.format(hovered.createdWeb + hovered.createdMcp) },
@@ -134,9 +137,9 @@ export function CreatedBarChart({ period }: { period: ProjectPeriodDay[] }) {
                 )}
             </div>
             <ChartTable
-                caption={`${t("projectStats.createdTitle")} · ${t("projectStats.tableCaption")}`}
+                caption={`${title} · ${t("projectStats.tableCaption")}`}
                 columns={[t("projectStats.date"), labels.createdWeb, labels.createdMcp]}
-                rows={period.map((day) => ({ key: day.date, cells: [formatDay(day.date, i18n.language, { day: "numeric", month: "long" }), day.createdWeb, day.createdMcp] }))}
+                rows={buckets.map((day) => ({ key: day.start, cells: [bucketLabel(day, granularity, i18n.language), day.createdWeb, day.createdMcp] }))}
             />
         </section>
     );

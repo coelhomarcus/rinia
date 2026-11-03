@@ -1,30 +1,32 @@
 import { useState, type KeyboardEvent, type PointerEvent } from "react";
-import type { ProjectPeriodDay } from "@rinia/shared";
 import { useTranslation } from "react-i18next";
-import { ChartHeader, ChartTable, ChartTooltip, formatDay, niceMax, useElementWidth } from "./chart-utils";
+import { axisStartLabel, bucketLabel, ChartHeader, ChartTable, ChartTooltip, niceMax, useElementWidth } from "./chart-utils";
+import type { Granularity, PeriodBucket } from "./period-buckets";
 
 const HEIGHT = 150;
 const PAD = { top: 10, right: 10, bottom: 22, left: 30 };
 const SERIES = "var(--chart-series-1)";
+const PER = { day: "projectStats.perDay", week: "projectStats.perWeek", month: "projectStats.perMonth" } as const;
 
-/** Issues completed per day over the period: a line with a light wash beneath, read with a crosshair. */
-export function CompletedAreaChart({ period }: { period: ProjectPeriodDay[] }) {
+/** Issues completed since the project began, per day, week or month: a line with a light wash, read with a crosshair. */
+export function CompletedAreaChart({ buckets, granularity }: { buckets: PeriodBucket[]; granularity: Granularity }) {
     const { t, i18n } = useTranslation();
     const [ref, width] = useElementWidth<HTMLDivElement>();
     const [hover, setHover] = useState<number | null>(null);
     const number = new Intl.NumberFormat(i18n.language);
+    const title = `${t("projectStats.completedTitle")} · ${t(PER[granularity])}`;
 
-    const totalCompleted = period.reduce((sum, day) => sum + day.completed, 0);
-    const top = niceMax(Math.max(0, ...period.map((day) => day.completed)));
+    const totalCompleted = buckets.reduce((sum, bucket) => sum + bucket.completed, 0);
+    const top = niceMax(Math.max(0, ...buckets.map((bucket) => bucket.completed)));
     const plotWidth = Math.max(0, width - PAD.left - PAD.right);
     const plotHeight = HEIGHT - PAD.top - PAD.bottom;
     const baseline = PAD.top + plotHeight;
-    const x = (index: number) => PAD.left + (period.length <= 1 ? plotWidth / 2 : (index * plotWidth) / (period.length - 1));
+    const x = (index: number) => PAD.left + (buckets.length <= 1 ? plotWidth / 2 : (index * plotWidth) / (buckets.length - 1));
     const y = (value: number) => PAD.top + plotHeight - (value / top) * plotHeight;
-    const points = period.map((day, index) => `${x(index).toFixed(1)},${y(day.completed).toFixed(1)}`);
+    const points = buckets.map((bucket, index) => `${x(index).toFixed(1)},${y(bucket.completed).toFixed(1)}`);
     const line = points.length ? `M${points.join("L")}` : "";
-    const area = points.length ? `${line}L${x(period.length - 1).toFixed(1)},${baseline}L${x(0).toFixed(1)},${baseline}Z` : "";
-    const last = period.length - 1;
+    const area = points.length ? `${line}L${x(buckets.length - 1).toFixed(1)},${baseline}L${x(0).toFixed(1)},${baseline}Z` : "";
+    const last = buckets.length - 1;
 
     function onPointerMove(event: PointerEvent<SVGSVGElement>) {
         const box = event.currentTarget.getBoundingClientRect();
@@ -40,11 +42,11 @@ export function CompletedAreaChart({ period }: { period: ProjectPeriodDay[] }) {
         setHover((current) => Math.max(0, Math.min(last, (current ?? last) + step)));
     }
 
-    const hovered = hover === null ? undefined : period[hover];
+    const hovered = hover === null ? undefined : buckets[hover];
 
     return (
-        <section aria-label={t("projectStats.completedTitle")} className="min-w-0">
-            <ChartHeader title={t("projectStats.completedTitle")} figure={t("projectStats.completedTotal", { count: totalCompleted })} />
+        <section aria-label={title} className="min-w-0">
+            <ChartHeader title={title} figure={t("projectStats.completedTotal", { count: totalCompleted })} />
             <div ref={ref} className="relative mt-3">
                 {width > 0 && (
                     <svg
@@ -52,7 +54,7 @@ export function CompletedAreaChart({ period }: { period: ProjectPeriodDay[] }) {
                         height={HEIGHT}
                         role="img"
                         tabIndex={0}
-                        aria-label={`${t("projectStats.completedTitle")}: ${t("projectStats.completedTotal", { count: totalCompleted })}`}
+                        aria-label={`${title}: ${t("projectStats.completedTotal", { count: totalCompleted })}`}
                         className="block touch-pan-y rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent-strong"
                         onPointerMove={onPointerMove}
                         onPointerLeave={() => setHover(null)}
@@ -72,13 +74,11 @@ export function CompletedAreaChart({ period }: { period: ProjectPeriodDay[] }) {
                         <path d={area} fill={SERIES} fillOpacity={0.1} />
                         <path d={line} fill="none" stroke={SERIES} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
                         {hovered && hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.top} y2={baseline} stroke="var(--txt-tertiary)" strokeWidth={1} shapeRendering="crispEdges" />}
-                        {period.length > 0 && (
-                            <circle cx={x(hover ?? last)} cy={y(period[hover ?? last]!.completed)} r={4} fill={SERIES} stroke="var(--bg-surface-1)" strokeWidth={2} />
-                        )}
-                        {period.length > 0 && (
+                        {buckets.length > 0 && <circle cx={x(hover ?? last)} cy={y(buckets[hover ?? last]!.completed)} r={4} fill={SERIES} stroke="var(--bg-surface-1)" strokeWidth={2} />}
+                        {buckets.length > 0 && (
                             <>
                                 <text x={x(0)} y={HEIGHT - 4} className="fill-[var(--txt-tertiary)] text-[11px]">
-                                    {formatDay(period[0]!.date, i18n.language)}
+                                    {axisStartLabel(buckets, granularity, i18n.language)}
                                 </text>
                                 <text x={x(last)} y={HEIGHT - 4} textAnchor="end" className="fill-[var(--txt-tertiary)] text-[11px]">
                                     {t("projectStats.today")}
@@ -93,15 +93,15 @@ export function CompletedAreaChart({ period }: { period: ProjectPeriodDay[] }) {
                         y={y(hovered.completed)}
                         width={width}
                         height={HEIGHT}
-                        title={formatDay(hovered.date, i18n.language, { weekday: "short", day: "numeric", month: "short" })}
+                        title={bucketLabel(hovered, granularity, i18n.language)}
                         rows={[{ key: "completed", label: t("projectStats.completedTitle").toLowerCase(), value: number.format(hovered.completed), color: SERIES }]}
                     />
                 )}
             </div>
             <ChartTable
-                caption={`${t("projectStats.completedTitle")} · ${t("projectStats.tableCaption")}`}
+                caption={`${title} · ${t("projectStats.tableCaption")}`}
                 columns={[t("projectStats.date"), t("projectStats.completedTitle")]}
-                rows={period.map((day) => ({ key: day.date, cells: [formatDay(day.date, i18n.language, { day: "numeric", month: "long" }), day.completed] }))}
+                rows={buckets.map((bucket) => ({ key: bucket.start, cells: [bucketLabel(bucket, granularity, i18n.language), bucket.completed] }))}
             />
         </section>
     );

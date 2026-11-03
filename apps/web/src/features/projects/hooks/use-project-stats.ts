@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { PROJECT_STATS_DEFAULT_DAYS } from "@rinia/shared";
 import { getProjectStats } from "../api";
 import { projectQueryKey } from "./use-project";
 
@@ -11,12 +10,12 @@ const viewerTimeZone = () => {
     }
 };
 
-/** Activity numbers for the project overview: open issues, streaks, the contribution map and the last 30 days. */
-export function useProjectStats(projectId: string, days = PROJECT_STATS_DEFAULT_DAYS) {
+/** Activity numbers for the project overview, from the day the project was created: open issues, streaks and charts. */
+export function useProjectStats(projectId: string) {
     const timeZone = viewerTimeZone();
     return useQuery({
-        queryKey: [...projectQueryKey(projectId), "stats", days, timeZone] as const,
-        queryFn: () => getProjectStats(projectId, days, timeZone),
+        queryKey: [...projectQueryKey(projectId), "stats", timeZone] as const,
+        queryFn: () => getProjectStats(projectId, timeZone),
         enabled: !!projectId,
         staleTime: 60_000,
     });
