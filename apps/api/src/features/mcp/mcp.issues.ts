@@ -246,7 +246,7 @@ export function registerIssueTools(context: McpContext) {
                 issue: z.string().describe("Issue identifier, such as RIN-4."),
                 title: z.string().optional(),
                 description: z.string().optional().describe("Markdown, including tables and task lists. Replaces the whole description."),
-                descriptionRevision: z.number().int().positive().optional().describe("Required with description: the descriptionRevision from get_issue."),
+                descriptionRevision: z.number().int().nonnegative().optional().describe("Required with description: the descriptionRevision from get_issue. A new issue is at 0."),
                 state: z.string().optional().describe('A state by name, such as "Em andamento" or "Concluído".'),
                 assignee: z.string().nullable().optional().describe('A username, "me", or null to unassign.'),
                 priority: z.enum(issuePriorityValues).optional(),

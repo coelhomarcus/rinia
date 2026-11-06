@@ -124,6 +124,35 @@ test("changing a description without the revision read is refused before anythin
     assert.equal(update.mock.calls.length, 0);
 });
 
+test("a new issue's description, still at revision 0, can be replaced with that revision", async () => {
+    stubWorkspace();
+    const fresh = issue({ descriptionRevision: 0, descriptionJson: markdownToTiptap("", "description") });
+    spyOn(issuesService, "getIssueOrThrow").mockImplementation((async () => fresh) as never);
+    const update = spyOn(issuesService, "updateIssue").mockImplementation((async () => fresh) as never);
+    const client = await connect();
+
+    const schema = (await client.listTools()).tools.find((tool) => tool.name === "update_issue")?.inputSchema as {
+        properties?: { descriptionRevision?: { minimum?: number; exclusiveMinimum?: number } };
+    };
+    assert.equal(schema.properties?.descriptionRevision?.minimum, 0);
+    assert.equal(schema.properties?.descriptionRevision?.exclusiveMinimum, undefined);
+
+    const result = await call(client, "update_issue", { issue: "RIN-4", description: "First real description", descriptionRevision: 0 });
+    assert.equal(result.isError, false, result.text);
+    assert.equal((update.mock.calls[0][1] as { expectedDescriptionRevision: number }).expectedDescriptionRevision, 0);
+});
+
+test("a new page starts at revision 1, which update_document already accepts", async () => {
+    stubWorkspace();
+    const page = { id: "d0000000-0000-4000-8000-000000000001", title: "Roadmap", createdBy: ana.sub, updatedAt: new Date("2026-11-01T10:00:00Z") };
+    spyOn(documentsService, "listDocuments").mockImplementation((async () => [page]) as never);
+    spyOn(documentsService, "getSavedDocument").mockImplementation((async () => ({ ...page, revision: 1, contentJson: markdownToTiptap("Draft", "document") })) as never);
+    const write = spyOn(documentsService, "writeDocumentContent").mockImplementation((async () => ({})) as never);
+    const result = await call(await connect(), "update_document", { project: "RIN", document: "Roadmap", content: "Published", revision: 1 });
+    assert.equal(result.isError, false, result.text);
+    assert.equal((write.mock.calls[0][2] as { expectedRevision: number }).expectedRevision, 1);
+});
+
 test("the revision the model read is the one checked, and a stale one comes back with the current text", async () => {
     stubWorkspace();
     let current = issue();
