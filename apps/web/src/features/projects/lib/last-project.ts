@@ -11,6 +11,18 @@ export function readIdSet(key: string): Set<string> {
     return new Set();
 }
 
+/**
+ * Projects whose sidebar groups should be open after arriving somewhere.
+ * A favorite is a shortcut, so it leaves every group as the user left it.
+ * Any other visit opens that project and leaves the rest alone.
+ */
+export function openProjectsAfterVisit(open: Set<string>, projectId: string, viaFavorite: boolean): Set<string> {
+    if (!projectId || viaFavorite || open.has(projectId)) return open;
+    const next = new Set(open);
+    next.add(projectId);
+    return next;
+}
+
 /** The project the user was last in, used when leaving settings and as the default for new issues. */
 export function readOpenProjectId(): string | null {
     try {

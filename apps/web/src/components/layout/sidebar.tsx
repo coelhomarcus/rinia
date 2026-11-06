@@ -19,7 +19,7 @@ import type { ProjectCardSummary, ProjectMemberPreview } from "@/features/projec
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { groupProjectsByOwner, type ProjectGroup } from "@/features/projects/lib/project-groups";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
-import { LAST_PROJECT_KEY, OPEN_PROJECTS_KEY, readIdSet, readOpenProjectId } from "@/features/projects/lib/last-project";
+import { LAST_PROJECT_KEY, OPEN_PROJECTS_KEY, openProjectsAfterVisit, readIdSet, readOpenProjectId } from "@/features/projects/lib/last-project";
 import { useAppCommands } from "@/features/commands/app-commands";
 import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
@@ -58,16 +58,6 @@ function toggleStoredId(key: string, setter: Dispatch<SetStateAction<Set<string>
     });
 }
 
-function openStoredId(key: string, setter: Dispatch<SetStateAction<Set<string>>>, id: string) {
-    setter((current) => {
-        if (current.has(id)) return current;
-        const next = new Set(current);
-        next.add(id);
-        persistIdSet(key, next);
-        return next;
-    });
-}
-
 /** `projects` is the viewer's own group; `owners` holds the other owners' groups, by owner id, when they differ from open. */
 type SidebarSections = { projects: boolean; favorites: boolean; owners: Record<string, boolean> };
 
@@ -97,20 +87,21 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     const { user } = useAuth();
     const currentProject = useCurrentProject();
     const routeProjectId = currentProject?.id ?? "";
+    const viaFavorite = useViaFavorite();
     const projectId = routeProjectId || readOpenProjectId() || "";
-    const [openProjects, setOpenProjects] = useState(() => {
-        const ids = readIdSet(OPEN_PROJECTS_KEY);
-        if (routeProjectId) ids.add(routeProjectId);
-        return ids;
-    });
+    const [openProjects, setOpenProjects] = useState(() => openProjectsAfterVisit(readIdSet(OPEN_PROJECTS_KEY), routeProjectId, viaFavorite));
     const [sections, setSections] = useState(readSections);
     const settings = location.pathname.includes("/settings");
     useEffect(() => {
         if (!routeProjectId) return;
-        // Visiting a project expands it without closing the others.
-        openStoredId(OPEN_PROJECTS_KEY, setOpenProjects, routeProjectId);
         localStorage.setItem(LAST_PROJECT_KEY, routeProjectId);
-    }, [routeProjectId]);
+        // A favorite is only a shortcut. Opening the project is for every other way of arriving there.
+        setOpenProjects((current) => {
+            const next = openProjectsAfterVisit(current, routeProjectId, viaFavorite);
+            if (next !== current) persistIdSet(OPEN_PROJECTS_KEY, next);
+            return next;
+        });
+    }, [routeProjectId, viaFavorite]);
 
     useMigrateLegacyFavorites();
 
