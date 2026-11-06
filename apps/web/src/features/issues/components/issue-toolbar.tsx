@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { AutoWidth } from "@/components/base/auto-width";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { CheckboxBase } from "@/components/base/checkbox/checkbox";
 import { Presence, Reveal, usePresence } from "@/components/base/presence";
 import { Select } from "@/components/base/select/select";
@@ -174,30 +175,32 @@ export function IssueToolbar({
                 set={set}
                 align="end"
                 trigger={
-                    <Button
-                        aria-label={t("issue.addFilter")}
-                        title={t("issue.addFilter")}
-                        size="xs"
-                        color="secondary"
-                        className={roundIconButton}
-                        iconLeading={FilterOutline}
-                    />
+                    <Tooltip title={t("issue.addFilter")}>
+                        <Button
+                            aria-label={t("issue.addFilter")}
+                            size="xs"
+                            color="secondary"
+                            className={roundIconButton}
+                            iconLeading={FilterOutline}
+                        />
+                    </Tooltip>
                 }
             />
             <Popover.Root>
                 <span className="relative flex">
-                    <Popover.Trigger
-                        render={
-                            <Button
-                                aria-label={t("issue.display")}
-                                title={t("issue.display")}
-                                size="xs"
-                                color="secondary"
-                                className={roundIconButton}
-                                iconLeading={DisplayOutline}
-                            />
-                        }
-                    />
+                    <Tooltip title={t("issue.display")}>
+                        <Popover.Trigger
+                            render={
+                                <Button
+                                    aria-label={t("issue.display")}
+                                    size="xs"
+                                    color="secondary"
+                                    className={roundIconButton}
+                                    iconLeading={DisplayOutline}
+                                />
+                            }
+                        />
+                    </Tooltip>
                     {displayChanged && (
                         <span
                             aria-hidden="true"
@@ -473,14 +476,15 @@ export function IssueFilterRow({
                             query={query}
                             set={set}
                             trigger={
-                                <Button
-                                    aria-label={t("issue.addFilter")}
-                                    title={t("issue.addFilter")}
-                                    size="xs"
-                                    color="tertiary"
-                                    className={roundIconButton}
-                                    iconLeading={Plus}
-                                />
+                                <Tooltip title={t("issue.addFilter")}>
+                                    <Button
+                                        aria-label={t("issue.addFilter")}
+                                        size="xs"
+                                        color="tertiary"
+                                        className={roundIconButton}
+                                        iconLeading={Plus}
+                                    />
+                                </Tooltip>
                             }
                         />
                     </div>

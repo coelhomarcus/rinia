@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ProjectIconKey } from "@rinia/shared";
 import { Search } from "lucide-react";
 import { Input } from "@/components/base/input/input";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { cx } from "@/utils/cx";
 import { IconColorPicker } from "@/components/appearance/icon-color-picker";
 import { DEFAULT_PROJECT_ICON, resolveProjectIcon } from "./project-icon";
@@ -111,12 +112,11 @@ export const ProjectIconPicker = ({ value, color, onChange, onColorChange }: Pro
                                 const isSelected = selected === key;
 
                                 return (
+                                    <Tooltip key={key} title={localizedIconLabel(key)}>
                                     <button
-                                        key={key}
                                         type="button"
                                         aria-label={t("projectIcons.useIcon", { icon: localizedIconLabel(key) })}
                                         aria-pressed={isSelected}
-                                        title={localizedIconLabel(key)}
                                         tabIndex={isSelected || (!selectedIsVisible && allFilteredKeys[0] === key) ? 0 : -1}
                                         onClick={() => onChange(key)}
                                         onKeyDown={(event) => {
@@ -136,6 +136,7 @@ export const ProjectIconPicker = ({ value, color, onChange, onColorChange }: Pro
                                     >
                                         <Icon className="size-4" aria-hidden="true" style={tint ? { color: tint } : undefined} />
                                     </button>
+                                    </Tooltip>
                                 );
                             })}
                         </div>

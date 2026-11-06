@@ -4,6 +4,7 @@ import { MailCheck, MailOpen } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Presence, usePresence } from "@/components/base/presence";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -125,15 +126,16 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                     {formatAge(notification.createdAt, i18n.language)}
                 </time>
             </Link>
+            <Tooltip title={unread ? t("inbox.markRead") : t("inbox.markUnread")}>
             <button
                 type="button"
                 aria-label={unread ? t("inbox.markRead") : t("inbox.markUnread")}
-                title={unread ? t("inbox.markRead") : t("inbox.markUnread")}
                 onClick={() => onRead(!unread)}
                 className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
             >
                 {unread ? <MailOpen className="size-3.5" /> : <MailCheck className="size-3.5" />}
             </button>
+            </Tooltip>
         </div>
     );
 }

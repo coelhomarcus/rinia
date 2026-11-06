@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { Asterisk, Bot } from "lucide-react";
 import type { ActionSource } from "@rinia/shared";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { cx } from "@/utils/cx";
 
 /**
@@ -72,9 +73,11 @@ export function PriorityIcon({ priority, className = "size-3.5" }: { priority: s
 }
 
 export function IssueAvatar({ name, avatarUrl, className }: { name: string; avatarUrl?: string | null; className?: string }) {
-    return <span title={name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
-        {avatarUrl ? <img src={avatarUrl} alt={name} className="size-full object-cover" /> : name.charAt(0).toUpperCase()}
-    </span>;
+    return <Tooltip title={name}>
+        <span aria-label={avatarUrl ? undefined : name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
+            {avatarUrl ? <img src={avatarUrl} alt={name} className="size-full object-cover" /> : name.charAt(0).toUpperCase()}
+        </span>
+    </Tooltip>;
 }
 
 /** What a change made through a tool is called: the tools Rinia knows by name, otherwise what the tool called itself. */
@@ -87,9 +90,12 @@ export function sourceLabel(source: ActionSource) {
 export function SourceAvatar({ source, className }: { source: ActionSource; className?: string }) {
     const claude = source.client?.startsWith("claude-code");
     const Icon = claude ? Asterisk : Bot;
-    return <span title={sourceLabel(source)} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: claude ? "#d97757" : "#6b7280" }}>
-        <Icon className="size-[65%]" strokeWidth={2.5} aria-hidden="true" />
-    </span>;
+    const label = sourceLabel(source);
+    return <Tooltip title={label}>
+        <span aria-label={label} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: claude ? "#d97757" : "#6b7280" }}>
+            <Icon className="size-[65%]" strokeWidth={2.5} aria-hidden="true" />
+        </span>
+    </Tooltip>;
 }
 
 /**

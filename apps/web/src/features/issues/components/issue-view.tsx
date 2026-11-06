@@ -9,6 +9,7 @@ import { Popover } from "@base-ui/react/popover";
 import { EstimateOutline, LabelsOutline, MoreHorizontalOutline, ParentOutline } from "@makeplane/propel/icons";
 import { Collapse } from "@/components/base/collapse";
 import { Button } from "@/components/base/buttons/button";
+import { OverflowTooltip, Tooltip } from "@/components/base/tooltip/tooltip";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { ComboBox, ComboBoxItem } from "@/components/base/select/combobox";
@@ -1159,8 +1160,10 @@ function IssueProperties({
                 <div className="flex min-h-8 min-w-0 items-center gap-2.5 px-2 py-1">
                     <PropertyIcon>{avatar(issue.createdBy)}</PropertyIcon>
                     <div className="min-w-0">
-                        <p className="truncate text-[13px] font-medium text-secondary" title={issue.createdBy.name}>{issue.createdBy.name}</p>
-                        <p className="truncate text-[12px] text-placeholder" title={formatFullIssueDate(issue.createdAt, i18n.language)}>{t("issue.createdOn", { date: created })}</p>
+                        <OverflowTooltip as="p" className="truncate text-[13px] font-medium text-secondary" title={issue.createdBy.name}>{issue.createdBy.name}</OverflowTooltip>
+                        <Tooltip title={formatFullIssueDate(issue.createdAt, i18n.language)}>
+                            <p className="truncate text-[12px] text-placeholder">{t("issue.createdOn", { date: created })}</p>
+                        </Tooltip>
                     </div>
                 </div>
             </PropertyGroup>
@@ -1451,16 +1454,19 @@ function IssueTimeline({
             <div className="mt-4 rounded-xl border border-subtle bg-layer-1 transition-colors duration-150 focus-within:border-[var(--border-strong-1)]">
                 <RichTextEditor toolbar={false} variant="comment" content={value} onChange={onChange} onSubmitShortcut={onSubmit} placeholder={t("issue.leaveComment")} mentionItems={mentionItems} className="issue-comment-composer" />
                 <div className="flex items-center justify-end gap-2 px-3 pb-3">
-                    <button
-                        type="button"
-                        aria-label={t("issue.commentAction")}
-                        title={t("issue.commentAction")}
-                        disabled={!canSend}
-                        onClick={() => void onSubmit()}
-                        className="grid size-7 place-items-center rounded-full bg-layer-2 text-tertiary transition-colors duration-150 enabled:bg-accent-primary enabled:text-white enabled:hover:opacity-90 disabled:cursor-not-allowed"
-                    >
-                        <ArrowUp className="size-3.5" />
-                    </button>
+                    <Tooltip title={t("issue.commentAction")}>
+                        <span className={cx("inline-flex", !canSend && "cursor-not-allowed")}>
+                            <button
+                                type="button"
+                                aria-label={t("issue.commentAction")}
+                                disabled={!canSend}
+                                onClick={() => void onSubmit()}
+                                className="grid size-7 place-items-center rounded-full bg-layer-2 text-tertiary transition-colors duration-150 enabled:bg-accent-primary enabled:text-white enabled:hover:opacity-90 disabled:pointer-events-none"
+                            >
+                                <ArrowUp className="size-3.5" />
+                            </button>
+                        </span>
+                    </Tooltip>
                 </div>
             </div>
             {error && <p role="alert" className="animate-enter mt-2 text-xs text-danger-primary">{error}</p>}
@@ -1555,16 +1561,19 @@ function ReplyComposer({ currentUser, mentionItems, onSubmit }: { currentUser: {
                         {t("issue.leaveReply")}
                     </button>
                 )}
-                <button
-                    type="button"
-                    aria-label={t("issue.replyAction")}
-                    title={t("issue.replyAction")}
-                    disabled={!canSend}
-                    onClick={() => void send()}
-                    className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-layer-2 text-tertiary transition-colors duration-150 enabled:bg-accent-primary enabled:text-white enabled:hover:opacity-90 disabled:cursor-not-allowed"
-                >
-                    <ArrowUp className="size-3.5" />
-                </button>
+                <Tooltip title={t("issue.replyAction")}>
+                    <span className={cx("inline-flex", !canSend && "cursor-not-allowed")}>
+                        <button
+                            type="button"
+                            aria-label={t("issue.replyAction")}
+                            disabled={!canSend}
+                            onClick={() => void send()}
+                            className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-layer-2 text-tertiary transition-colors duration-150 enabled:bg-accent-primary enabled:text-white enabled:hover:opacity-90 disabled:pointer-events-none"
+                        >
+                            <ArrowUp className="size-3.5" />
+                        </button>
+                    </span>
+                </Tooltip>
             </div>
             {error && <p role="alert" className="animate-enter px-4 pb-2.5 text-xs text-danger-primary">{error}</p>}
         </div>
@@ -1585,9 +1594,11 @@ function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, 
                 <IssueAvatarGroup name={entry.author.name} avatarUrl={entry.author.avatarUrl} source={entry.source} className="size-5 text-[10px]" />
                 <span className="font-medium text-primary">{entry.author.name}</span>
                 {entry.source && <span className="text-tertiary">{t("issue.viaSource", { client: sourceLabel(entry.source) })}</span>}
-                <time className="text-tertiary" title={formatFullIssueDate(entry.createdAt, i18n.language)} dateTime={entry.createdAt}>
-                    {formatDistanceToNow(entry.createdAt, i18n.language)}{edited ? ` · ${t("issue.edited")}` : ""}
-                </time>
+                <Tooltip title={formatFullIssueDate(entry.createdAt, i18n.language)}>
+                    <time className="text-tertiary" dateTime={entry.createdAt}>
+                        {formatDistanceToNow(entry.createdAt, i18n.language)}{edited ? ` · ${t("issue.edited")}` : ""}
+                    </time>
+                </Tooltip>
                 {!editing && (
                     <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/comment:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100">
                         <ReactionPicker onPick={(emoji) => onReact(entry.id, emoji, !entry.reactions.find((group) => group.emoji === emoji)?.users.some((user) => user.id === currentUserId))} />

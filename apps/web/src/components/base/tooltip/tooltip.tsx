@@ -1,15 +1,15 @@
-import type { ComponentProps, ReactElement, ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { cx } from "@/utils/cx";
 
-interface TooltipProps extends Omit<ComponentProps<typeof BaseTooltip.Root>, "children"> {
+interface TooltipProps {
     title: ReactNode;
     description?: ReactNode;
     arrow?: boolean;
     delay?: number;
     offset?: number;
     placement?: string;
-    children: ReactNode;
+    children: ReactElement;
     isDisabled?: boolean;
 }
 
@@ -18,8 +18,9 @@ export const Tooltip = ({ title, description, arrow = false, delay = 300, offset
 
     return (
         <BaseTooltip.Provider delay={delay}>
-            <BaseTooltip.Root {...props} disabled={isDisabled}>
-                <BaseTooltip.Trigger render={children as ReactElement} />
+            <BaseTooltip.Root disabled={isDisabled}>
+                {/* Popup props, including ref, land here when a dialog or menu clones this component. */}
+                <BaseTooltip.Trigger {...props} render={children} />
                 <BaseTooltip.Portal>
                     <BaseTooltip.Positioner side={side} sideOffset={offset}>
                         <BaseTooltip.Popup className={cx("overlay-motion z-50 flex max-w-xs flex-col items-start gap-2 rounded-md bg-primary-solid px-3 shadow-lg", description ? "py-3" : "py-2")}>
@@ -33,6 +34,26 @@ export const Tooltip = ({ title, description, arrow = false, delay = 300, offset
         </BaseTooltip.Provider>
     );
 };
+
+/** Shows `title` only when the text actually overflows. The node stays the same element either way. */
+export function OverflowTooltip({ title, children, className, as: Tag = "span" }: { title: string; children: ReactNode; className?: string; as?: "p" | "span" }) {
+    const ref = useRef<HTMLElement | null>(null);
+    const [cut, setCut] = useState(false);
+    useLayoutEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        const measure = () => setCut(node.scrollWidth - node.clientWidth > 1 || node.scrollHeight - node.clientHeight > 1);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [children, className, title]);
+    const setRef = (node: HTMLElement | null) => {
+        ref.current = node;
+    };
+    const element = Tag === "p" ? <p ref={setRef} className={className}>{children}</p> : <span ref={setRef} className={className}>{children}</span>;
+    return <Tooltip title={title} isDisabled={!cut}>{element}</Tooltip>;
+}
 
 export const TooltipTrigger = ({ children, className, isDisabled, ...props }: ComponentProps<typeof BaseTooltip.Trigger> & { isDisabled?: boolean }) => (
     <BaseTooltip.Trigger {...props} disabled={isDisabled} className={cx("h-max w-max outline-hidden", typeof className === "function" ? undefined : className)}>

@@ -3,6 +3,7 @@ import { TextSelection } from "@tiptap/pm/state";
 import { TableMap } from "@tiptap/pm/tables";
 import type { Editor } from "@tiptap/react";
 import { Plus } from "lucide-react";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { useTranslation } from "react-i18next";
 
 type Hovered = { table: HTMLTableElement; top: number; left: number; width: number; height: number };
@@ -80,30 +81,32 @@ export function TableControls({ editor, container }: { editor: Editor; container
     if (!hovered || !hovered.table.isConnected) return null;
     return (
         <>
-            <button
-                type="button"
-                data-table-control=""
-                className="rich-table-add rich-table-add-row"
-                style={{ top: hovered.top + hovered.height + 4, left: hovered.left, width: hovered.width }}
-                aria-label={t("editor.addRow")}
-                title={t("editor.addRow")}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => addAtEnd(editor, hovered.table, "row")}
-            >
-                <Plus className="size-3" />
-            </button>
-            <button
-                type="button"
-                data-table-control=""
-                className="rich-table-add rich-table-add-column"
-                style={{ top: hovered.top, left: hovered.left + hovered.width + 4, height: hovered.height }}
-                aria-label={t("editor.addColumn")}
-                title={t("editor.addColumn")}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => addAtEnd(editor, hovered.table, "column")}
-            >
-                <Plus className="size-3" />
-            </button>
+            <Tooltip title={t("editor.addRow")}>
+                <button
+                    type="button"
+                    data-table-control=""
+                    className="rich-table-add rich-table-add-row"
+                    style={{ top: hovered.top + hovered.height + 4, left: hovered.left, width: hovered.width }}
+                    aria-label={t("editor.addRow")}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => addAtEnd(editor, hovered.table, "row")}
+                >
+                    <Plus className="size-3" />
+                </button>
+            </Tooltip>
+            <Tooltip title={t("editor.addColumn")}>
+                <button
+                    type="button"
+                    data-table-control=""
+                    className="rich-table-add rich-table-add-column"
+                    style={{ top: hovered.top, left: hovered.left + hovered.width + 4, height: hovered.height }}
+                    aria-label={t("editor.addColumn")}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => addAtEnd(editor, hovered.table, "column")}
+                >
+                    <Plus className="size-3" />
+                </button>
+            </Tooltip>
         </>
     );
 }

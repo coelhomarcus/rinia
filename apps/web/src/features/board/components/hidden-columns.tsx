@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { Eye, EyeOff } from "lucide-react";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { translateStatusName } from "@/i18n/status-label";
 import { cx } from "@/utils/cx";
@@ -65,10 +66,10 @@ export function HiddenColumnsMenu({
     const { t } = useTranslation();
     return (
         <Menu.Root>
+            <Tooltip title={t("projects.hiddenColumns")}>
             <Menu.Trigger
                 type="button"
                 aria-label={`${t("projects.hiddenColumns")} (${columns.length})`}
-                title={t("projects.hiddenColumns")}
                 className="relative flex size-7 shrink-0 items-center justify-center rounded-full border border-strong bg-layer-2 text-placeholder outline-none transition-colors hover:bg-layer-2-hover hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent-strong data-[popup-open]:bg-layer-2-hover data-[popup-open]:text-secondary"
             >
                 <EyeOff className="size-4" />
@@ -78,6 +79,7 @@ export function HiddenColumnsMenu({
                     </span>
                 )}
             </Menu.Trigger>
+            </Tooltip>
             <Menu.Portal>
                 <Menu.Positioner side="bottom" align="end" sideOffset={6} className="z-50">
                     <Menu.Popup className={cx("max-h-80 w-64 origin-[var(--transform-origin)] overflow-y-auto transition-[opacity,transform] duration-150 data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0", overlayChrome.menu)}>

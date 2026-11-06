@@ -8,6 +8,7 @@ import { AlertCircle, CalendarDays, ChevronRight, Maximize2, Minimize2, X } from
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Toggle } from "@/components/base/toggle/toggle";
 import { useToast } from "@/components/feedback/toaster";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -130,15 +131,16 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                             <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
                             <Dialog.Title className="text-[13px] text-secondary">{t("issue.newIssue")}</Dialog.Title>
                             <div className="ml-auto flex items-center gap-1">
-                                <Button
-                                    size="xs"
-                                    color="tertiary"
-                                    className="rounded-full"
-                                    iconLeading={expanded ? Minimize2 : Maximize2}
-                                    aria-label={expanded ? t("issue.collapseEditor") : t("issue.expandEditor")}
-                                    title={expanded ? t("issue.collapseEditor") : t("issue.expandEditor")}
-                                    onClick={() => setExpanded((current) => !current)}
-                                />
+                                <Tooltip title={expanded ? t("issue.collapseEditor") : t("issue.expandEditor")}>
+                                    <Button
+                                        size="xs"
+                                        color="tertiary"
+                                        className="rounded-full"
+                                        iconLeading={expanded ? Minimize2 : Maximize2}
+                                        aria-label={expanded ? t("issue.collapseEditor") : t("issue.expandEditor")}
+                                        onClick={() => setExpanded((current) => !current)}
+                                    />
+                                </Tooltip>
                                 <Dialog.Close
                                     render={<Button size="xs" color="tertiary" className="rounded-full" iconLeading={X} aria-label={t("common.close")} />}
                                 />

@@ -2,6 +2,7 @@ import { Popover } from "@base-ui/react/popover";
 import type { Editor } from "@tiptap/react";
 import { Table2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import type { TranslationKey } from "@/i18n/resources";
 
 const ACTIONS: Array<[TranslationKey, (editor: Editor) => boolean]> = [
@@ -20,9 +21,11 @@ export function TableActionsMenu({ editor, triggerClassName = "document-format-b
     const { t } = useTranslation();
     return (
         <Popover.Root>
-            <Popover.Trigger className={triggerClassName} aria-label={t("editor.tableActions")} title={t("editor.tableActions")}>
-                <Table2 className="size-4" />
-            </Popover.Trigger>
+            <Tooltip title={t("editor.tableActions")}>
+                <Popover.Trigger className={triggerClassName} aria-label={t("editor.tableActions")}>
+                    <Table2 className="size-4" />
+                </Popover.Trigger>
+            </Tooltip>
             <Popover.Portal>
                 <Popover.Positioner side="bottom" sideOffset={8} collisionPadding={12} className="document-overlay">
                     <Popover.Popup finalFocus={() => editor.view.dom} className="document-popover w-60">

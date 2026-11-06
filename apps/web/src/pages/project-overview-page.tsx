@@ -9,6 +9,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { AppIcons } from "@/components/foundations/icons";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { useCreateDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
@@ -67,16 +68,17 @@ export const ProjectOverviewPage = () => {
                             <section className="mt-12" aria-labelledby="project-resources">
                                 <div className="flex items-center justify-between gap-3">
                                     <h2 id="project-resources" className="text-[17px] font-medium text-primary">{t("projects.homeResources")}</h2>
+                                    <Tooltip title={t("documents.newPage")}>
                                     <button
                                         type="button"
                                         aria-label={t("documents.newPage")}
-                                        title={t("documents.newPage")}
                                         disabled={createDocument.isPending}
                                         onClick={() => void addDocument().catch(() => undefined)}
                                         className="grid size-7 place-items-center rounded-full border border-subtle text-tertiary hover:bg-layer-transparent-hover hover:text-primary disabled:opacity-50"
                                     >
                                         <Plus className="size-3.5" />
                                     </button>
+                                    </Tooltip>
                                 </div>
                                 {createDocument.isError && <div className="mt-3"><ErrorMessage message={t("documents.createFailed")} /></div>}
                                 {documents && documents.length > 0 ? (
@@ -127,9 +129,11 @@ export const ProjectOverviewPage = () => {
                                     {isProjectOwner && (
                                         <ModalDialog
                                             trigger={
-                                                <button type="button" aria-label={t("settings.addMember")} title={t("settings.addMember")} className="grid size-8 place-items-center rounded-full border border-subtle text-tertiary hover:bg-layer-transparent-hover hover:text-primary">
-                                                    <Plus className="size-3.5" />
-                                                </button>
+                                                <Tooltip title={t("settings.addMember")}>
+                                                    <button type="button" aria-label={t("settings.addMember")} className="grid size-8 place-items-center rounded-full border border-subtle text-tertiary hover:bg-layer-transparent-hover hover:text-primary">
+                                                        <Plus className="size-3.5" />
+                                                    </button>
+                                                </Tooltip>
                                             }
                                             title={t("settings.addMember")}
                                             description={t("settings.addMemberDescription")}

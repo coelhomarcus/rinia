@@ -5,6 +5,7 @@ import { Check, Copy, Layers, type LucideIcon, MoreHorizontal, Pencil, RotateCcw
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Reveal } from "@/components/base/presence";
 import { useToast } from "@/components/feedback/toaster";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
@@ -147,16 +148,17 @@ export function useViewActions({
     }
 
     const saveButton = (
-        <Button
-            size="xs"
-            color="tertiary"
-            className="rounded-full"
-            iconLeading={Layers}
-            isDisabled={!filters}
-            aria-label={savedView ? t("views.saveAsNew") : t("views.saveAsView")}
-            title={savedView ? t("views.saveAsNew") : t("views.saveAsView")}
-            onClick={() => setDialog("create")}
-        />
+        <Tooltip title={savedView ? t("views.saveAsNew") : t("views.saveAsView")}>
+            <Button
+                size="xs"
+                color="tertiary"
+                className="rounded-full"
+                iconLeading={Layers}
+                isDisabled={!filters}
+                aria-label={savedView ? t("views.saveAsNew") : t("views.saveAsView")}
+                onClick={() => setDialog("create")}
+            />
+        </Tooltip>
     );
 
     // On a plain page, Save names the filters as a new view. On a view, Reset and Save show once the screen differs.
@@ -193,18 +195,19 @@ export function useViewActions({
 
     const menu = savedView && (
         <Menu.Root>
-            <Menu.Trigger
-                render={
-                    <Button
-                        size="xs"
-                        color="tertiary"
-                        iconLeading={MoreHorizontal}
-                        aria-label={t("views.actions")}
-                        title={t("views.actions")}
-                        className="rounded-full data-[popup-open]:bg-layer-1-hover"
-                    />
-                }
-            />
+            <Tooltip title={t("views.actions")}>
+                <Menu.Trigger
+                    render={
+                        <Button
+                            size="xs"
+                            color="tertiary"
+                            iconLeading={MoreHorizontal}
+                            aria-label={t("views.actions")}
+                            className="rounded-full data-[popup-open]:bg-layer-1-hover"
+                        />
+                    }
+                />
+            </Tooltip>
             <Menu.Portal>
                 <Menu.Positioner side="bottom" align="end" sideOffset={6} className="z-50">
                     <Menu.Popup className={cx("w-56", overlayChrome.menu)}>

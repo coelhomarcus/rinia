@@ -6,6 +6,7 @@ import { Popover } from "@base-ui/react/popover";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Input } from "@/components/base/input/input";
 import { ControlledInput } from "@/components/form/controlled-input";
 import { ControlledTextarea } from "@/components/form/controlled-textarea";
@@ -57,18 +58,19 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
                             name="iconAppearance"
                             render={({ field }) => (
                                 <Popover.Root open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
+                                    <Tooltip title={t("projects.chooseIcon")}>
                                     <Popover.Trigger
                                         render={
                                             <button
                                                 type="button"
                                                 aria-label={t("projects.chooseIcon")}
-                                                title={t("projects.chooseIcon")}
                                                 className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-subtle bg-layer-2 text-secondary outline-accent-strong transition-colors hover:bg-layer-2-hover hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong"
                                             />
                                         }
                                     >
                                         <ProjectIcon icon={field.value} className="size-5" />
                                     </Popover.Trigger>
+                                    </Tooltip>
                                     <Popover.Portal>
                                         <Popover.Positioner side="bottom" align="start" sideOffset={8} collisionPadding={12} className="z-[60]">
                                             <Popover.Popup className={appearancePopupClass}>

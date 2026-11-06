@@ -4,6 +4,7 @@ import { type Editor, useEditorState } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Bold, Code2, Italic, Link2, Strikethrough } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Input } from "@/components/base/input/input";
 import { TableActionsMenu } from "@/features/editor/table-menu";
 import { useTranslation } from "react-i18next";
@@ -91,18 +92,18 @@ export function DocumentFormatMenu({ editor }: { editor: Editor }) {
                 { label: t("editor.strikethrough"), Icon: Strikethrough, active: marks.strike, action: () => editor.chain().focus().toggleStrike().run() },
                 { label: t("editor.inlineCode"), Icon: Code2, active: marks.code, action: () => editor.chain().focus().toggleCode().run() },
             ].map(({ label, Icon, active, action }) => (
-                <button
-                    key={label}
-                    type="button"
-                    aria-label={label}
-                    title={label}
-                    aria-pressed={active}
-                    className="document-format-button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={action}
-                >
-                    <Icon className="size-4" />
-                </button>
+                <Tooltip key={label} title={label}>
+                    <button
+                        type="button"
+                        aria-label={label}
+                        aria-pressed={active}
+                        className="document-format-button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={action}
+                    >
+                        <Icon className="size-4" />
+                    </button>
+                </Tooltip>
             ))}
             <Popover.Root
                 open={linkOpen}

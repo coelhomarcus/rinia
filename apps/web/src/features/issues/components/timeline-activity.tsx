@@ -1,5 +1,6 @@
 import type { ActionSource } from "@rinia/shared";
 import { useTranslation } from "react-i18next";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { IssueAvatarGroup, PriorityIcon, StateIcon, sourceLabel } from "@/features/board/components/issue-property-icons";
 import { formatDueDate } from "@/features/issues/lib/due-date";
 import { translateStatusName } from "@/i18n/status-label";
@@ -60,7 +61,9 @@ export function TimelineActivity({ entry, lookups }: { entry: ActivityEntry; loo
                     <EventIcon icon={toIcon} />{change.to}
                 </>}
                 <span className="text-placeholder"> · </span>
-                <time className="text-placeholder" title={formatFullIssueDate(entry.createdAt, i18n.language)} dateTime={entry.createdAt}>{formatDistanceToNow(entry.createdAt, i18n.language)}</time>
+                <Tooltip title={formatFullIssueDate(entry.createdAt, i18n.language)}>
+                    <time className="text-placeholder" dateTime={entry.createdAt}>{formatDistanceToNow(entry.createdAt, i18n.language)}</time>
+                </Tooltip>
                 {entry.source && <span className="sr-only"> {t("issue.viaSource", { client: sourceLabel(entry.source) })}</span>}
             </p>
         </li>

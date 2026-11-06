@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { findNativeTitles } from "./native-titles.mjs";
 
 const root = new URL("../src/", import.meta.url).pathname;
 const checks = [
@@ -51,6 +52,8 @@ for (const directory of activeRoots) {
         if (/<(?:select|datalist)(?:\s|>)/.test(source)) failures.push(`${file}: native select/datalist`);
     }
 }
+
+for (const hit of findNativeTitles(root.replace(/\/$/, ""))) failures.push(`${hit}: native title tooltip`);
 
 if (failures.length > 0) {
     console.error(failures.join("\n"));

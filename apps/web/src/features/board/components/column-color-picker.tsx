@@ -1,3 +1,4 @@
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { cx } from "@/utils/cx";
 import { COLUMN_COLORS, COLUMN_FALLBACK_COLOR } from "./column-color";
 import { useTranslation } from "react-i18next";
@@ -36,30 +37,31 @@ export const ColumnColorPicker = ({ value, onChange, label }: ColumnColorPickerP
                     />
                 ))}
 
-                <label
-                    className={cx(
-                        "relative flex size-6 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full outline-offset-2 transition duration-100 ease-linear",
-                        isCustom ? "outline-2 outline-fg-primary" : "ring-1 ring-subtle ring-inset",
-                    )}
-                    style={isCustom ? { backgroundColor: current } : undefined}
-                    title={t("settings.customColor")}
-                >
-                    {/* The gradient appears when no custom color is active, signaling "choose another color". */}
-                    {!isCustom && (
-                        <span
-                            aria-hidden="true"
-                            className="absolute inset-0"
-                            style={{ background: "conic-gradient(#f04438, #f79009, #eaaa08, #17b26a, #2e90fa, #7a5af8, #f04438)" }}
+                <Tooltip title={t("settings.customColor")}>
+                    <label
+                        className={cx(
+                            "relative flex size-6 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full outline-offset-2 transition duration-100 ease-linear",
+                            isCustom ? "outline-2 outline-fg-primary" : "ring-1 ring-subtle ring-inset",
+                        )}
+                        style={isCustom ? { backgroundColor: current } : undefined}
+                    >
+                        {/* The gradient appears when no custom color is active, signaling "choose another color". */}
+                        {!isCustom && (
+                            <span
+                                aria-hidden="true"
+                                className="absolute inset-0"
+                                style={{ background: "conic-gradient(#f04438, #f79009, #eaaa08, #17b26a, #2e90fa, #7a5af8, #f04438)" }}
+                            />
+                        )}
+                        <input
+                            type="color"
+                            aria-label={t("settings.customColor")}
+                            value={current}
+                            onChange={(event) => onChange(event.target.value)}
+                            className="absolute inset-0 cursor-pointer opacity-0"
                         />
-                    )}
-                    <input
-                        type="color"
-                        aria-label={t("settings.customColor")}
-                        value={current}
-                        onChange={(event) => onChange(event.target.value)}
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                    />
-                </label>
+                    </label>
+                </Tooltip>
             </div>
         </div>
     );

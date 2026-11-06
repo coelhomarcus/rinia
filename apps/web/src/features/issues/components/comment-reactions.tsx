@@ -36,13 +36,14 @@ export function ReactionPicker({ onPick, className }: { onPick: (emoji: string) 
                 if (!next) setMore(false);
             }}
         >
+            <Tooltip title={t("issue.addReaction")}>
             <Popover.Trigger
                 aria-label={t("issue.addReaction")}
-                title={t("issue.addReaction")}
                 className={cx("grid size-6 place-items-center rounded-md text-tertiary outline-none transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover data-[popup-open]:bg-layer-transparent-hover data-[popup-open]:text-primary", className)}
             >
                 <SmilePlus className="size-3.5" />
             </Popover.Trigger>
+            </Tooltip>
             <Popover.Portal>
                 <Popover.Positioner side="top" align="end" sideOffset={6} collisionPadding={12} className="z-50">
                     <Popover.Popup className={cx("w-[17.5rem] p-1.5", overlayChrome.popup, popupMotion)}>

@@ -6,6 +6,7 @@ import { issueEstimateValues, type BulkIssuePatch } from "@rinia/shared";
 import { Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motionTiming } from "@/components/base/motion";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { useToast } from "@/components/feedback/toaster";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -174,9 +175,11 @@ export function BulkActionBar({
             >
                 <span className="flex h-7 shrink-0 items-center gap-1 rounded-md border border-dashed border-subtle pr-1 pl-2 text-[13px] text-primary tabular-nums">
                     {counted("issue.selectedOne", "issue.selectedMany", shownCount)}
-                    <button type="button" aria-label={t("issue.clearSelection")} title={`${t("issue.clearSelection")} · Esc`} onClick={onClear} className="grid size-5 place-items-center rounded text-tertiary hover:bg-layer-transparent-hover hover:text-primary">
-                        <X className="size-3.5" />
-                    </button>
+                    <Tooltip title={`${t("issue.clearSelection")} · Esc`}>
+                        <button type="button" aria-label={t("issue.clearSelection")} onClick={onClear} className="grid size-5 place-items-center rounded text-tertiary hover:bg-layer-transparent-hover hover:text-primary">
+                            <X className="size-3.5" />
+                        </button>
+                    </Tooltip>
                 </span>
                 <span aria-hidden="true" className="mx-1 h-4 w-px shrink-0 bg-border-secondary" />
                 <BarMenu icon={<StateIcon name={columns[0]?.name ?? ""} color={columns[0]?.color} className="size-4" />} label={t("issue.status")}>

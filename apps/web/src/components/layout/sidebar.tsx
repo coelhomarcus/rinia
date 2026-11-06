@@ -13,6 +13,7 @@ import { getInitials } from "@/components/base/avatar/utils";
 import { Collapse } from "@/components/base/collapse";
 import { UNMOUNT_AFTER } from "@/components/base/motion";
 import { Presence } from "@/components/base/presence";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { CreateProjectModal } from "@/features/projects/components/create-project-modal";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import type { ProjectCardSummary, ProjectMemberPreview } from "@/features/projects/api";
@@ -299,14 +300,15 @@ function NewProjectButton() {
     return (
         <CreateProjectModal
             trigger={
-                <button
-                    type="button"
-                    aria-label={t("nav.newProject")}
-                    title={t("nav.newProject")}
-                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-tertiary opacity-0 transition-opacity duration-150 group-hover/label:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100 data-[popup-open]:opacity-100"
-                >
-                    <Plus className="size-3.5" />
-                </button>
+                <Tooltip title={t("nav.newProject")}>
+                    <button
+                        type="button"
+                        aria-label={t("nav.newProject")}
+                        className="flex size-6 shrink-0 items-center justify-center rounded-md text-tertiary opacity-0 transition-opacity duration-150 group-hover/label:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100 data-[popup-open]:opacity-100"
+                    >
+                        <Plus className="size-3.5" />
+                    </button>
+                </Tooltip>
             }
         />
     );
@@ -438,16 +440,17 @@ function FavoriteRow({ favorite, leaving, animateIn }: { favorite: Favorite; lea
                     <span className="truncate">{label}</span>
                     {context && <span className="min-w-0 shrink-[2] truncate font-normal text-placeholder">{context}</span>}
                 </Link>
-                <button
-                    type="button"
-                    aria-label={`${t("nav.removeFavorite")}: ${label}`}
-                    title={t("nav.removeFavorite")}
-                    disabled={remove.isPending || leaving}
-                    onClick={() => remove.mutate(favorite.id)}
-                    className="absolute top-1/2 right-1 grid size-5 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/favorite:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100"
-                >
-                    <X className="size-3.5" />
-                </button>
+                <Tooltip title={t("nav.removeFavorite")}>
+                    <button
+                        type="button"
+                        aria-label={`${t("nav.removeFavorite")}: ${label}`}
+                        disabled={remove.isPending || leaving}
+                        onClick={() => remove.mutate(favorite.id)}
+                        className="absolute top-1/2 right-1 grid size-5 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/favorite:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100"
+                    >
+                        <X className="size-3.5" />
+                    </button>
+                </Tooltip>
             </div>
         </Presence>
     );

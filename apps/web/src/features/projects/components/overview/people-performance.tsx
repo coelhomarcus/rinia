@@ -1,6 +1,7 @@
 import type { ProjectPersonStats } from "@rinia/shared";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import type { ProjectMember } from "../../api";
 import { memberInitials } from "../members-panel";
 
@@ -41,9 +42,9 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
                                 <th scope="row" className="py-2 pr-3 font-normal">
                                     <span className="flex min-w-0 items-center gap-2">
                                         <Avatar src={member.avatarUrl ?? undefined} initials={memberInitials(member.name)} size="xs" />
-                                        <span className="min-w-0 truncate text-primary" title={member.username}>
-                                            {member.name}
-                                        </span>
+                                        <Tooltip title={member.username}>
+                                            <span className="min-w-0 truncate text-primary">{member.name}</span>
+                                        </Tooltip>
                                     </span>
                                 </th>
                                 <td className="py-2 pr-3">
