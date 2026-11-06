@@ -101,7 +101,11 @@ async function findIssue(identifier: string) {
             labels: LABELS_WITH,
             column: { columns: { id: true, name: true } },
             parent: { columns: { id: true, number: true, title: true } },
-            children: { where: (child, { isNull: isNullValue }) => isNullValue(child.deletedAt), columns: { id: true, number: true, title: true, columnId: true, priority: true } },
+            children: {
+                where: (child, { isNull: isNullValue }) => isNullValue(child.deletedAt),
+                columns: { id: true, number: true, title: true, columnId: true, priority: true },
+                with: { column: { columns: { id: true, name: true } } },
+            },
         },
     });
     return issue && withLabels(issue);

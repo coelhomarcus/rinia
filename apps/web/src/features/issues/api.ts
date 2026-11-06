@@ -56,7 +56,7 @@ export type IssueDetail = Omit<Issue, "createdBy"> & {
     categories: IssueLabel[];
     column: { id: string; name: string };
     parent: { id: string; number: number; title: string } | null;
-    children: Array<{ id: string; number: number; title: string; columnId: string; priority: Issue["priority"] }>;
+    children: Array<{ id: string; number: number; title: string; columnId: string; priority: Issue["priority"]; column?: { id: string; name: string } | null }>;
 };
 
 /** Everyone who reacted to a comment with one emoji. */

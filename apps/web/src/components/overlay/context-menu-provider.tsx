@@ -338,13 +338,21 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
             copyLinkItem,
             {
                 key: "copy-content",
-                label: t("contextMenu.copyAllIssueContent"),
+                label: t("contextMenu.copyWithPrompt"),
                 icon: Copy,
-                onSelect: () => void fetchIssueClipboardContent(entity.identifier).then(copy).then((result) => setNotice(result.success ? t("contextMenu.issueContentCopied") : t("contextMenu.couldNotCopyContent"))).catch(() => setNotice(t("contextMenu.couldNotCopyContent"))),
+                onSelect: () => void fetchIssueClipboardContent(entity.identifier).then(async (content) => {
+                    const result = await copy(content);
+                    const title = result.success ? t("issue.promptCopied") : t("issue.couldNotCopyContent");
+                    showToast(result.success ? { tone: "copy", title } : { tone: "error", title });
+                    setNotice(title);
+                }).catch(() => {
+                    showToast({ tone: "error", title: t("issue.couldNotCopyContent") });
+                    setNotice(t("contextMenu.couldNotCopyContent"));
+                }),
             },
             { key: "delete", label: t("contextMenu.deleteIssue"), icon: Trash2, destructive: true, onSelect: () => setConfirmation(entity) },
         ];
-    }, [canDeleteDocument, canDeleteProject, copy, navigate, projects, state, t]);
+    }, [canDeleteDocument, canDeleteProject, copy, navigate, projects, showToast, state, t]);
 
     async function confirmDelete() {
         if (!confirmation) return;
