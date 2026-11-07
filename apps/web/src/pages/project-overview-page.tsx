@@ -63,7 +63,7 @@ export const ProjectOverviewPage = () => {
                             </div>
                             <ProjectDescription projectId={projectId} description={project.description ?? ""} editable={isProjectOwner} />
 
-                            <ProjectActivity projectId={projectId} />
+                            <ProjectActivity projectId={projectId} accent={projectIconColor(icon)} />
 
                             <section className="mt-12" aria-labelledby="project-resources">
                                 <div className="flex items-center justify-between gap-3">

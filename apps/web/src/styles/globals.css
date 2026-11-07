@@ -309,6 +309,23 @@ html[data-theme*="dark"] {
     --chart-heat-4: #b7d3f6;
 }
 
+/* A project that picked a logo colour paints its overview charts in that hue. The orange series stays, so the two bars still separate. */
+.chart-accent {
+    --chart-series-1: var(--chart-accent);
+    --chart-heat-1: color-mix(in srgb, var(--chart-accent) 48%, white);
+    --chart-heat-2: color-mix(in srgb, var(--chart-accent) 78%, white);
+    --chart-heat-3: var(--chart-accent);
+    --chart-heat-4: color-mix(in srgb, var(--chart-accent) 58%, black);
+}
+
+html[data-theme*="dark"] .chart-accent {
+    --chart-series-1: var(--chart-accent);
+    --chart-heat-1: color-mix(in srgb, var(--chart-accent) 34%, black);
+    --chart-heat-2: color-mix(in srgb, var(--chart-accent) 62%, black);
+    --chart-heat-3: color-mix(in srgb, var(--chart-accent) 82%, white);
+    --chart-heat-4: color-mix(in srgb, var(--chart-accent) 48%, white);
+}
+
 @layer base {
     html { color-scheme: light; background: var(--bg-canvas); }
     html[data-theme*="dark"] { color-scheme: dark; }

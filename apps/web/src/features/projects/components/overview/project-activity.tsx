@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { ErrorMessage } from "@/components/feedback/error-message";
@@ -12,8 +12,10 @@ import { ContributionHeatmap } from "./contribution-heatmap";
 import { CreatedBarChart } from "./created-bar-chart";
 import { StatCards } from "./stat-cards";
 
-/** The overview's activity since the project was created: headline numbers, the year's map, charts and each person's work. */
-export function ProjectActivity({ projectId }: { projectId: string }) {
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
+/** The overview's activity since the project was created. Charts use the colour chosen for the project logo. */
+export function ProjectActivity({ projectId, accent }: { projectId: string; accent?: string | null }) {
     const { t, i18n } = useTranslation();
     const { data: stats, isLoading, isError } = useProjectStats(projectId);
     const { data: members } = useProjectMembers(projectId);
@@ -34,7 +36,7 @@ export function ProjectActivity({ projectId }: { projectId: string }) {
                     <ErrorMessage message={t("projectStats.loadFailed")} />
                 </div>
             ) : (
-                <div className="mt-4 flex flex-col gap-10">
+                <div className={`mt-4 flex flex-col gap-10${accent && HEX.test(accent) ? " chart-accent" : ""}`} style={accent && HEX.test(accent) ? ({ "--chart-accent": accent } as CSSProperties) : undefined}>
                     <StatCards stats={stats} />
                     <ContributionHeatmap activity={stats.activity} />
                     <CompletedAreaChart {...series} />
