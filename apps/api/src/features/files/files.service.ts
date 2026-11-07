@@ -73,6 +73,18 @@ export async function assertIssueInProject(projectId: string, issueId: string) {
     if (!issue || issue.deletedAt) throw new HttpError(400, "That issue is not in this project");
 }
 
+/** Removes a project file for any member. The bytes go with the row. */
+export async function deleteProjectFile(projectId: string, fileId: string, userId: string) {
+    await assertProjectMembership(projectId, userId);
+    const row = await db.query.files.findFirst({
+        where: and(eq(files.id, fileId), eq(files.projectId, projectId)),
+        columns: { id: true },
+    });
+    if (!row) throw new HttpError(404, "File not found");
+    await db.delete(files).where(eq(files.id, fileId));
+    await unlink(storedFilePath(fileId)).catch(() => undefined);
+}
+
 /** Files shown on the issue. Inline images uploaded with the issue id are included. */
 export async function listIssueFiles(projectId: string, issueId: string) {
     const rows = await db

@@ -24,6 +24,15 @@ export function uploadDirectory() {
     return configured ? path.resolve(configured) : path.resolve(process.cwd(), "uploads");
 }
 
+/** One profile photo per user, outside the project files table. */
+export function avatarFilePath(userId: string) {
+    if (!FILE_ID.test(userId)) throw new HttpError(400, "Invalid file");
+    const root = path.resolve(uploadDirectory(), "avatars");
+    const file = path.resolve(root, userId);
+    if (file !== path.join(root, userId)) throw new HttpError(400, "Invalid file");
+    return file;
+}
+
 /** The on-disk name is the id only, so the client's filename cannot leave this directory. */
 export function storedFilePath(id: string) {
     if (!FILE_ID.test(id)) throw new HttpError(400, "Invalid file");

@@ -305,7 +305,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                                     <Popover.Positioner sideOffset={8} collisionPadding={12} className="z-[60]">
                                         <Popover.Popup className={appearancePopupClass}>
                                             <Popover.Title className="sr-only">{t("appearance.pageIcon")}</Popover.Title>
-                                            <AppearancePicker value={state.iconAppearance} onChange={(iconAppearance) => session.edit({ iconAppearance })} onComplete={() => setIconPickerOpen(false)} />
+                                            <AppearancePicker projectId={page.projectId} value={state.iconAppearance} onChange={(iconAppearance) => session.edit({ iconAppearance })} onComplete={() => setIconPickerOpen(false)} />
                                         </Popover.Popup>
                                     </Popover.Positioner>
                                 </Popover.Portal>

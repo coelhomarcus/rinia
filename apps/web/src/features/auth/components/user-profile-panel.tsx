@@ -6,7 +6,7 @@ import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
 import { SettingsControl, SettingsGroup, settingsFieldClass } from "@/components/settings/settings-layout";
-import { AvatarUrlPicker } from "@/components/appearance/avatar-url-picker";
+import { AvatarPhotoPicker } from "@/components/appearance/avatar-url-picker";
 import { AUTH_QUERY_KEY, updateProfile } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
@@ -16,7 +16,7 @@ export const UserProfilePanel = () => {
     const { user } = useAuth();
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { control, handleSubmit, watch, reset, setError, formState } = useForm({
+    const { control, handleSubmit, watch, reset, setError, setValue, formState } = useForm({
         resolver: zodResolver(updateProfileSchema),
         defaultValues: { name: user?.name ?? "", avatarUrl: user?.avatarUrl ?? "" },
     });
@@ -41,15 +41,16 @@ export const UserProfilePanel = () => {
         <form noValidate onSubmit={handleSubmit((data) => mutation.mutate(data))}>
             <SettingsGroup>
                 <SettingsControl title={t("profile.profilePhoto")}>
-                    <Controller
-                        control={control}
-                        name="avatarUrl"
-                        render={({ field: avatar }) => (
-                            <AvatarUrlPicker value={avatar.value} initials={initials} onChange={avatar.onChange} disabled={mutation.isPending}>
-                                <Avatar key={previewUrl} src={previewUrl || undefined} initials={initials} size="sm" />
-                            </AvatarUrlPicker>
-                        )}
-                    />
+                    <AvatarPhotoPicker
+                        hasPhoto={Boolean(previewUrl)}
+                        disabled={mutation.isPending}
+                        onUpdated={(updated) => {
+                            queryClient.setQueryData(AUTH_QUERY_KEY, updated);
+                            setValue("avatarUrl", updated.avatarUrl ?? "", { shouldDirty: false });
+                        }}
+                    >
+                        <Avatar key={previewUrl} src={previewUrl || undefined} initials={initials} size="sm" />
+                    </AvatarPhotoPicker>
                 </SettingsControl>
                 <SettingsControl title={t("profile.email")}>
                     <span className="truncate text-md text-secondary">{user.email}</span>

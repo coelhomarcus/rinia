@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { localeSchema } from "../locales";
-import { remoteImageUrlSchema } from "./appearance";
+import { remoteImageUrlSchema, storedAvatarUrlSchema } from "./appearance";
 
 export const updateProfileSchema = z
     .object({
@@ -8,7 +8,7 @@ export const updateProfileSchema = z
         // Accepts "" (a cleared UI field) as equivalent to "remove the photo". Without this, a user
         // without an avatarUrl who only wants to edit their name would hit .url() on an empty field.
         avatarUrl: z
-            .union([remoteImageUrlSchema, z.literal("")])
+            .union([remoteImageUrlSchema, storedAvatarUrlSchema, z.literal("")])
             .nullable()
             .optional()
             .transform((value) => (value === "" ? null : value)),

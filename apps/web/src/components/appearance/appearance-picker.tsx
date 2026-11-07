@@ -1,8 +1,10 @@
 import type { EntityIcon } from "@rinia/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { ImagePlus, Smile, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { ImageCrop } from "@/components/appearance/image-crop";
+import { uploadProjectFile } from "@/features/editor/file-upload";
 import { ProjectIconPicker } from "@/features/projects/components/project-icon-picker";
 import { DEFAULT_PROJECT_ICON, ProjectIcon } from "@/features/projects/components/project-icon";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -21,30 +23,50 @@ interface AppearancePickerProps {
     value: EntityIcon | null | undefined;
     onChange: (appearance: EntityIcon | null) => void;
     onComplete?: () => void;
+    /** Uploads the cropped square into this project. Absent while the project does not exist yet. */
+    projectId?: string;
+    /** Holds the cropped file until the caller can upload it. */
+    onCroppedImage?: (file: File) => void;
 }
 
-export function AppearancePicker({ value, onChange, onComplete }: AppearancePickerProps) {
+export function AppearancePicker({ value, onChange, onComplete, projectId, onCroppedImage }: AppearancePickerProps) {
     const { t } = useTranslation();
     const [tab, setTab] = useState<Tab>(value?.type === "emoji" ? "emoji" : value?.type === "image" ? "image" : "icons");
     const [emoji, setEmoji] = useState(value?.type === "emoji" ? value.value : "");
-    const [url, setUrl] = useState(value?.type === "image" ? value.url : "");
+    const [source, setSource] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
     const [imageError, setImageError] = useState("");
+    const fileInput = useRef<HTMLInputElement>(null);
     useEffect(() => {
         if (value?.type === "emoji") setEmoji(value.value);
-        if (value?.type === "image") setUrl(value.url);
     }, [value]);
     const select = (next: EntityIcon | null) => {
         onChange(next);
         onComplete?.();
     };
-    const useImage = () => {
+    const chooseImage = (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+        setImageError("");
+        setSource(file);
+    };
+    const confirmImage = async (file: File) => {
+        setImageError("");
+        if (!projectId) {
+            onCroppedImage?.(file);
+            onComplete?.();
+            return;
+        }
+        setUploading(true);
         try {
-            const parsed = new URL(url.trim());
-            if (!/^https?:$/.test(parsed.protocol) || parsed.username || parsed.password) throw new Error();
-            setImageError("");
-            select({ type: "image", url: parsed.toString() });
-        } catch {
-            setImageError(t("appearance.httpImageUrl"));
+            const stored = await uploadProjectFile(projectId, file);
+            setSource(null);
+            select({ type: "image", url: stored.url });
+        } catch (reason) {
+            setImageError(reason instanceof Error ? reason.message : t("appearance.imageUploadFailed"));
+        } finally {
+            setUploading(false);
         }
     };
     const fieldClass = "min-w-0 w-full !items-stretch [&>span]:max-w-full [&>span]:whitespace-normal";
@@ -84,9 +106,16 @@ export function AppearancePicker({ value, onChange, onComplete }: AppearancePick
             )}
             {tab === "image" && (
                 <div className="flex min-w-0 flex-col gap-3">
-                    <Input className={fieldClass} size="sm" label={t("appearance.imageUrl")} value={url} onChange={(next) => { setUrl(next); setImageError(""); }} placeholder="https://..." isInvalid={!!imageError} hint={imageError || t("appearance.directImage")} />
-                    {url && <div className="flex h-20 items-center justify-center overflow-hidden rounded-md border border-subtle bg-surface-2"><img src={url} alt="" referrerPolicy="no-referrer" className="max-h-full max-w-full object-contain p-2" onError={() => setImageError(t("appearance.imageLoadFailed"))} /></div>}
-                    <Button size="sm" className="self-start" onClick={useImage}>{t("appearance.useImage")}</Button>
+                    <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="sr-only" onChange={chooseImage} />
+                    {source ? (
+                        <ImageCrop file={source} shape="square" busy={uploading} onCancel={() => setSource(null)} onConfirm={(file) => void confirmImage(file)} onError={setImageError} />
+                    ) : (
+                        <>
+                            {value?.type === "image" && <div className="mx-auto size-16 overflow-hidden rounded-md border border-subtle bg-surface-2"><img src={value.url} alt="" className="size-full object-cover" /></div>}
+                            <Button type="button" size="sm" className="self-start" iconLeading={ImagePlus} onClick={() => fileInput.current?.click()}>{t("appearance.chooseImage")}</Button>
+                        </>
+                    )}
+                    {imageError && <p role="alert" className="text-xs text-danger-primary">{imageError}</p>}
                 </div>
             )}
         </div>

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { documentParamsSchema } from "@rinia/shared";
 import { asyncHandler } from "../../middleware/async-handler";
 import { documentsRouter } from "../documents/documents.routes";
-import { begin as beginUpload, chunk as uploadChunk, complete as completeUpload, list as listFiles, upload as uploadFile } from "../files/files.controller";
+import { begin as beginUpload, chunk as uploadChunk, complete as completeUpload, list as listFiles, remove as removeFile, upload as uploadFile } from "../files/files.controller";
 import { projectIssuesRouter } from "../issues/issues.routes";
 import { categoriesRouter } from "../categories/categories.routes";
 import { columnsRouter } from "../columns/columns.routes";
@@ -53,6 +53,7 @@ projectsRouter.use(
 
 projectsRouter.get("/:projectId/files", requireProjectMember, listFiles);
 projectsRouter.post("/:projectId/files", requireProjectMember, uploadFile);
+projectsRouter.delete("/:projectId/files/:fileId", requireProjectMember, removeFile);
 projectsRouter.post("/:projectId/files/uploads", requireProjectMember, beginUpload);
 projectsRouter.put("/:projectId/files/uploads/:uploadId", requireProjectMember, uploadChunk);
 projectsRouter.post("/:projectId/files/uploads/:uploadId/complete", requireProjectMember, completeUpload);

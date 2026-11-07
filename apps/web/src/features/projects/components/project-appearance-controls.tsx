@@ -48,6 +48,7 @@ export function ProjectIconControl({
                     <Popover.Popup className={appearancePopupClass}>
                         <Popover.Title className="sr-only">{t("settings.projectIcon")}</Popover.Title>
                         <AppearancePicker
+                            projectId={projectId}
                             value={icon && typeof icon === "object" ? icon : undefined}
                             onChange={(iconAppearance) => update.mutate({ iconAppearance: iconAppearance as UpdateProjectInput["iconAppearance"] })}
                             onComplete={() => setOpen(false)}

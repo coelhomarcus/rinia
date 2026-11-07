@@ -23,8 +23,20 @@ export const catalogIconSchema = z.object({
     key: z.string().trim().min(1).max(100),
     color: iconColorSchema.optional(),
 });
+const UUID = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+
+/** A file this app stored for a project. The browser loads it with the session cookie. */
+export const storedFileUrlSchema = z.string().regex(new RegExp(`^/api/files/${UUID}$`), "Invalid file");
+
+/** A profile photo stored for one user. `v` changes when the photo changes. */
+export const storedAvatarUrlSchema = z.string().regex(new RegExp(`^/api/users/${UUID}/avatar\\?v=\\d+$`), "Invalid avatar");
+
+export function storedAvatarOwner(value: string) {
+    return new RegExp(`^/api/users/(${UUID})/avatar\\?v=\\d+$`).exec(value)?.[1] ?? null;
+}
+
 export const emojiIconSchema = z.object({ type: z.literal("emoji"), value: emojiValueSchema });
-export const imageIconSchema = z.object({ type: z.literal("image"), url: remoteImageUrlSchema });
+export const imageIconSchema = z.object({ type: z.literal("image"), url: z.union([remoteImageUrlSchema, storedFileUrlSchema]) });
 export const entityIconSchema = z.discriminatedUnion("type", [catalogIconSchema, emojiIconSchema, imageIconSchema]);
 
 export type EntityIcon = z.infer<typeof entityIconSchema>;

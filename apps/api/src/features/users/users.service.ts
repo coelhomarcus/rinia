@@ -1,4 +1,4 @@
-import type { Locale, UpdateProfileInput } from "@rinia/shared";
+import { storedAvatarOwner, type Locale, type UpdateProfileInput } from "@rinia/shared";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { users } from "../../db/schema";
@@ -6,6 +6,10 @@ import { HttpError } from "../../lib/http-error";
 import { toPublicUser } from "../auth/auth.service";
 
 export async function updateProfile(userId: string, input: UpdateProfileInput) {
+    if (typeof input.avatarUrl === "string") {
+        const owner = storedAvatarOwner(input.avatarUrl);
+        if (owner && owner.toLowerCase() !== userId.toLowerCase()) throw new HttpError(400, "Invalid avatar");
+    }
     const [user] = await db
         .update(users)
         .set({ ...input, updatedAt: new Date() })

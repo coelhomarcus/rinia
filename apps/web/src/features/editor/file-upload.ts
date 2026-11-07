@@ -21,6 +21,10 @@ export interface FileUploadTarget {
 
 export const issueFilesKey = (projectId: string, issueId: string) => ["projects", projectId, "files", issueId] as const;
 
+export function deleteProjectFile(projectId: string, fileId: string) {
+    return apiClient.delete<void>(`/projects/${projectId}/files/${fileId}`);
+}
+
 function uploadedFile(data: { file?: StoredFile; error?: string; fields?: ApiError["fields"]; code?: string; params?: ApiError["params"]; fieldCodes?: ApiError["fieldCodes"] }, response: Response) {
     if (!response.ok) throw new ApiError(response.status, data?.error ?? "Unexpected error", data?.fields, data?.code, data?.params, data?.fieldCodes);
     return data.file as StoredFile;

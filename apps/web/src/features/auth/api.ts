@@ -1,5 +1,6 @@
-import type { ApiTokenAccess, CreateApiTokenInput, LoginInput, RegisterInput, UpdateLocaleInput, UpdateProfileInput } from "@rinia/shared";
-import { apiClient } from "@/lib/api-client";
+import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type CreateApiTokenInput, type LoginInput, type RegisterInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
+import { ApiError, apiClient } from "@/lib/api-client";
+import { TAB_ID } from "@/lib/tab-id";
 
 export interface AuthUser {
     id: string;
@@ -36,6 +37,25 @@ export function logout(): Promise<void> {
 
 export async function updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
     const { user } = await apiClient.patch<{ user: AuthUser }>("/users/me", input);
+    return user;
+}
+
+export async function uploadAvatar(file: File): Promise<AuthUser> {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await fetch("/api/users/me/avatar", {
+        method: "PUT",
+        credentials: "include",
+        headers: { [REALTIME_CLIENT_HEADER]: TAB_ID },
+        body,
+    });
+    const data = await response.json().catch(() => undefined);
+    if (!response.ok) throw new ApiError(response.status, data?.error ?? "Unexpected error", data?.fields, data?.code, data?.params, data?.fieldCodes);
+    return data.user as AuthUser;
+}
+
+export async function deleteAvatar(): Promise<AuthUser> {
+    const { user } = await apiClient.delete<{ user: AuthUser }>("/users/me/avatar");
     return user;
 }
 

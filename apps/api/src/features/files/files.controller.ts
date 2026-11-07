@@ -5,7 +5,7 @@ import { asyncHandler } from "../../middleware/async-handler";
 import { HttpError } from "../../lib/http-error";
 import { UPLOAD_CHUNK_BYTES } from "@rinia/shared";
 import { contentDisposition, readMultipart, readRawBody } from "./files.http";
-import { listIssueFiles, openStoredFile, storeProjectFile } from "./files.service";
+import { deleteProjectFile, listIssueFiles, openStoredFile, storeProjectFile } from "./files.service";
 import { beginChunkedUpload, finishChunkedUpload, writeChunk } from "./files.uploads";
 
 export const upload = asyncHandler<{ projectId: string }>(async (req, res) => {
@@ -62,6 +62,11 @@ export const complete = asyncHandler<{ projectId: string; uploadId: string }>(as
 export const list = asyncHandler<{ projectId: string }>(async (req, res) => {
     const issueId = z.string().uuid().parse(req.query.issueId);
     res.json({ files: await listIssueFiles(z.string().uuid().parse(req.params.projectId), issueId) });
+});
+
+export const remove = asyncHandler<{ projectId: string; fileId: string }>(async (req, res) => {
+    await deleteProjectFile(z.string().uuid().parse(req.params.projectId), z.string().uuid().parse(req.params.fileId), req.user!.sub);
+    res.status(204).end();
 });
 
 export const download = asyncHandler<{ fileId: string }>(async (req, res) => {

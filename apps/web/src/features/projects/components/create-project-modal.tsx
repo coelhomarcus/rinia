@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createProjectSchema, suggestProjectKey } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Popover } from "@base-ui/react/popover";
 import { Controller, useForm } from "react-hook-form";
@@ -12,8 +13,10 @@ import { ControlledInput } from "@/components/form/controlled-input";
 import { ControlledTextarea } from "@/components/form/controlled-textarea";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { AppearancePicker, appearancePopupClass } from "@/components/appearance/appearance-picker";
+import { uploadProjectFile } from "@/features/editor/file-upload";
 import { ApiError } from "@/lib/api-client";
-import { useCreateProject } from "../hooks/use-projects";
+import { updateProject, type Project } from "../api";
+import { PROJECTS_QUERY_KEY, useCreateProject } from "../hooks/use-projects";
 import { DEFAULT_PROJECT_ICON, ProjectIcon } from "./project-icon";
 import { useTranslation } from "react-i18next";
 import { urls } from "@/lib/urls";
@@ -21,8 +24,16 @@ import { urls } from "@/lib/urls";
 /** `trigger` replaces the default "New project" button; it must accept a ref and click handlers. */
 export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
     const mutation = useCreateProject();
+    const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [iconPickerOpen, setIconPickerOpen] = useState(false);
+    const [pendingImage, setPendingImage] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const created = useRef<Project | null>(null);
+    useEffect(() => () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+    }, [previewUrl]);
     const { t } = useTranslation();
     const { control, handleSubmit, reset, setError, watch, formState } = useForm({
         resolver: zodResolver(createProjectSchema),
@@ -30,6 +41,20 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
     });
     const projectName = watch("name");
     const generatedIssueKey = suggestProjectKey(projectName);
+    const stageImage = (file: File) => {
+        setPendingImage(file);
+        setPreviewUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            return URL.createObjectURL(file);
+        });
+    };
+    const clearImage = () => {
+        setPendingImage(null);
+        setPreviewUrl((current) => {
+            if (current) URL.revokeObjectURL(current);
+            return null;
+        });
+    };
 
     return (
         <ModalDialog trigger={trigger ?? <Button iconLeading={Plus}>{t("nav.newProject")}</Button>} title={t("nav.newProject")} size="2xl">
@@ -37,19 +62,32 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
                 <form
                     className="flex flex-col gap-4"
                     noValidate
-                    onSubmit={handleSubmit((data) => {
-                        mutation.mutate(data, {
-                            onSuccess: (project) => {
-                                reset();
-                                close();
-                                navigate(urls.project(project.issueKey));
-                            },
-                            onError: (error) => {
-                                setError(error instanceof ApiError && error.status === 409 ? "issueKey" : "root", {
-                                    message: error instanceof ApiError ? error.message : t("projects.couldNotCreate"),
-                                });
-                            },
-                        });
+                    onSubmit={handleSubmit(async (data) => {
+                        setSaving(true);
+                        try {
+                            const existing = created.current;
+                            const project = existing ?? await mutation.mutateAsync(data);
+                            created.current = project;
+                            if (pendingImage) {
+                                const stored = await uploadProjectFile(project.id, pendingImage);
+                                await updateProject(project.id, { iconAppearance: { type: "image", url: stored.url } });
+                                await queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+                            } else if (existing) {
+                                await updateProject(project.id, { iconAppearance: data.iconAppearance });
+                                await queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+                            }
+                            created.current = null;
+                            clearImage();
+                            reset();
+                            close();
+                            navigate(urls.project(project.issueKey));
+                        } catch (error) {
+                            setError(error instanceof ApiError && error.status === 409 ? "issueKey" : "root", {
+                                message: error instanceof ApiError ? error.message : t("projects.couldNotCreate"),
+                            });
+                        } finally {
+                            setSaving(false);
+                        }
                     })}
                 >
                     <div className="flex min-w-0 items-stretch gap-2">
@@ -68,14 +106,19 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
                                             />
                                         }
                                     >
-                                        <ProjectIcon icon={field.value} className="size-5" />
+                                        <ProjectIcon icon={previewUrl ? { type: "image", url: previewUrl } : field.value} className="size-5" />
                                     </Popover.Trigger>
                                     </Tooltip>
                                     <Popover.Portal>
                                         <Popover.Positioner side="bottom" align="start" sideOffset={8} collisionPadding={12} className="z-[60]">
                                             <Popover.Popup className={appearancePopupClass}>
                                                 <Popover.Title className="sr-only">{t("projects.chooseIcon")}</Popover.Title>
-                                                <AppearancePicker value={field.value} onChange={field.onChange} onComplete={() => setIconPickerOpen(false)} />
+                                                <AppearancePicker
+                                                    value={previewUrl ? { type: "image", url: previewUrl } : field.value}
+                                                    onChange={(next) => { field.onChange(next); clearImage(); }}
+                                                    onCroppedImage={stageImage}
+                                                    onComplete={() => setIconPickerOpen(false)}
+                                                />
                                             </Popover.Popup>
                                         </Popover.Positioner>
                                     </Popover.Portal>
@@ -109,10 +152,10 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
                     {formState.errors.root && <p className="text-sm text-danger-primary">{formState.errors.root.message}</p>}
 
                     <div className="mt-1 flex justify-end gap-2 border-t border-subtle pt-3">
-                        <Button type="button" color="secondary" onClick={close}>
+                        <Button type="button" color="secondary" onClick={() => { created.current = null; close(); }}>
                                 {t("common.cancel")}
                         </Button>
-                        <Button type="submit" isLoading={mutation.isPending}>
+                        <Button type="submit" isLoading={saving}>
                             {t("projects.createProject")}
                         </Button>
                     </div>
