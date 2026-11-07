@@ -1,11 +1,14 @@
 import { z } from "zod";
+import { isStoredFilePath } from "../file-urls";
 import { entityIconSchema } from "./appearance";
 import { tiptapDocumentSchema } from "./issues";
 
-/** Page images load from the web only. An empty source is an image block still being filled in. */
+/** A page image is a file stored here, or an HTTP(S) URL. An empty source is a block still being filled in. */
 export function isAllowedImageSource(src: unknown): boolean {
   if (src === undefined || src === null || src === "") return true;
-  const url = z.string().url().safeParse(String(src));
+  const value = String(src).trim();
+  if (isStoredFilePath(value)) return true;
+  const url = z.string().url().safeParse(value);
   return url.success && /^https?:\/\//i.test(url.data);
 }
 

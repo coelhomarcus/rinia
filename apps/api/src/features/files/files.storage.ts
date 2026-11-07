@@ -5,6 +5,8 @@ import { HttpError } from "../../lib/http-error";
 
 export { UPLOAD_CHUNK_BYTES };
 
+/** A file nobody references is removed once it has been sitting this long. */
+export const FILE_RETENTION_MS = 24 * 60 * 60 * 1000;
 /** Images pasted into a description. */
 export const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 /** Other attachments on an issue. */
@@ -13,6 +15,10 @@ export const FILE_MAX_BYTES = 25 * 1024 * 1024;
 export const MULTIPART_MAX_BYTES = FILE_MAX_BYTES + 1024 * 1024;
 
 const FILE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isUploadId(value: string) {
+    return FILE_ID.test(value);
+}
 const BLOCKED_EXTENSIONS = new Set([".exe", ".dll", ".bat", ".cmd", ".com", ".scr", ".msi", ".app", ".dmg", ".pkg", ".apk", ".deb", ".rpm", ".sh", ".bash", ".bin", ".so", ".dylib"]);
 
 /**

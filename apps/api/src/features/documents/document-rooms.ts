@@ -1,5 +1,5 @@
 import { DOCUMENT_FRAGMENT, documentSchema } from "@rinia/shared/src/rich-text-schema";
-import { isAllowedImageSource, type PresenceViewer, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
+import { isAllowedImageSource, storedFileIds, type PresenceViewer, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
 import { prosemirrorJSONToYDoc, updateYFragment, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import * as decoding from "lib0/decoding";
@@ -241,7 +241,7 @@ class DocumentRoom {
 
     /**
      * Content arrives as Yjs updates, which skip the checks a save over REST had, so what no page may hold is taken out
-     * here, for everyone: images must load over HTTP(S), and only nodes the editor knows are kept.
+     * here, for everyone: an image is a stored file or an HTTP(S) URL, and only nodes the editor knows are kept.
      */
     private clean() {
         const doomed: Y.XmlElement[] = [];
@@ -393,6 +393,12 @@ export class DocumentRooms {
             // A malformed message from one client must not stop the others.
             logFor("documents").warn({ event: "document.bad_message", documentId: channel.slice("document:".length), userId: connection.user.id, err: error }, "ignoring a bad collaboration message");
         }
+    }
+
+    /** Stored files in pages that are open, including an edit that has not been saved yet. */
+    async referencedFileIds(): Promise<string[]> {
+        const rooms = await Promise.all([...this.rooms.values()].map((pending) => pending.catch(() => undefined)));
+        return rooms.flatMap((room) => (room ? storedFileIds(room.json()) : []));
     }
 
     /** The page as Tiptap JSON, including edits not yet saved, if someone has it open. */

@@ -83,6 +83,15 @@ test("document schemas accept URL images and reject non-HTTP schemes", () => {
   assert.equal(
     createDocumentSchema.safeParse({
       contentJson: {
+        type: "doc",
+        content: [{ type: "image", attrs: { src: "/api/files/11111111-1111-4111-8111-111111111111" } }],
+      },
+    }).success,
+    true,
+  );
+  assert.equal(
+    createDocumentSchema.safeParse({
+      contentJson: {
         ...contentJson,
         content: [
           { type: "image", attrs: { src: "data:image/png;base64,AAAA" } },

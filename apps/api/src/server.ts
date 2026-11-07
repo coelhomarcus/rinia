@@ -1,6 +1,7 @@
 import { app } from "./app";
 import { CONFIG_KEYS, env } from "./config/env";
 import { cleanupExpiredDeletes } from "./db/soft-delete-cleanup";
+import { cleanupOrphanFiles } from "./features/files/files.orphans";
 import { documentRooms } from "./features/documents/document-rooms";
 import { attachRealtime } from "./features/realtime/realtime.socket";
 import { logger } from "./lib/logger";
@@ -18,11 +19,16 @@ process.on("unhandledRejection", (reason) => {
 });
 
 const cleanupLog = logger.child({ module: "cleanup" });
-const cleanup = () =>
+const cleanup = () => {
     void cleanupExpiredDeletes().then(
         (removed) => cleanupLog.debug({ event: "cleanup.round", removed }, "expired deletions cleaned"),
         (error: unknown) => cleanupLog.error({ event: "cleanup.failed", err: error }, "could not clean expired undo records"),
     );
+    void cleanupOrphanFiles().then(
+        (removed) => cleanupLog.debug({ event: "cleanup.files", removed }, "unreferenced files cleaned"),
+        (error: unknown) => cleanupLog.error({ event: "cleanup.files_failed", err: error }, "could not clean unreferenced files"),
+    );
+};
 cleanup();
 setInterval(cleanup, 60_000).unref();
 
