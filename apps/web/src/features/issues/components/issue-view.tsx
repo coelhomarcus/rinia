@@ -1220,7 +1220,7 @@ function IssueSubIssues({ issue, columns, isCreating, onCreate }: { issue: Issue
                                 <li key={child.id} className="animate-enter" data-issue-id={child.id} data-issue-context="true" data-project-id={issue.projectId} data-issue-identifier={identifier} data-issue-title={child.title}>
                                     <Link to={urls.issue(identifier, child.title)} className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
                                         <StateIcon name={column?.name ?? ""} color={column?.color} />
-                                        <span className="w-16 shrink-0 text-tertiary">{identifier}</span>
+                                        <span className="shrink-0 whitespace-nowrap text-tertiary">{identifier}</span>
                                         <span className="min-w-0 truncate text-primary">{child.title}</span>
                                     </Link>
                                 </li>
