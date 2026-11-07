@@ -5,8 +5,77 @@ import Mention from "@tiptap/extension-mention";
 import { TableKit } from "@tiptap/extension-table";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
-import type { Schema } from "@tiptap/pm/model";
+import type { Mark, Schema } from "@tiptap/pm/model";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
+
+/** The URL itself, ignoring protocol and a trailing slash, so `example.com` and `https://example.com/` are one link. */
+function urlKey(value: string) {
+    return value.trim().replace(/\/+$/, "").replace(/^https?:\/\//i, "").toLowerCase();
+}
+
+/**
+ * Where a link's text stops being its own URL. A space never belongs to a URL, so `https://a.co hello` keeps the link
+ * on `https://a.co` and the rest is ordinary text. A phrase such as "see the docs" is not a URL and stays whole.
+ * Returns null when there is nothing to cut.
+ */
+export function urlLinkCut(text: string, href: string): number | null {
+    const match = /^(\S+)(?=\s)/.exec(text);
+    const head = match?.[1];
+    const key = head ? urlKey(head) : "";
+    if (!head || !key || key !== urlKey(href)) return null;
+    return head.length;
+}
+
+/** Drops the link mark from the space and the words after a URL. The cursor there must not keep typing the link. */
+function exitUrlLink(): Plugin {
+    return new Plugin({
+        key: new PluginKey("exitUrlLink"),
+        appendTransaction(transactions, _old, state) {
+            if (!transactions.some((tr) => tr.docChanged) || transactions.some((tr) => tr.getMeta("exitUrlLink"))) return null;
+            const link = state.schema.marks.link;
+            if (!link) return null;
+            const runs: { from: number; to: number; text: string; href: string }[] = [];
+            state.doc.descendants((node, pos) => {
+                if (!node.isText || !node.text) return;
+                const mark = link.isInSet(node.marks);
+                if (!mark) return;
+                const href = String(mark.attrs.href ?? "");
+                const from = pos;
+                const to = pos + node.text.length;
+                const previous = runs[runs.length - 1];
+                if (previous && previous.to === from && previous.href === href) {
+                    previous.to = to;
+                    previous.text += node.text;
+                } else runs.push({ from, to, text: node.text, href });
+            });
+            const tr = state.tr;
+            let changed = false;
+            for (const run of runs) {
+                const cut = urlLinkCut(run.text, run.href);
+                if (cut == null || cut >= run.text.length) continue;
+                tr.removeMark(run.from + cut, run.to, link);
+                changed = true;
+            }
+            if (!changed) return null;
+            const stored = tr.storedMarks ?? state.storedMarks;
+            const atCursor = tr.selection.empty ? tr.doc.resolve(tr.selection.from).marks() : null;
+            if (stored?.some((mark: Mark) => mark.type === link) && atCursor && !link.isInSet(atCursor)) {
+                tr.setStoredMarks(stored.filter((mark: Mark) => mark.type !== link));
+            }
+            tr.setMeta("exitUrlLink", true);
+            return tr;
+        },
+    });
+}
+
+/** Autolink stays on, but the mark does not swallow the space typed after a URL. Tiptap's own link is inclusive whenever autolink is. */
+const ExitOnSpaceLink = Link.extend({
+    inclusive: () => false,
+    addProseMirrorPlugins() {
+        return [...(this.parent?.() ?? []), exitUrlLink()];
+    },
+});
 
 /**
  * The rich text model, without any view code. Pages, issue descriptions and comments share it, each through a profile
@@ -43,7 +112,7 @@ export function richTextAllowsImages(profile: RichTextProfile) {
 export function richTextExtensionSet(profile: RichTextProfile) {
     return {
         starterKit: StarterKit.configure({ heading: { levels: [1, 2, 3] }, link: false, ...(profile === "document" && { undoRedo: false as const }) }),
-        link: Link.configure({ openOnClick: false, autolink: true, defaultProtocol: "https" }),
+        link: ExitOnSpaceLink.configure({ openOnClick: false, autolink: true, defaultProtocol: "https" }),
         taskList: TaskList,
         taskItem: TaskItem.configure({ nested: true }),
         table: TableKit.configure({ table: { resizable: profile === "document", renderWrapper: true, allowTableNodeSelection: true, cellMinWidth: 100 } }),

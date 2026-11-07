@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "bun:test";
 import { isMarkdownTable, markdownToTiptap, tiptapToMarkdown } from "@rinia/shared";
-import { checkRichText, richTextProfiles, richTextSchema } from "@rinia/shared/src/rich-text-schema";
+import { checkRichText, richTextProfiles, richTextSchema, urlLinkCut } from "@rinia/shared/src/rich-text-schema";
 
 const fixtures = join(import.meta.dir, "fixtures/markdown");
 const names = readdirSync(fixtures)
@@ -125,6 +125,18 @@ test("content that breaks the schema's structure is reported", () => {
     const tableInParagraph = { type: "doc", content: [{ type: "paragraph", content: [{ type: "table", content: [] }] }] };
     for (const profile of richTextProfiles) assert.equal(checkRichText(tableInParagraph, profile).ok, false);
     assert.deepEqual(checkRichText({ type: "doc", content: [] }, "comment"), { ok: true });
+});
+
+test("a space ends a link whose text is the URL, and a phrase stays linked", () => {
+    assert.equal(urlLinkCut("https://example.com hello", "https://example.com"), "https://example.com".length);
+    assert.equal(urlLinkCut("example.com hello", "https://example.com/"), "example.com".length);
+    assert.equal(urlLinkCut("https://example.com/docs hello", "https://example.com/docs"), "https://example.com/docs".length);
+    assert.equal(urlLinkCut("ver a documentação", "https://example.com"), null);
+    assert.equal(urlLinkCut("https://example.com", "https://example.com"), null);
+    assert.equal(urlLinkCut("https://example.com/docs hello", "https://example.com"), null);
+    assert.equal(richTextSchema("description").marks.link.spec.inclusive, false);
+    assert.equal(richTextSchema("document").marks.link.spec.inclusive, false);
+    assert.equal(richTextSchema("comment").marks.link.spec.inclusive, false);
 });
 
 test("a description with a table is valid and keeps the table", () => {
