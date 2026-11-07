@@ -7,7 +7,6 @@ import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { Issue, IssuePerson } from "@/features/issues/api";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
-import { OverflowTooltip } from "@/components/base/tooltip/tooltip";
 import { cx } from "@/utils/cx";
 import { useIssueSelection } from "@/features/issues/selection";
 
@@ -79,7 +78,7 @@ export const IssueCardContent = ({ issue, status, statuses = [], categories = []
         </div>
         <div className="mt-1 flex items-start gap-1">
             <StatusMenu value={status} statuses={statuses} onChange={(columnId) => onUpdate({ columnId })} className="text-tertiary" />
-            <OverflowTooltip as="p" title={issue.title} className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary">{issue.title}</OverflowTooltip>
+            <p className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary">{issue.title}</p>
         </div>
         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
             <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} />
