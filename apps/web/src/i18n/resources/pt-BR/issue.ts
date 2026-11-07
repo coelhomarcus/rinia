@@ -20,6 +20,8 @@ const issue = {
         branchCopied: "Nome da branch copiado. Cole no seu cliente git.", promptCopied: "Tarefa copiada com prompt",
         copyBranchName: "Copiar nome da branch", copyWithPrompt: "Copiar com prompt",
         promptInstructions: "Analise a tarefa descrita abaixo e utilize todas as informações fornecidas como contexto.\n\nSe a tarefa exigir implementação, examine primeiro a estrutura e as convenções existentes no projeto.\n\nRespeite os requisitos, critérios de aceitação e decisões registradas nos comentários.\n\nNão presuma que a tarefa ainda não foi executada: considere seu estado atual e verifique o que falta.\n\nAo finalizar, apresente as alterações realizadas, as validações executadas e eventuais pendências.",
+        promptFileAccess: "Ficheiros guardados na Rinia são URLs absolutos em /api/files/. Busque-os com o mesmo token da API, no cabeçalho Authorization: Bearer. Sem esse token o ficheiro não abre.",
+        attachments: "Anexos", addFile: "Adicionar ficheiro", fileUploadFailed: "Não foi possível enviar o ficheiro.",
         activityChange: "{{actor}} {{action}} de \"{{from}}\" para \"{{to}}\".", activityChangeTo: "{{actor}} {{action}} para \"{{to}}\".", activityChangeFrom: "{{actor}} {{action}} de \"{{from}}\".", activitySentence: "{{actor}} {{action}}.", activityWithValue: "{{actor}} {{action}} \"{{value}}\".", activityRelation: "{{actor}} {{action}}: {{detail}}.", promptReply: "resposta", promptReactions: "Reações",
         titleRequired: "O título não pode ficar vazio", titleReverted: "O título voltou ao valor anterior",
         changeStatus: "Mudar estado…", setPriority: "Definir prioridade…", assignTo: "Atribuir a…", setEstimate: "Estimar…",

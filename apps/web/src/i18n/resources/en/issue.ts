@@ -20,6 +20,8 @@ const issue = {
         branchCopied: "Branch name copied. Paste it into your git client.", promptCopied: "Issue copied with prompt",
         copyBranchName: "Copy git branch name", copyWithPrompt: "Copy with prompt",
         promptInstructions: "Analyze the task described below and use all of the information provided as context.\n\nIf the task requires implementation, first examine the project's existing structure and conventions.\n\nRespect the requirements, acceptance criteria, and decisions recorded in the comments.\n\nDo not assume the task has not been done yet: consider its current status and check what is still missing.\n\nWhen you finish, present the changes you made, the checks you ran, and anything still open.",
+        promptFileAccess: "Files stored in Rinia are absolute URLs under /api/files/. Fetch them with the same API token, in an Authorization: Bearer header. Without that token the file does not open.",
+        attachments: "Attachments", addFile: "Add file", fileUploadFailed: "Could not upload the file.",
         activityChange: "{{actor}} {{action}} from \"{{from}}\" to \"{{to}}\".", activityChangeTo: "{{actor}} {{action}} to \"{{to}}\".", activityChangeFrom: "{{actor}} {{action}} from \"{{from}}\".", activitySentence: "{{actor}} {{action}}.", activityWithValue: "{{actor}} {{action}} \"{{value}}\".", activityRelation: "{{actor}} {{action}}: {{detail}}.", promptReply: "reply", promptReactions: "Reactions",
         titleRequired: "Title cannot be empty", titleReverted: "Reverted the title to its previous value",
         changeStatus: "Change status…", setPriority: "Set priority…", assignTo: "Assign to…", setEstimate: "Estimate…",

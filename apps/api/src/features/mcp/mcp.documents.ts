@@ -1,4 +1,4 @@
-import { appPaths, createDocumentSchema, markdownToTiptap, matchDocumentSlug, tiptapToMarkdown, type TiptapDocument } from "@rinia/shared";
+import { appPaths, createDocumentSchema, markdownToTiptap, matchDocumentSlug, type TiptapDocument } from "@rinia/shared";
 import { z } from "zod";
 import { HttpError } from "../../lib/http-error";
 import { createDocument, getSavedDocument, listDocuments, updateDocument, writeDocumentContent } from "../documents/documents.service";
@@ -10,7 +10,7 @@ const APPEND_ATTEMPTS = 3;
 const pageOutput = { ...outputs.page.shape, revision: z.number().describe("Pass this to update_document to replace the content."), updatedAt: z.string(), content: z.string() };
 
 export function registerDocumentTools(context: McpContext) {
-    const { tool, user, source, link, projectByKey, projectsOrAll } = context;
+    const { tool, user, source, link, projectByKey, projectsOrAll, markdown } = context;
     const pageUrl = (space: Workspace, document: { id: string; title: string }) => link(appPaths.document(space.project.issueKey, document));
 
     /** A page by its id, URL, slug or title. */
@@ -22,7 +22,7 @@ export function registerDocumentTools(context: McpContext) {
         return match;
     }
 
-    function describe(space: Workspace, document: { id: string; title: string; revision: number; updatedAt: Date; contentJson: Parameters<typeof tiptapToMarkdown>[0] }) {
+    function describe(space: Workspace, document: { id: string; title: string; revision: number; updatedAt: Date; contentJson: { content?: unknown[] } | null }) {
         return {
             id: document.id,
             title: document.title,
@@ -30,7 +30,7 @@ export function registerDocumentTools(context: McpContext) {
             url: pageUrl(space, document),
             revision: document.revision,
             updatedAt: document.updatedAt.toISOString(),
-            content: tiptapToMarkdown(document.contentJson),
+            content: markdown(document.contentJson),
         };
     }
 

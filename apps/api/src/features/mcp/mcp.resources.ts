@@ -1,6 +1,6 @@
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GetPromptResult, ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
-import { appPaths, columnBucket, tiptapToMarkdown } from "@rinia/shared";
+import { appPaths, columnBucket } from "@rinia/shared";
 import { z } from "zod";
 import { getSavedDocument, listDocuments } from "../documents/documents.service";
 import { listProjectsForUser } from "../projects/projects.service";
@@ -17,7 +17,7 @@ type Variables = Record<string, string | string[] | undefined>;
  * @-mention in Claude Code), and prompts for the jobs people most often bring to Rinia.
  */
 export function registerResourcesAndPrompts(context: McpContext) {
-    const { server, user, link, workspace, projectByKey, issueByIdentifier } = context;
+    const { server, user, link, workspace, projectByKey, issueByIdentifier, markdown } = context;
     // Plain signatures instead of the SDK's generic ones, which exhaust the TypeScript compiler on Zod shapes, as for tools.
     const resource = server.registerResource.bind(server) as unknown as (
         name: string,
@@ -45,7 +45,7 @@ export function registerResourcesAndPrompts(context: McpContext) {
                 issue.dueDate ? `Due: ${issue.dueDate}` : null,
                 `Link: ${link(appPaths.issue(space.identifier(issue), issue.title))}`,
             ].filter(Boolean);
-            const text = `# ${space.identifier(issue)}: ${issue.title}\n\n${facts.map((fact) => `- ${fact}`).join("\n")}\n\n${tiptapToMarkdown(issue.descriptionJson)}`;
+            const text = `# ${space.identifier(issue)}: ${issue.title}\n\n${facts.map((fact) => `- ${fact}`).join("\n")}\n\n${markdown(issue.descriptionJson)}`;
             return { contents: [{ uri: uri.href, mimeType: MARKDOWN, text }] };
         },
     );
@@ -67,7 +67,7 @@ export function registerResourcesAndPrompts(context: McpContext) {
         async (uri, { project, id }) => {
             const space = await projectByKey(one(project));
             const document = await getSavedDocument(space.project.id, one(id));
-            return { contents: [{ uri: uri.href, mimeType: MARKDOWN, text: `# ${document.title}\n\n${tiptapToMarkdown(document.contentJson)}` }] };
+            return { contents: [{ uri: uri.href, mimeType: MARKDOWN, text: `# ${document.title}\n\n${markdown(document.contentJson)}` }] };
         },
     );
 

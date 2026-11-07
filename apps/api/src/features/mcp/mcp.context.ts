@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
-import { appPaths, issuePriorityValues, type ActionSource, type ApiTokenAccess, type IssuePriority } from "@rinia/shared";
+import { absoluteStoredFileUrls, appPaths, issuePriorityValues, tiptapToMarkdown, type ActionSource, type ApiTokenAccess, type IssuePriority } from "@rinia/shared";
 import { z, ZodError } from "zod";
 import { HttpError } from "../../lib/http-error";
 import type { JwtPayload } from "../../lib/jwt";
@@ -180,6 +180,7 @@ export function createMcpContext(server: McpServer, { user, baseUrl, client = nu
     }
 
     const issueUrl = (identifier: string, title: string) => link(appPaths.issue(identifier, title));
+    const markdown = (document: Parameters<typeof tiptapToMarkdown>[0]) => absoluteStoredFileUrls(tiptapToMarkdown(document), baseUrl);
 
     function summarize(space: Workspace, issue: IssueForSummary): z.input<typeof outputs.issueSummary> {
         const identifier = space.identifier(issue);
@@ -197,7 +198,7 @@ export function createMcpContext(server: McpServer, { user, baseUrl, client = nu
         };
     }
 
-    return { server, user, source, link, tool, workspace, projectByKey, projectsOrAll, issueByIdentifier, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize };
+    return { server, user, source, link, tool, workspace, projectByKey, projectsOrAll, issueByIdentifier, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize, markdown };
 }
 
 export type McpContext = ReturnType<typeof createMcpContext>;

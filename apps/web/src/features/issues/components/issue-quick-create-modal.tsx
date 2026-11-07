@@ -173,6 +173,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                                     toolbar={false}
                                     variant="description"
                                     content={description}
+                                    uploads={{ projectId }}
                                     onChange={setDescription}
                                     onSubmitShortcut={submit}
                                     placeholder={t("issue.addDescription")}

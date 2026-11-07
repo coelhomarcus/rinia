@@ -61,7 +61,9 @@ import {
 import { restoreIssue as restoreDeletedIssue, restoreIssueComment, type DescriptionRevision, type IssueDetail, type ReactionGroup } from "../api";
 import { ReactionChips, ReactionPicker } from "./comment-reactions";
 import { DescriptionHistorySheet } from "./description-history";
+import { IssueFiles } from "./issue-files";
 import { fetchIssueClipboardContent } from "../lib/issue-clipboard";
+import { issueFilesKey, type FileUploadTarget } from "@/features/editor/file-upload";
 import { issueDescriptionDrafts, issueDraftKey } from "../lib/issue-description-drafts";
 import { formatDistanceToNow, formatFullIssueDate } from "../lib/relative-time";
 import { DueDatePopover } from "./due-date-picker";
@@ -610,6 +612,7 @@ export const IssueView = () => {
                                 toolbar={false}
                                 variant="description"
                                 content={description}
+                                uploads={{ projectId: issue.projectId, issueId: issue.id, onUploaded: () => void queryClient.invalidateQueries({ queryKey: issueFilesKey(issue.projectId, issue.id) }) }}
                                 onChange={(value) => {
                                     descriptionDirty.current = true;
                                     descriptionVersion.current += 1;
@@ -663,6 +666,8 @@ export const IssueView = () => {
                             </div>
                         )}
 
+                        <IssueFiles projectId={issue.projectId} issueId={issue.id} />
+
                         <IssueSubIssues issue={issue} columns={columns ?? []} isCreating={createIssue.isPending} onCreate={createSubIssue} />
 
                         <Collapse open={relationsOpen || !!relations?.length} lazy={false}>
@@ -700,6 +705,7 @@ export const IssueView = () => {
                                 }}
                                 isSubmitting={createComment.isPending || updateComment.isPending || deleteComment.isPending}
                                 error={commentSaveError}
+                                uploads={{ projectId: issue.projectId, issueId: issue.id, onUploaded: () => void queryClient.invalidateQueries({ queryKey: issueFilesKey(issue.projectId, issue.id) }) }}
                                 onSubmit={async () => {
                                     if (!hasMeaningfulTiptapContent(comment)) return;
                                     const submittedIssueId = issue.id;
@@ -1385,6 +1391,7 @@ function IssueTimeline({
     onChange,
     isSubmitting,
     error,
+    uploads = null,
     onSubmit,
     onDelete,
     onEdit,
@@ -1404,6 +1411,7 @@ function IssueTimeline({
     onChange: (value: TiptapDocument) => void;
     isSubmitting: boolean;
     error?: string | null;
+    uploads?: FileUploadTarget | null;
     onSubmit: () => void | Promise<void>;
     onDelete: (id: string) => void | Promise<void>;
     onEdit: (id: string, contentJson: TiptapDocument) => void | Promise<void>;
@@ -1444,6 +1452,7 @@ function IssueTimeline({
                                 isSubmitting={isSubmitting}
                                 onDelete={onDelete}
                                 onEdit={onEdit}
+                                uploads={uploads}
                             />
                         ) : (
                             <TimelineActivity key={`a-${item.entry.id}`} entry={item.entry} lookups={lookups} />
@@ -1452,7 +1461,7 @@ function IssueTimeline({
                 </ol>
             )}
             <div className="mt-4 rounded-xl border border-subtle bg-layer-1 transition-colors duration-150 focus-within:border-[var(--border-strong-1)]">
-                <RichTextEditor toolbar={false} variant="comment" content={value} onChange={onChange} onSubmitShortcut={onSubmit} placeholder={t("issue.leaveComment")} mentionItems={mentionItems} className="issue-comment-composer" />
+                <RichTextEditor toolbar={false} variant="comment" content={value} onChange={onChange} onSubmitShortcut={onSubmit} placeholder={t("issue.leaveComment")} mentionItems={mentionItems} uploads={uploads} className="issue-comment-composer" />
                 <div className="flex items-center justify-end gap-2 px-3 pb-3">
                     <Tooltip title={t("issue.commentAction")}>
                         <span className={cx("inline-flex", !canSend && "cursor-not-allowed")}>
@@ -1481,6 +1490,7 @@ type CommentActions = {
     onReact: (commentId: string, emoji: string, add: boolean) => void;
     onDelete: (id: string) => void | Promise<void>;
     onEdit: (id: string, contentJson: TiptapDocument) => void | Promise<void>;
+    uploads?: FileUploadTarget | null;
 };
 
 /**
@@ -1501,7 +1511,7 @@ function TimelineThread({ entry, replies, currentUser, onReply, ...actions }: Co
                     <CommentItem entry={reply} replyCount={0} {...actions} />
                 </div>
             ))}
-            <ReplyComposer currentUser={currentUser} mentionItems={actions.mentionItems} onSubmit={(contentJson) => onReply(entry.id, contentJson)} />
+            <ReplyComposer currentUser={currentUser} mentionItems={actions.mentionItems} uploads={actions.uploads} onSubmit={(contentJson) => onReply(entry.id, contentJson)} />
         </li>
     );
 }
@@ -1510,7 +1520,7 @@ function TimelineThread({ entry, replies, currentUser, onReply, ...actions }: Co
  * "Leave a reply…" under a thread. It grows as you type and sends with the arrow or Cmd/Ctrl+Enter. Until someone clicks
  * into it, it is plain text: a long discussion has a reply box per thread, and each editor costs as much as a comment.
  */
-function ReplyComposer({ currentUser, mentionItems, onSubmit }: { currentUser: { name: string; avatarUrl: string | null } | null; mentionItems: MentionItem[]; onSubmit: (contentJson: TiptapDocument) => Promise<void> }) {
+function ReplyComposer({ currentUser, mentionItems, uploads = null, onSubmit }: { currentUser: { name: string; avatarUrl: string | null } | null; mentionItems: MentionItem[]; uploads?: FileUploadTarget | null; onSubmit: (contentJson: TiptapDocument) => Promise<void> }) {
     const { t } = useTranslation();
     const [active, setActive] = useState(false);
     const [value, setValue] = useState<TiptapDocument>(EMPTY_TIPTAP_DOCUMENT);
@@ -1553,6 +1563,7 @@ function ReplyComposer({ currentUser, mentionItems, onSubmit }: { currentUser: {
                         onSubmitShortcut={() => void send()}
                         placeholder={t("issue.leaveReply")}
                         mentionItems={mentionItems}
+                        uploads={uploads}
                         autoFocus
                         className="issue-reply-composer min-w-0 flex-1"
                     />
@@ -1580,7 +1591,7 @@ function ReplyComposer({ currentUser, mentionItems, onSubmit }: { currentUser: {
     );
 }
 
-function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, isSubmitting, onDelete, onEdit }: CommentActions & { entry: CommentEntry; replyCount: number }) {
+function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, uploads = null, isSubmitting, onDelete, onEdit }: CommentActions & { entry: CommentEntry; replyCount: number }) {
     const { t, i18n } = useTranslation();
     const [editing, setEditing] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -1612,7 +1623,7 @@ function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, 
             </div>
             {editing ? (
                 <>
-                    <RichTextEditor toolbar={false} variant="comment" content={draft} onChange={setDraft} mentionItems={mentionItems} className="issue-comment-composer" />
+                    <RichTextEditor toolbar={false} variant="comment" content={draft} onChange={setDraft} mentionItems={mentionItems} uploads={uploads} className="issue-comment-composer" />
                     <div className="mt-2 flex justify-end gap-2">
                         <Button size="xs" color="tertiary" onClick={() => setEditing(false)}>{t("common.cancel")}</Button>
                         <Button size="xs" isLoading={isSubmitting} onClick={async () => {

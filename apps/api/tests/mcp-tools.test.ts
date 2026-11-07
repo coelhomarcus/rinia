@@ -114,6 +114,19 @@ test("get_issue returns the description revision that update_issue needs", async
     assert.equal(data?.description, "Steps to reproduce");
 });
 
+test("get_issue gives an agent an absolute file URL", async () => {
+    stubWorkspace();
+    const id = "11111111-2222-4333-8444-555555555555";
+    spyOn(issuesService, "getIssueOrThrow").mockImplementation((async () => issue({
+        descriptionJson: { type: "doc", content: [{ type: "image", attrs: { src: `/api/files/${id}`, alt: "shot" } }] },
+    })) as never);
+    spyOn(issuesService, "listIssueComments").mockImplementation((async () => []) as never);
+    spyOn(issuesService, "listIssueRelations").mockImplementation((async () => []) as never);
+    const { data } = await call(await connect(), "get_issue", { issue: "RIN-4" });
+    assert.match(String(data?.description), new RegExp(`https://rinia\\.test/api/files/${id}`));
+    assert.doesNotMatch(String(data?.description), /\]\(\/api\/files\//);
+});
+
 test("changing a description without the revision read is refused before anything is saved", async () => {
     stubWorkspace();
     spyOn(issuesService, "getIssueOrThrow").mockImplementation((async () => issue()) as never);

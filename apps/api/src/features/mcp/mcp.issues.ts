@@ -1,4 +1,4 @@
-import { columnBucket, createIssueSchema, defaultIssueColumn, dueDateSchema, issueEstimateValues, issuePriorityValues, issueRelationValues, markdownToTiptap, myIssuesFilterValues, nextLabels, tiptapToMarkdown, updateIssueSchema, type UpdateIssueInput } from "@rinia/shared";
+import { columnBucket, createIssueSchema, defaultIssueColumn, dueDateSchema, issueEstimateValues, issuePriorityValues, issueRelationValues, markdownToTiptap, myIssuesFilterValues, nextLabels, updateIssueSchema, type UpdateIssueInput } from "@rinia/shared";
 import { z } from "zod";
 import { HttpError } from "../../lib/http-error";
 import {
@@ -43,7 +43,7 @@ const fromSide = (type: (typeof issueRelationValues)[number], outgoing: boolean)
 const relationOutput = z.object({ type: z.enum(issueRelationValues), issue: z.string(), title: z.string() });
 
 export function registerIssueTools(context: McpContext) {
-    const { tool, user, source, projectsOrAll, projectByKey, issueByIdentifier, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize } = context;
+    const { tool, user, source, projectsOrAll, projectByKey, issueByIdentifier, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize, markdown } = context;
 
     async function relationsOf(issueId: string) {
         const relations = await listIssueRelations(issueId, user.sub);
@@ -178,14 +178,14 @@ export function registerIssueTools(context: McpContext) {
         async (args) => {
             const { issue, space } = await issueByIdentifier(args.issue);
             const [comments, relations] = await Promise.all([listIssueComments(issue.id, user.sub), relationsOf(issue.id)]);
-            const comment = (entry: (typeof comments)[number]) => ({ id: entry.id, author: entry.author.username, createdAt: entry.createdAt.toISOString(), body: tiptapToMarkdown(entry.contentJson) });
+            const comment = (entry: (typeof comments)[number]) => ({ id: entry.id, author: entry.author.username, createdAt: entry.createdAt.toISOString(), body: markdown(entry.contentJson) });
             return {
                 ...summarize(space, issue),
                 project: { key: space.project.issueKey, name: space.project.name },
                 createdBy: issue.createdBy.username,
                 createdAt: issue.createdAt.toISOString(),
                 parent: issue.parent && { identifier: space.identifier(issue.parent), title: issue.parent.title },
-                description: tiptapToMarkdown(issue.descriptionJson),
+                description: markdown(issue.descriptionJson),
                 descriptionRevision: issue.descriptionRevision,
                 subIssues: issue.children.map((child) => ({ identifier: space.identifier(child), title: child.title, state: space.stateName(child.columnId), priority: child.priority })),
                 relations: relations.map(({ id: _id, ...relation }) => relation),
@@ -293,7 +293,7 @@ export function registerIssueTools(context: McpContext) {
                 const { issue: current } = await issueByIdentifier(identifier);
                 throw new HttpError(
                     409,
-                    `${identifier}'s description changed after revision ${args.descriptionRevision}; it is now at revision ${current.descriptionRevision}. Nothing was changed. Its description is now:\n\n${tiptapToMarkdown(current.descriptionJson)}\n\nMerge your change into this text and call update_issue again with descriptionRevision: ${current.descriptionRevision}.`,
+                    `${identifier}'s description changed after revision ${args.descriptionRevision}; it is now at revision ${current.descriptionRevision}. Nothing was changed. Its description is now:\n\n${markdown(current.descriptionJson)}\n\nMerge your change into this text and call update_issue again with descriptionRevision: ${current.descriptionRevision}.`,
                 );
             }
             return summarize(space, (await issueByIdentifier(identifier)).issue);

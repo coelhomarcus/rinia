@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n/i18n";
 import { DocumentImage } from "@/features/documents/components/document-image";
 import { type EditorCommand, commandIcons, executeBlockCommand, filterBlockCommands } from "@/features/editor/commands";
+import { FileDrop, type FileUploadTarget } from "@/features/editor/file-upload";
 import { MarkdownTablePaste } from "@/features/editor/markdown-paste";
 import { TableControls } from "@/features/editor/table-controls";
 import { TableActionsMenu } from "@/features/editor/table-menu";
@@ -186,6 +187,8 @@ interface RichTextEditorProps {
     variant?: RichTextProfile;
     /** Puts the cursor at the end once the editor is ready, for editors that appear when someone clicks to write. */
     autoFocus?: boolean;
+    /** Where a pasted or dropped file is uploaded. Comments receive a link; descriptions receive an image. */
+    uploads?: FileUploadTarget | null;
 }
 
 /**
@@ -193,7 +196,7 @@ interface RichTextEditorProps {
  * on save. Content the profile cannot read is never loaded: the editor shows it as saved and sends no changes, so
  * nothing is overwritten with an empty document.
  */
-export const RichTextEditor = ({ content, editable = true, onChange, placeholder, mentionItems = [], className, onSubmitShortcut, variant = "description", toolbar = true, autoFocus = false }: RichTextEditorProps) => {
+export const RichTextEditor = ({ content, editable = true, onChange, placeholder, mentionItems = [], className, onSubmitShortcut, variant = "description", toolbar = true, autoFocus = false, uploads = null }: RichTextEditorProps) => {
     const { t } = useTranslation();
     const mentionItemsRef = useRef(mentionItems);
     mentionItemsRef.current = mentionItems;
@@ -205,6 +208,12 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
     const syncingRef = useRef(false);
     const emittedRef = useRef<TiptapDocument | null>(null);
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const uploadsRef = useRef(uploads);
+    const variantRef = useRef(variant);
+    uploadsRef.current = uploads;
+    variantRef.current = variant;
     onChangeRef.current = onChange;
     onSubmitShortcutRef.current = onSubmitShortcut;
     placeholderRef.current = placeholder;
@@ -240,7 +249,7 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
                 ...(shared.image ? [DocumentImage] : []),
                 shared.mention.configure({ suggestion: mentionSuggestion }),
                 Placeholder.configure({ placeholder: () => placeholderRef.current ?? i18n.t("editor.writeSomething") }),
-                ...(editable ? [createSlashSuggestion(variant), MarkdownTablePaste.configure({ profile: variant })] : []),
+                ...(editable ? [createSlashSuggestion(variant), MarkdownTablePaste.configure({ profile: variant }), FileDrop.configure({ target: () => uploadsRef.current, profile: () => variantRef.current, onStart: () => { setUploadError(null); setUploading(true); }, onDone: () => setUploading(false), onError: setUploadError })] : []),
             ];
         })(),
         onUpdate: ({ editor: currentEditor }) => {
@@ -275,6 +284,7 @@ export const RichTextEditor = ({ content, editable = true, onChange, placeholder
         {editable && editor && <RichTextBubbleMenu editor={editor} />}
         {editable && editor && <TableControls editor={editor} container={container} />}
         <EditorContent editor={editor} />
+        {(uploading || uploadError) && <p role="status" className={cx("px-1 pt-1 text-xs", uploadError ? "text-danger-primary" : "text-tertiary")}>{uploadError ?? t("editor.uploadingImage")}</p>}
     </div>;
 };
 

@@ -35,5 +35,6 @@ export async function fetchIssueClipboardContent(identifier: string, overrides?:
         lookups: { columns, members, categories, issues: lookups?.issues },
         locale,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        origin: typeof window === "undefined" ? "" : window.location.origin,
     });
 }

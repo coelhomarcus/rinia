@@ -276,6 +276,19 @@ describe("buildIssuePrompt", () => {
         expect(text).toContain('Marcus Coelho changed the status from "In progress" to "Done".');
         expect(text).toContain("- LINKORD-12: Limpar imports — In progress");
     });
+
+    test("turns a stored image into an absolute URL and says to send the token", () => {
+        const id = "11111111-2222-4333-8444-555555555555";
+        const text = prompt({
+            locale: "en",
+            origin: "https://rinia.test",
+            overrides: { description: { type: "doc", content: [{ type: "image", attrs: { src: `/api/files/${id}`, alt: "shot" } }] } },
+        });
+        expect(text).toContain(`https://rinia.test/api/files/${id}`);
+        expect(text).not.toContain(`](/api/files/${id})`);
+        expect(text).toContain(issueEn.promptFileAccess);
+        expect(text).toContain("Authorization: Bearer");
+    });
 });
 
 describe("copy with prompt labels", () => {

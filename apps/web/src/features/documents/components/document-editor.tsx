@@ -14,6 +14,7 @@ import "./document-editor.css";
 import { DocumentFormatMenu } from "./document-format-menu";
 import { DocumentImage } from "./document-image";
 import { type EditorCommand, executeBlockCommand, filterBlockCommands } from "@/features/editor/commands";
+import { FileDrop } from "@/features/editor/file-upload";
 import "@/features/editor/editor-ui.css";
 import { MarkdownTablePaste } from "@/features/editor/markdown-paste";
 import { TableControls } from "@/features/editor/table-controls";
@@ -130,18 +131,24 @@ export function DocumentEditor({
     provider,
     user,
     members,
+    projectId,
     disabled = false,
 }: {
     /** The page's collaborative document. Edits go straight into it, and other people's edits and cursors come out of it. */
     provider: DocumentProvider;
     user: { id: string; name: string };
     members: { id: string; name: string }[];
+    projectId: string;
     disabled?: boolean;
 }) {
     const { t } = useTranslation();
     const membersRef = useRef(members);
     membersRef.current = members;
+    const projectIdRef = useRef(projectId);
+    projectIdRef.current = projectId;
     const [container, setContainer] = useState<HTMLDivElement | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState<string | null>(null);
     const editor = useEditor(
         {
             immediatelyRender: false,
@@ -167,6 +174,13 @@ export function DocumentEditor({
                 }),
                 SlashCommands,
                 MarkdownTablePaste.configure({ profile: "document" }),
+                FileDrop.configure({
+                    target: () => (projectIdRef.current ? { projectId: projectIdRef.current } : null),
+                    profile: () => "document",
+                    onStart: () => { setUploadError(null); setUploading(true); },
+                    onDone: () => setUploading(false),
+                    onError: setUploadError,
+                }),
                 HeadingEnter,
                 Collaboration.configure({ document: provider.doc, field: DOCUMENT_FRAGMENT }),
                 CollaborationCaret.configure({ provider, user: { id: user.id, name: user.name }, render: renderCaret, selectionRender: renderSelection }),
@@ -233,6 +247,7 @@ export function DocumentEditor({
                 </>
             )}
             <EditorContent editor={editor} className="document-editor-content" />
+            {(uploading || uploadError) && <p role="status" className={uploading && !uploadError ? "px-1 pt-1 text-xs text-tertiary" : "px-1 pt-1 text-xs text-danger-primary"}>{uploadError ?? t("editor.uploadingImage")}</p>}
         </div>
     );
 }

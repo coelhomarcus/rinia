@@ -1,4 +1,5 @@
 node_modules/
+apps/api/uploads/
 dist/
 .env
 .env.local

@@ -225,6 +225,20 @@
       "when": 1790300000000,
       "tag": "0031_mcp_access",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790400000000,
+      "tag": "0032_files",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790500000000,
+      "tag": "0033_file_names",
+      "breakpoints": true
     }
   ]
 }

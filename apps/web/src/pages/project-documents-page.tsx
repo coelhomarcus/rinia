@@ -332,6 +332,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                             provider={provider}
                             user={{ id: userId, name: user?.name ?? "" }}
                             members={members}
+                            projectId={page.projectId}
                             disabled={busy || state.status === "deleted"}
                         />
                     </div>

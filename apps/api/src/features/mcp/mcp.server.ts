@@ -12,7 +12,8 @@ export type { McpActor } from "./mcp.context";
 const MARKDOWN_GUIDE = `Markdown (GitHub-flavoured) supports: headings # to ### (#### and deeper become ###), **bold**, *italic*, ~~strike~~, \`code\`, [links](https://...),
 bullet, numbered and task lists (- [ ] / - [x]) nested by indentation, > quotes, fenced code blocks with a language, --- dividers,
 tables (| a | b | with a | --- | --- | row; use <br> for a line break inside a cell and \\| for a pipe), and images ![alt](https://...) in descriptions and pages
-(in comments an image becomes a link). A line break inside a paragraph is kept. Mention someone with [@ id="<user id>" label="<name>"], as get_issue returns them.
+(in comments an image becomes a link). A file stored in Rinia is an absolute URL ending in /api/files/<id>. Fetch that URL with the same token (Authorization: Bearer); without it the file does not open.
+A line break inside a paragraph is kept. Mention someone with [@ id="<user id>" label="<name>"], as get_issue returns them.
 HTML is shown as text.`;
 
 const INSTRUCTIONS = `Rinia is a project tracker. Projects are named by a short key such as RIN, and issues by their identifier, such as RIN-4.

@@ -1,5 +1,5 @@
 import type { ActionSource, TiptapDocument } from "@rinia/shared";
-import { tiptapToMarkdown } from "@rinia/shared";
+import { absoluteFileReference, absoluteStoredFileUrls, isStoredFilePath, tiptapToMarkdown } from "@rinia/shared";
 import i18n from "../../../i18n/i18n";
 import type { TranslationKey } from "../../../i18n/resources";
 import { translateStatusName } from "../../../i18n/status-label";
@@ -23,6 +23,8 @@ export interface IssuePromptInput {
     lookups?: IssuePromptLookups;
     locale: string;
     timeZone: string;
+    /** Public origin, so a stored file becomes a URL an agent can request. */
+    origin?: string;
 }
 
 const activityLabelKeys: Record<string, TranslationKey> = {
@@ -55,7 +57,7 @@ type RichNode = { type?: string; text?: string; attrs?: Record<string, unknown>;
 
 /** The prompt both copy actions produce. Same input, same text. */
 export function buildIssuePrompt(input: IssuePromptInput): string {
-    const { issue, comments, activity, relations, overrides, lookups, locale, timeZone } = input;
+    const { issue, comments, activity, relations, overrides, lookups, locale, timeZone, origin = "" } = input;
     const t = i18n.getFixedT(locale);
     const title = overrides?.title ?? issue.title;
     const description = overrides?.description ?? issue.descriptionJson;
@@ -144,10 +146,12 @@ export function buildIssuePrompt(input: IssuePromptInput): string {
         [t("issue.parent"), issue.parent ? `${issue.project.issueKey}-${issue.parent.number}: ${issue.parent.title}` : none],
     ];
 
+    const markdown = (document: TiptapDocument | null | undefined) => absoluteStoredFileUrls(tiptapToMarkdown(document), origin);
+    const documents = [description, ...comments.map((comment) => comment.contentJson)];
     const sections = [
         block("Title", indent(guard(title), 4)),
         block("Metadata", metadata.map(([label, value]) => `    ${label}: ${guard(String(value))}`).join("\n")),
-        block("Description", guard(tiptapToMarkdown(description)) || `(${t("issue.noDescription")})`),
+        block("Description", guard(markdown(description)) || `(${t("issue.noDescription")})`),
     ];
 
     if (issue.children.length > 0) {
@@ -166,7 +170,7 @@ export function buildIssuePrompt(input: IssuePromptInput): string {
         sections.push(block("Relations", lines.join("\n")));
     }
 
-    const attachments = collectAttachments([description, ...comments.map((comment) => comment.contentJson)]);
+    const attachments = collectAttachments(documents, origin);
     if (attachments.length > 0) sections.push(block("Attachments", attachments.map((line) => `    ${guard(line)}`).join("\n")));
 
     if (comments.length > 0) {
@@ -177,7 +181,7 @@ export function buildIssuePrompt(input: IssuePromptInput): string {
                     comment.parentCommentId ? t("issue.promptReply") : "",
                     Date.parse(comment.updatedAt) > Date.parse(comment.createdAt) ? t("issue.edited") : "",
                 ].filter(Boolean);
-                const body = guard(tiptapToMarkdown(comment.contentJson)) || `(${t("issue.emptyComment")})`;
+                const body = guard(markdown(comment.contentJson)) || `(${t("issue.emptyComment")})`;
                 const reactions = formatReactions(comment.reactions, t("issue.promptReactions"));
                 return [`- ${formatPromptDate(comment.createdAt, timeZone)} — ${guard(comment.author.name)}${markers.length ? ` · ${markers.join(" · ")}` : ""}:`, body, reactions]
                     .filter(Boolean)
@@ -194,7 +198,8 @@ export function buildIssuePrompt(input: IssuePromptInput): string {
     }
 
     const taskId = issue.identifier.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
-    return `<Instructions>\n${t("issue.promptInstructions")}\n</Instructions>\n\n<Task id="${taskId}">\n${sections.join("\n\n")}\n</Task>`;
+    const instructions = documents.some(documentHasStoredFile) ? `${t("issue.promptInstructions")}\n\n${t("issue.promptFileAccess")}` : t("issue.promptInstructions");
+    return `<Instructions>\n${instructions}\n</Instructions>\n\n<Task id="${taskId}">\n${sections.join("\n\n")}\n</Task>`;
 }
 
 function block(tag: string, body: string) {
@@ -216,12 +221,12 @@ function formatReactions(reactions: IssueComment["reactions"], label: string) {
     return groups.length > 0 ? `${label}: ${groups.join(" · ")}` : "";
 }
 
-function collectAttachments(documents: Array<TiptapDocument | null | undefined>) {
+function collectAttachments(documents: Array<TiptapDocument | null | undefined>, origin: string) {
     const lines: string[] = [];
     const seen = new Set<string>();
     const visit = (node: RichNode) => {
         if (node.type === "image") {
-            const src = String(node.attrs?.src ?? "");
+            const src = absoluteFileReference(String(node.attrs?.src ?? ""), origin);
             if (src && !seen.has(`image:${src}`)) {
                 seen.add(`image:${src}`);
                 lines.push(`- ![${String(node.attrs?.alt ?? "")}](${src})`);
@@ -229,7 +234,7 @@ function collectAttachments(documents: Array<TiptapDocument | null | undefined>)
         }
         for (const mark of node.marks ?? []) {
             if (mark.type !== "link") continue;
-            const href = String(mark.attrs?.href ?? "");
+            const href = absoluteFileReference(String(mark.attrs?.href ?? ""), origin);
             if (!href || seen.has(`link:${href}`)) continue;
             seen.add(`link:${href}`);
             lines.push(`- [${node.text?.trim() || href}](${href})`);
@@ -240,6 +245,16 @@ function collectAttachments(documents: Array<TiptapDocument | null | undefined>)
         if (document) visit(document as RichNode);
     }
     return lines;
+}
+
+function documentHasStoredFile(document: TiptapDocument | null | undefined) {
+    if (!document) return false;
+    const visit = (node: RichNode): boolean => {
+        if (node.type === "image" && isStoredFilePath(String(node.attrs?.src ?? ""))) return true;
+        if ((node.marks ?? []).some((mark) => mark.type === "link" && isStoredFilePath(String(mark.attrs?.href ?? "")))) return true;
+        return (node.content ?? []).some(visit);
+    };
+    return visit(document as RichNode);
 }
 
 function toolName(source: ActionSource | null) {

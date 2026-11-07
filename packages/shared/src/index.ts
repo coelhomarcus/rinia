@@ -14,6 +14,7 @@ export * from "./schemas/notifications";
 export * from "./schemas/realtime";
 export * from "./schemas/project-stats";
 export * from "./rich-text";
+export * from "./file-urls";
 export * from "./locales";
 export * from "./error-codes";
 export * from "./urls";

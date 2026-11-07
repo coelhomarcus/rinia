@@ -10,6 +10,8 @@ const envSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     /** Where people open Rinia, for links the API hands out (MCP results). Defaults to the host each request came to. */
     APP_URL: z.string().url().optional(),
+    /** Where uploaded files are written. In Dokploy set `/data/uploads` and bind-mount a host directory there. */
+    UPLOAD_DIR: z.string().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     /** Read by the logger itself, which starts before this file; checked here so a typo stops the API instead of being ignored. */
     LOG_LEVEL: z.string().trim().toLowerCase().pipe(z.enum(LOG_LEVELS)).optional(),

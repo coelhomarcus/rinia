@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Popover } from "@base-ui/react/popover";
+import { isAllowedIssueImageSource } from "@rinia/shared";
 import { DocumentImageNode } from "@rinia/shared/src/rich-text-schema";
 import { type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import { ImageIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { uploadProjectFile, uploadTargetOf } from "@/features/editor/file-upload";
 import { useTranslation } from "react-i18next";
 
 function ImageBlock({ node, updateAttributes, selected, editor, getPos }: NodeViewProps) {
@@ -17,10 +19,33 @@ function ImageBlock({ node, updateAttributes, selected, editor, getPos }: NodeVi
     const [preview, setPreview] = useState<number | null>(null);
     const resize = useRef<{ pointerId: number; cleanup: () => void } | null>(null);
     const resizeControl = useRef<HTMLButtonElement>(null);
+    const fileInput = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
     const hasCurrentNode = () => {
         if (editor.isDestroyed) return false;
         const position = getPos();
         return typeof position === "number" && editor.state.doc.nodeAt(position)?.type === node.type;
+    };
+    const onUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        const target = uploadTargetOf(editor);
+        if (!file || !target || !hasCurrentNode()) return;
+        setUploading(true);
+        setError("");
+        try {
+            const stored = await uploadProjectFile(target.projectId, file, target.issueId);
+            if (!hasCurrentNode()) return;
+            updateAttributes({ src: stored.url, alt: alt || stored.filename });
+            setUrl(stored.url);
+            setFailed(false);
+            setOpen(false);
+            target.onUploaded?.();
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : t("editor.imageUploadFailed"));
+        } finally {
+            setUploading(false);
+        }
     };
     const width = Math.max(10, Math.min(100, Number(preview ?? node.attrs.widthPercent) || 100));
     useEffect(() => setFailed(false), [node.attrs.src]);
@@ -121,15 +146,24 @@ function ImageBlock({ node, updateAttributes, selected, editor, getPos }: NodeVi
                         <Popover.Positioner side="bottom" align="end" sideOffset={8} collisionPadding={12} className="document-overlay">
                             <Popover.Popup finalFocus={() => editor.view.dom} className="document-popover w-80">
                                 <Popover.Title className="mb-3 text-sm font-medium">{t("editor.image")}</Popover.Title>
+                                {uploadTargetOf(editor) && (
+                                    <div className="mb-3" data-node-view-control="">
+                                        <input
+                                            ref={fileInput}
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/gif,image/webp"
+                                            className="sr-only"
+                                            onChange={(event) => void onUpload(event)}
+                                        />
+                                        <Button type="button" size="sm" color="secondary" isLoading={uploading} onClick={() => fileInput.current?.click()}>{t("editor.uploadImage")}</Button>
+                                    </div>
+                                )}
                                 <form
                                     className="space-y-3"
                                     onSubmit={(event) => {
                                         event.preventDefault();
                                         if (!hasCurrentNode()) return;
-                                        try {
-                                            const parsed = new URL(url.trim());
-                                            if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
-                                        } catch {
+                                        if (!isAllowedIssueImageSource(url.trim())) {
                                             setError(t("editor.enterImageUrl"));
                                             return;
                                         }

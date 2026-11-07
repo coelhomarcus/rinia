@@ -4,6 +4,7 @@ import { boardColumns } from "./board-columns";
 import { categories } from "./categories";
 import { commentReactions } from "./comment-reactions";
 import { favorites } from "./favorites";
+import { files } from "./files";
 import { issueActivities } from "./issue-activities";
 import { issueComments } from "./issue-comments";
 import { issueDescriptionRevisions } from "./issue-description-revisions";
@@ -24,6 +25,7 @@ export * from "./board-columns";
 export * from "./categories";
 export * from "./comment-reactions";
 export * from "./favorites";
+export * from "./files";
 export * from "./issue-activities";
 export * from "./issue-comments";
 export * from "./issue-description-revisions";
@@ -49,6 +51,7 @@ export const usersRelations = relations(users, ({ many }) => ({
     comments: many(issueComments),
     activities: many(issueActivities),
     apiTokens: many(apiTokens),
+    files: many(files),
 }));
 
 export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
@@ -63,6 +66,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     columns: many(boardColumns),
     issues: many(issues),
     documents: many(projectDocuments),
+    files: many(files),
     keyAliases: many(projectKeyAliases),
     views: many(views),
 }));
@@ -100,6 +104,7 @@ export const issuesRelations = relations(issues, ({ one, many }) => ({
     parent: one(issues, { fields: [issues.parentIssueId], references: [issues.id], relationName: "issueParent" }),
     children: many(issues, { relationName: "issueParent" }),
     comments: many(issueComments),
+    files: many(files),
     activities: many(issueActivities),
     outgoingRelations: many(issueRelations, { relationName: "relationSource" }),
     incomingRelations: many(issueRelations, { relationName: "relationTarget" }),
@@ -139,6 +144,12 @@ export const projectDocumentsRelations = relations(projectDocuments, ({ one }) =
 
 export const projectKeyAliasesRelations = relations(projectKeyAliases, ({ one }) => ({
     project: one(projects, { fields: [projectKeyAliases.projectId], references: [projects.id] }),
+}));
+
+export const filesRelations = relations(files, ({ one }) => ({
+    project: one(projects, { fields: [files.projectId], references: [projects.id] }),
+    issue: one(issues, { fields: [files.issueId], references: [issues.id] }),
+    uploadedBy: one(users, { fields: [files.uploadedBy], references: [users.id] }),
 }));
 
 export const favoritesRelations = relations(favorites, ({ one }) => ({

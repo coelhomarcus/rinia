@@ -1,4 +1,4 @@
-import { nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
+import { isAllowedIssueImageSource, nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
 import { and, asc, count, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
@@ -7,6 +7,7 @@ import { HttpError } from "../../lib/http-error";
 import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { mentionedUserIds, newMentions, recordIssueChange } from "../notifications/notifications.service";
+import { attachReferencedFiles } from "../files/files.service";
 import { publishChange } from "../realtime/realtime.service";
 
 const EMPTY_DOCUMENT = { type: "doc" as const, content: [] };
@@ -46,19 +47,14 @@ function issueOrder(orderBy: IssueOrder) {
     return asc(issues.position);
 }
 
-function validateIssueImageUrls(document?: TiptapDocument) {
+export function validateIssueImageUrls(document?: TiptapDocument) {
     if (!document) return;
     const visit = (nodes: unknown[]) => {
         for (const candidate of nodes) {
             if (!candidate || typeof candidate !== "object") continue;
             const node = candidate as { type?: unknown; attrs?: { src?: unknown }; content?: unknown[] };
-            if (node.type === "image" && typeof node.attrs?.src === "string" && node.attrs.src.trim()) {
-                try {
-                    const url = new URL(node.attrs.src);
-                    if (!(["http:", "https:"].includes(url.protocol))) throw new Error();
-                } catch {
-                    throw new HttpError(400, "Issue image URLs must use HTTP or HTTPS");
-                }
+            if (node.type === "image" && typeof node.attrs?.src === "string" && node.attrs.src.trim() && !isAllowedIssueImageSource(node.attrs.src)) {
+                throw new HttpError(400, "Issue image URLs must use HTTP or HTTPS");
             }
             if (Array.isArray(node.content)) visit(node.content);
         }
@@ -297,6 +293,7 @@ export async function createIssue(projectId: string, input: CreateIssueInput, ac
     });
     if (input.descriptionJson?.content.length) {
         await recordDescriptionRevision({ issueId: issue.id, revision: issue.descriptionRevision, authorId: actorId, contentJson: input.descriptionJson, source });
+        await attachReferencedFiles(projectId, issue.id, input.descriptionJson);
     }
     await recordIssueChange(issue, { actorId, created: true, assigneeId: issue.assigneeId, mentionedIds: mentionedUserIds(input.descriptionJson) });
     publishChange("issue.created", { projectId, id: issue.id });
@@ -331,7 +328,10 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
         .returning();
     if (!updated && writesDescription) throw new HttpError(409, "This issue description was updated elsewhere. Your draft has been kept.");
     if (!updated) throw new HttpError(404, "Issue not found");
-    if (writesDescription) await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: updated.descriptionJson, source });
+    if (writesDescription) {
+        await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: updated.descriptionJson, source });
+        await attachReferencedFiles(current.projectId, current.id, updated.descriptionJson);
+    }
 
     const activityMap = [
         ["columnId", "status_changed"],
@@ -620,6 +620,7 @@ export async function restoreDescriptionRevision(identifier: string, revisionId:
         .returning();
     if (!updated) throw new HttpError(404, "Issue not found");
     await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: version.contentJson, restoredFromId: version.id });
+    await attachReferencedFiles(current.projectId, current.id, version.contentJson);
     await recordIssueChange(current, { actorId, mentionedIds: newMentions(current.descriptionJson, version.contentJson) });
     publishChange("issue.updated", { projectId: current.projectId, id: current.id });
     return { ...updated, identifier: issueIdentifier(current) };
