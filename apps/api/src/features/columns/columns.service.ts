@@ -1,6 +1,7 @@
-import type { CreateColumnInput, UpdateColumnInput } from "@rinia/shared";
+import { POSITION_GAP, type CreateColumnInput, type UpdateColumnInput } from "@rinia/shared";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
+import { respaceColumnsIfCrowded } from "../../db/positions";
 import { boardColumns, issues } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import { publishChange } from "../realtime/realtime.service";
@@ -13,13 +14,14 @@ async function nextColumnPosition(projectId: string): Promise<number> {
         .orderBy(desc(boardColumns.position))
         .limit(1);
 
-    return (last?.position ?? 0) + 1000;
+    return (last?.position ?? 0) + POSITION_GAP;
 }
 
 export async function listColumns(projectId: string) {
     return db.query.boardColumns.findMany({
         where: eq(boardColumns.projectId, projectId),
-        orderBy: [asc(boardColumns.position)],
+        // The respacing and the migration break ties by age, so two columns that share a position keep one order.
+        orderBy: [asc(boardColumns.position), asc(boardColumns.createdAt), asc(boardColumns.id)],
     });
 }
 
@@ -41,6 +43,10 @@ export async function updateColumn(projectId: string, columnId: string, input: U
 
     if (!column) {
         throw new HttpError(404, "Column not found");
+    }
+    if (input.position !== undefined) {
+        const respaced = await respaceColumnsIfCrowded(projectId, [columnId]);
+        column.position = respaced?.get(columnId) ?? column.position;
     }
 
     publishChange("column.updated", { projectId, id: columnId });

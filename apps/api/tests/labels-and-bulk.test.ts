@@ -58,6 +58,8 @@ function stubProject(member: boolean) {
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: projectId, issueKey: "RIN" }) as never);
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership", role: "member" } as never) : undefined));
     spyOn(db.query.boardColumns, "findFirst").mockImplementation(async () => ({ id: done }) as never);
+    // A moved card's neighbours are looked up to see whether the order needs spreading out; here none are close.
+    spyOn(db, "execute").mockImplementation(async () => ({ rows: [] }) as never);
     spyOn(db.query.categories, "findMany").mockImplementation((async (config: { where: SQL }) => render(config.where).params.filter((param) => param !== projectId).map((id) => ({ id }))) as never);
 }
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
+import { positionAtIndex } from "@rinia/shared";
 import {
     ArrowDownOutline as ArrowDown,
     TopArrowOutline as ArrowUp,
@@ -18,7 +19,6 @@ import { NamedColorForm } from "@/components/settings/named-color-form";
 import { SettingsGroup, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { ApiError } from "@/lib/api-client";
 import { useColumns, useCreateColumn, useDeleteColumn, useUpdateColumn } from "../hooks/use-board";
-import { positionAtIndex } from "../position";
 import { COLUMN_COLORS } from "./column-color";
 import { useTranslation } from "react-i18next";
 

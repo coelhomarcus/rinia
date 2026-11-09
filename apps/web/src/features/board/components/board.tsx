@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useNavigate } from "react-router";
-import type { UpdateIssueInput } from "@rinia/shared";
+import { positionAtIndex, type UpdateIssueInput } from "@rinia/shared";
 import { useRouteProject } from "@/features/projects/route-project";
 import { urls } from "@/lib/urls";
 import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
@@ -30,7 +30,6 @@ import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { ApiError } from "@/lib/api-client";
 import { useColumns } from "../hooks/use-board";
-import { positionAtIndex } from "../position";
 import { Column } from "./column";
 import { columnBucket } from "../column-bucket";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
