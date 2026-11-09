@@ -6,6 +6,7 @@ import { afterAll, describe, spyOn, test } from "bun:test";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+import { positionAtIndex } from "@rinia/shared";
 
 /**
  * Runs against a real PostgreSQL server. Set TEST_DATABASE_URL to a local server where this user may create
@@ -18,6 +19,7 @@ if (adminUrl && !LOCAL_HOSTS.has(new URL(adminUrl).hostname)) throw new Error("T
 
 const MIGRATIONS = path.resolve(import.meta.dir, "../drizzle");
 const LABELS_MIGRATION = 23;
+const POSITIONS_MIGRATION = 34;
 const databaseName = `rinia_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const testUrl = adminUrl ? Object.assign(new URL(adminUrl), { pathname: `/${databaseName}` }).toString() : "";
 const admin = adminUrl ? new Pool({ connectionString: adminUrl }) : null;
@@ -138,4 +140,108 @@ describe.skipIf(!adminUrl)("against PostgreSQL", () => {
         spy.mockRestore();
         assert.deepEqual(await state(), saved, "nothing from the failed change was kept");
     });
+
+    test("widening positions keeps each project's order and pulls apart the cards that collided", async () => {
+        // A database of its own, still at the float4 schema.
+        const name = `${databaseName}_positions`;
+        await admin!.query(`CREATE DATABASE "${name}"`);
+        const pool = new Pool({ connectionString: Object.assign(new URL(adminUrl!), { pathname: `/${name}` }).toString() });
+        try {
+            const before = migrationsBefore(POSITIONS_MIGRATION);
+            try {
+                await migrate(drizzle(pool), { migrationsFolder: before });
+            } finally {
+                rmSync(before, { recursive: true, force: true });
+            }
+            const { rows: [{ type: oldType }] } = await pool.query(`SELECT data_type AS type FROM information_schema.columns WHERE table_name = 'issues' AND column_name = 'position'`);
+            assert.equal(oldType, "real");
+
+            const one = "6a4b8c02-0000-4000-8000-0000000000a1";
+            const two = "6a4b8c02-0000-4000-8000-0000000000a2";
+            await pool.query(`INSERT INTO users (id, name, username, email, password_hash) VALUES ($1, 'Ana', 'ana', 'ana@test.local', 'x')`, [ids.user]);
+            await pool.query(`INSERT INTO projects (id, name, issue_key, created_by) VALUES ($1, 'One', 'ONE', $3), ($2, 'Two', 'TWO', $3)`, [one, two, ids.user]);
+            // Two columns share a position; the older one shows first.
+            await pool.query(
+                `INSERT INTO board_columns (project_id, name, position, created_at) VALUES
+                    ($1, 'Done', 3000, '2026-01-01'), ($1, 'To do', 1000, '2026-01-02'), ($1, 'Doing', 1000, '2026-01-03'), ($2, 'Only', 7, '2026-01-01')`,
+                [one, two],
+            );
+            const columnOf = async (projectId: string) => (await pool.query(`SELECT id FROM board_columns WHERE project_id = $1 ORDER BY created_at DESC LIMIT 1`, [projectId])).rows[0].id;
+            // Cards 2 and 3 collided at 1000; card 4 sits one float4 step above them; card 5 went above zero.
+            const cards: Array<[string, number, number]> = [[one, 1, 2000], [one, 2, 1000], [one, 3, 1000], [one, 4, 1000.00006103515625], [one, 5, -500], [two, 1, 10], [two, 2, 5]];
+            for (const [projectId, number, position] of cards) {
+                await pool.query(
+                    `INSERT INTO issues (project_id, number, column_id, title, description_json, created_by, position) VALUES ($1, $2, $3, $4, '{"type":"doc","content":[]}', $5, $6)`,
+                    [projectId, number, await columnOf(projectId), `Card ${number}`, ids.user, position],
+                );
+            }
+            const issueOrder = async () => (await pool.query(`SELECT p.issue_key, i.number, i.position FROM issues i JOIN projects p ON p.id = i.project_id ORDER BY p.issue_key, i.position, i.number`)).rows;
+            const columnOrder = async () => (await pool.query(`SELECT p.issue_key, c.name, c.position FROM board_columns c JOIN projects p ON p.id = c.project_id ORDER BY p.issue_key, c.position, c.created_at, c.id`)).rows;
+            const issuesBefore = await issueOrder();
+            const columnsBefore = await columnOrder();
+
+            await migrate(drizzle(pool), { migrationsFolder: MIGRATIONS });
+
+            const issuesAfter = await issueOrder();
+            assert.deepEqual(issuesAfter.map((row) => `${row.issue_key}-${row.number}`), issuesBefore.map((row) => `${row.issue_key}-${row.number}`), "the order is the one shown before");
+            assert.deepEqual(issuesAfter.map((row) => `${row.issue_key}-${row.number}`), ["ONE-5", "ONE-2", "ONE-3", "ONE-4", "ONE-1", "TWO-2", "TWO-1"]);
+            assert.deepEqual(issuesAfter.map((row) => row.position), [1000, 2000, 3000, 4000, 5000, 1000, 2000], "each project is spread 1000 apart again");
+            const columnsAfter = await columnOrder();
+            assert.deepEqual(columnsAfter.map((row) => row.name), columnsBefore.map((row) => row.name));
+            assert.deepEqual(columnsAfter.map((row) => `${row.name}:${row.position}`), ["To do:1000", "Doing:2000", "Done:3000", "Only:1000"]);
+            const { rows: types } = await pool.query(`SELECT table_name, data_type FROM information_schema.columns WHERE column_name = 'position' AND table_name IN ('issues', 'board_columns') ORDER BY table_name`);
+            assert.deepEqual(types.map((row) => row.data_type), ["double precision", "double precision"]);
+        } finally {
+            await pool.end();
+            await admin!.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+        }
+    }, 60_000);
+
+    test("dropping a card between the same two cards 1,000 times keeps a strict, distinct order", async () => {
+        const { updateIssue } = await import("../src/features/issues/issues.service");
+        for (let number = 4; number <= 40; number++) {
+            await direct!.query(
+                `INSERT INTO issues (project_id, number, column_id, title, description_json, created_by, position) VALUES ($1, $2, $3, $4, '{"type":"doc","content":[]}', $5, $6)`,
+                [ids.project, number, ids.column, `Card ${number}`, ids.user, number * 1000],
+            );
+        }
+        const order = async () => (await direct!.query<{ number: number; position: number }>(`SELECT number, position FROM issues WHERE project_id = $1 AND deleted_at IS NULL ORDER BY position, number`, [ids.project])).rows;
+        const expected = (await order()).map((row) => row.number);
+        const [first, second] = expected;
+        const respacedBefore = new Set<number>();
+        for (let round = 1; round <= 1000; round++) {
+            // Every drop puts the last card right after the first one, the tightest gap there is.
+            const moving = expected.pop()!;
+            expected.splice(1, 0, moving);
+            const siblings = (await order()).filter((row) => row.number !== moving);
+            const position = positionAtIndex(siblings, 1);
+            const saved = await updateIssue(`RIN-${moving}`, { position }, ids.user);
+            const rows = await order();
+            assert.deepEqual(rows.map((row) => row.number), expected, `the order after drop ${round}`);
+            for (let index = 1; index < rows.length; index++) assert.ok(rows[index - 1].position < rows[index].position, `after drop ${round}, RIN-${rows[index - 1].number} and RIN-${rows[index].number} share a position`);
+            assert.equal(saved.position, rows.find((row) => row.number === moving)!.position, "the saved issue reports where it ended up");
+            if (saved.position !== position) respacedBefore.add(round);
+        }
+        assert.equal(expected[0], first);
+        assert.ok(respacedBefore.size > 0 && respacedBefore.size <= 40, `the order was spread out again now and then (${respacedBefore.size} times)`);
+        assert.ok(expected.indexOf(second) > 0);
+    }, 120_000);
+
+    test("reordering columns between the same two 200 times keeps a strict, distinct order", async () => {
+        const { updateColumn } = await import("../src/features/columns/columns.service");
+        for (const [index, name] of ["Doing", "Review", "Done", "Archived"].entries()) {
+            await direct!.query(`INSERT INTO board_columns (project_id, name, position) VALUES ($1, $2, $3)`, [ids.project, name, (index + 2) * 1000]);
+        }
+        const order = async () => (await direct!.query<{ id: string; position: number }>(`SELECT id, position FROM board_columns WHERE project_id = $1 ORDER BY position, created_at, id`, [ids.project])).rows;
+        const expected = (await order()).map((row) => row.id);
+        for (let round = 1; round <= 200; round++) {
+            const moving = expected.pop()!;
+            expected.splice(1, 0, moving);
+            const siblings = (await order()).filter((row) => row.id !== moving);
+            await updateColumn(ids.project, moving, { position: positionAtIndex(siblings, 1) });
+            const rows = await order();
+            assert.deepEqual(rows.map((row) => row.id), expected, `the order after move ${round}`);
+            for (let index = 1; index < rows.length; index++) assert.ok(rows[index - 1].position < rows[index].position, `after move ${round}, two columns share a position`);
+        }
+    }, 60_000);
 });

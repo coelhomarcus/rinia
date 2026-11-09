@@ -1,6 +1,7 @@
 import { isAllowedIssueImageSource, nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
 import { and, asc, count, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
+import { respaceIssuesIfCrowded } from "../../db/positions";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import type { TiptapDocument as StoredDocument } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
@@ -328,6 +329,10 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
         .returning();
     if (!updated && writesDescription) throw new HttpError(409, "This issue description was updated elsewhere. Your draft has been kept.");
     if (!updated) throw new HttpError(404, "Issue not found");
+    if (values.position !== undefined) {
+        const respaced = await respaceIssuesIfCrowded(current.projectId, [current.id]);
+        updated.position = respaced?.get(current.id) ?? updated.position;
+    }
     if (writesDescription) {
         await recordDescriptionRevision({ issueId: current.id, revision: updated.descriptionRevision, authorId: actorId, contentJson: updated.descriptionJson, source });
         await attachReferencedFiles(current.projectId, current.id, updated.descriptionJson);
@@ -690,6 +695,7 @@ export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssue
         if (labelsToAdd.length > 0) await tx.insert(issueLabels).values(labelsToAdd).onConflictDoNothing();
         if (activities.length > 0) await tx.insert(issueActivities).values(activities);
     });
+    await respaceIssuesIfCrowded(projectId, moved.map((issue) => issue.id));
     for (const issueId of issueIds) publishChange("issue.updated", { projectId, id: issueId });
 
     // Notifications follow the saved change; a failure there is logged, not reported, like single edits.

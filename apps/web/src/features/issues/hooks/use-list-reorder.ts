@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import type { UpdateIssueInput } from "@rinia/shared";
-import { positionAtIndex } from "@/features/board/position";
+import { positionAtIndex, type UpdateIssueInput } from "@rinia/shared";
 import type { Issue } from "../api";
 
 export type ListGroupBy = "none" | "status" | "assignee";
