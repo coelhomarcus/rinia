@@ -7,6 +7,11 @@ const SHELL_CACHE = `rinia-shell-${VERSION}`;
 const IMAGE_CACHE = "rinia-images-v1";
 const IMAGE_LIMIT = 120;
 const IMAGE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+// Lazy chunks and other build assets that are not precached. Their names carry a content hash, so entries never go
+// stale; the cap only bounds the disk used by chunks of old builds.
+const ASSET_CACHE = "rinia-assets-v1";
+const ASSET_LIMIT = 150;
+const SHELL_ENTRY = "/index.html";
 
 /**
  * Never handled here, so they always reach the network: the API (authenticated, per account), OAuth and its
@@ -17,8 +22,20 @@ const BYPASS = [/^\/api\//, /^\/\.well-known\//, /^\/oauth\//];
 self.addEventListener("install", (event) => {
     // The new version waits until the page agrees to reload (the "new version" toast), so a page never runs
     // code from two builds at once.
-    event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE)));
+    event.waitUntil(precache());
 });
+
+/**
+ * Fetches the shell file by file, so one failing asset does not abort the install the way `cache.addAll` would
+ * (a file that is missing here is fetched from the network when it is first used). Only the HTML shell is
+ * required: without it the app cannot open offline, so the worker retries on the next update check.
+ */
+async function precache() {
+    const cache = await caches.open(SHELL_CACHE);
+    const results = await Promise.allSettled(PRECACHE.map((path) => cache.add(path)));
+    const failed = PRECACHE.findIndex((path, index) => path === SHELL_ENTRY && results[index].status === "rejected");
+    if (failed !== -1) throw results[failed].reason;
+}
 
 self.addEventListener("activate", (event) => {
     event.waitUntil(
@@ -48,6 +65,10 @@ self.addEventListener("fetch", (event) => {
         event.respondWith(caches.match(url.pathname, { cacheName: SHELL_CACHE }).then((cached) => cached ?? fetch(request)));
         return;
     }
+    if (url.pathname.startsWith("/assets/")) {
+        event.respondWith(asset(event, request));
+        return;
+    }
     if (request.destination === "image") event.respondWith(image(request));
 });
 
@@ -60,6 +81,23 @@ async function navigation(request) {
         if (cached) return cached;
         throw error;
     }
+}
+
+/** Build assets outside the precache (lazy chunks, icons): stale-while-revalidate, so a chunk works offline once it was used. */
+async function asset(event, request) {
+    const cache = await caches.open(ASSET_CACHE);
+    const cached = await cache.match(request);
+    const refresh = fetch(request).then(async (response) => {
+        if (response.ok && response.type === "basic") {
+            await cache.put(request, response.clone());
+            await trim(cache, ASSET_LIMIT);
+        }
+        return response;
+    });
+    if (!cached) return refresh;
+    // The page gets the cached copy now; the worker stays alive to update it for next time.
+    event.waitUntil(refresh.catch(() => undefined));
+    return cached;
 }
 
 /** Same-origin images: from the cache when present and fresh, refreshed from the network otherwise. */
@@ -75,7 +113,7 @@ async function image(request) {
             headers.set("x-rinia-cached-at", String(Date.now()));
             const body = await response.clone().blob();
             await cache.put(request, new Response(body, { status: response.status, statusText: response.statusText, headers }));
-            await trim(cache);
+            await trim(cache, IMAGE_LIMIT);
         }
         return response;
     } catch (error) {
@@ -84,7 +122,8 @@ async function image(request) {
     }
 }
 
-async function trim(cache) {
+/** Drops the oldest entries beyond `limit`. */
+async function trim(cache, limit) {
     const keys = await cache.keys();
-    await Promise.all(keys.slice(0, Math.max(0, keys.length - IMAGE_LIMIT)).map((key) => cache.delete(key)));
+    await Promise.all(keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)));
 }
