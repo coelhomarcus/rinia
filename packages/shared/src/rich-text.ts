@@ -56,6 +56,21 @@ const isBreakTag = (html: string) => /^<br\s*\/?>$/i.test(html.trim());
 const MARK_ORDER = ["link", "bold", "italic", "strike", "code"];
 const byMarkOrder = (a: RichTextMark, b: RichTextMark) => MARK_ORDER.indexOf(a.type) - MARK_ORDER.indexOf(b.type);
 
+/**
+ * The marks a text node may carry together. The editor's `code` mark excludes every other mark, so a code span inside
+ * bold, italic or strike is plain code, as when bold is applied to a selection with code in it. A link around code keeps
+ * the link and drops the code, since a link is worth more than its font and cannot be rebuilt from the label. A mark
+ * nested inside itself (`**a *b **c***`) counts once. The schema refuses anything else, and a document that fails its
+ * check would be lost whole, so the converter never hands one over.
+ */
+function normalizeMarks(marks: RichTextMark[] = []): RichTextMark[] {
+    const unique = marks.filter((mark, index) => marks.findIndex((other) => other.type === mark.type && JSON.stringify(other.attrs ?? null) === JSON.stringify(mark.attrs ?? null)) === index);
+    const hasCode = unique.some((mark) => mark.type === "code");
+    if (!hasCode) return unique.sort(byMarkOrder);
+    const link = unique.filter((mark) => mark.type === "link");
+    return link.length ? unique.filter((mark) => mark.type !== "code").sort(byMarkOrder) : [{ type: "code" }];
+}
+
 function withMark(nodes: RichTextNode[], mark: RichTextMark): RichTextNode[] {
     return nodes.map((node) => (node.type === "text" ? { ...node, marks: [...(node.marks ?? []), mark].sort(byMarkOrder) } : node));
 }
@@ -107,7 +122,8 @@ function sameMarks(a: RichTextMark[] = [], b: RichTextMark[] = []) {
 /** Joins neighbouring text with the same marks and drops empty text, as the editor itself would. */
 function tidyInline(nodes: RichTextNode[]): RichTextNode[] {
     const result: RichTextNode[] = [];
-    for (const node of nodes) {
+    for (const raw of nodes) {
+        const node = raw.type === "text" && raw.marks ? { ...raw, marks: normalizeMarks(raw.marks) } : raw;
         if (node.type === "text" && !node.text) continue;
         const previous = result[result.length - 1];
         if (node.type === "text" && previous?.type === "text" && sameMarks(previous.marks, node.marks)) previous.text += node.text ?? "";

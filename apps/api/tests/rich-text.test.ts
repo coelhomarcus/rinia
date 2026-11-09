@@ -44,6 +44,16 @@ const variants: Array<[string, string, string]> = [
     ["table cells are trimmed and short rows padded", "|a|b|\n|-|-|\n|1|", "| a | b |\n| --- | --- |\n| 1 |  |"],
     ["a table without a leading pipe", "a | b\n--- | ---\n1 | 2", "| a | b |\n| --- | --- |\n| 1 | 2 |"],
     ["an empty document", "", ""],
+    ["bold around code leaves plain code", "The plugin adds **every file in `dist/`** to the precache list.", "The plugin adds **every file in** `dist/` to the precache list."],
+    ["italic and strike around code leave plain code", "*see `a`* and ~~old `b`~~", "*see* `a` and ~~old~~ `b`"],
+    ["a code span alone inside bold, italic or strike is plain code", "**`a`** *`b`* ~~`c`~~", "`a` `b` `c`"],
+    ["bold and italic around code leave plain code", "***bold italic `x`***", "***bold italic*** `x`"],
+    ["a link whose label is code keeps the link", "[`code`](https://example.com) and [see `code` here](https://example.com)", "[code](https://example.com) and [see code here](https://example.com)"],
+    ["bold around a link around code keeps the link and the bold", "**[`x`](https://example.com)**", "[**x**](https://example.com)"],
+    ["a link around bold code reads the same as bold around a link around code", "[**`x`**](https://example.com)", "[**x**](https://example.com)"],
+    ["a mark nested inside itself counts once", "**a *b **c** d***", "**a *b c d***"],
+    ["code inside marks in a heading and a table cell", "# Head **`x`**\n\n| **`a`** |\n| --- |\n| ~~`b`~~ |", "# Head `x`\n\n| `a` |\n| --- |\n| `b` |"],
+    ["code inside marks in list items", "- **`x` and y**\n- ~~`z`~~", "- `x` **and y**\n- `z`"],
 ];
 
 for (const [name, input, expected] of variants) {
@@ -53,6 +63,40 @@ for (const [name, input, expected] of variants) {
         assert.equal(tiptapToMarkdown(markdownToTiptap(output)), output);
     });
 }
+
+/** Markdown that nests marks around code, written the way agents write it. Every profile must take all of it. */
+const markWrapped = [
+    "The plugin adds **every file in `dist/`** to the precache list.",
+    "*see `a`* and ~~old `b`~~ and ***both `c`***",
+    "[`code`](https://example.com) and **[`code`](https://example.com)** and [**`code`**](https://example.com)",
+    "**a *b `c` **d** e***",
+    "# **`Title`**\n\n> *`quoted`*\n\n- [ ] ~~`task`~~\n\n1. **`step`**\n\n| **`a`** | [`b`](https://example.com) |\n| --- | --- |\n| *`1`* | ~~`2`~~ |",
+];
+
+test("no mark combination in Markdown produces a document the schema refuses", () => {
+    for (const source of markWrapped)
+        for (const profile of ["document", "description", "comment"] as const) {
+            const json = markdownToTiptap(source, profile);
+            assert.deepEqual(checkRichText(json, profile), { ok: true }, `${source} as ${profile}`);
+            assert.deepEqual(checkRichText(markdownToTiptap(tiptapToMarkdown(json), profile), profile), { ok: true }, `${source} written back as ${profile}`);
+        }
+});
+
+test("a code span keeps only its code mark, and a link label with code keeps only the link", () => {
+    const json = markdownToTiptap("**a `b`** [`c`](https://example.com)");
+    const marks = json.content[0].content.map((node: { marks?: Array<{ type: string }> }) => (node.marks ?? []).map((mark) => mark.type));
+    assert.deepEqual(marks, [["bold"], ["code"], [], ["link"]]);
+});
+
+test("a document with code beside other marks goes to Markdown and back unchanged", () => {
+    const text = (value: string, ...marks: string[]) => ({ type: "text", text: value, ...(marks.length && { marks: marks.map((type) => ({ type })) }) });
+    const document = {
+        type: "doc",
+        content: [{ type: "paragraph", content: [text("Run "), text("bun test", "code"), text(" "), text("now", "bold"), text(" "), text("--watch", "code"), text(" "), text("later", "bold", "italic"), text(" "), text("x", "code")] }],
+    };
+    assert.deepEqual(checkRichText(document, "description"), { ok: true });
+    assert.deepEqual(markdownToTiptap(tiptapToMarkdown(document)), document);
+});
 
 test("an image in a comment becomes a link to it", () => {
     const json = markdownToTiptap("See ![the chart](https://example.com/chart.png)", "comment");
