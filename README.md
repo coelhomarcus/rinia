@@ -115,4 +115,4 @@ The API writes its logs to stdout. Every response carries an `X-Request-Id` head
 
 Found a bug or have an idea? [Open an issue](https://github.com/alty-oss/rinia/issues). Commits and pull requests follow Conventional Commits; see [AGENTS.md](./AGENTS.md).
 
-Before opening a pull request, run `bun run typecheck`, `bun run test`, and `bun run build`. Database tests run with `bun run test:db` against a local PostgreSQL set in `TEST_DATABASE_URL`; without it they are skipped.
+Before opening a pull request, run `bun run typecheck`, `bun run test`, and `bun run build`. Database tests run with `bun run test:db` against a local PostgreSQL set in `TEST_DATABASE_URL`; without it they are skipped. A change to the database also needs `bun run db:check` to pass; see "Database migrations" in [AGENTS.md](./AGENTS.md).

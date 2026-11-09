@@ -1,0 +1,34 @@
+name: Database
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  schema-drift:
+    name: Migrations match the schema
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      # Builds one database from the migrations and one from src/db/schema, and fails if they differ
+      # or if the latest snapshot in apps/api/drizzle/meta does not match the schema.
+      - run: bun run db:check
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres

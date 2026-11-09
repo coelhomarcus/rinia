@@ -11,6 +11,7 @@
     "test:db": "bun test tests-db/",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun src/db/migrate.ts",
+    "db:check": "bun scripts/check-schema-drift.ts",
     "db:seed": "bun src/db/seed.ts",
     "db:reset": "bun src/db/reset.ts && bun run db:migrate && bun run db:seed",
     "db:migrate:prod": "bun dist/migrate.js"

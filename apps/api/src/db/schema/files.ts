@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { issues } from "./issues";
 import { projects } from "./projects";
 import { users } from "./users";
@@ -23,5 +23,10 @@ export const files = pgTable(
         byteSize: integer("byte_size").notNull(),
         createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     },
-    (table) => [index("files_project_id_idx").on(table.projectId), index("files_issue_id_idx").on(table.issueId)],
+    (table) => [
+        // One name per issue, and per project for files on no issue.
+        unique("files_name_per_issue_unique").on(table.projectId, table.issueId, table.filename).nullsNotDistinct(),
+        index("files_project_id_idx").on(table.projectId),
+        index("files_issue_id_idx").on(table.issueId),
+    ],
 );
