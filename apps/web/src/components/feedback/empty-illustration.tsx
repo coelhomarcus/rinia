@@ -1,26 +1,26 @@
-import checkDark from "@/assets/illustrations/iso-48-check-two-tone-dark.svg";
-import check from "@/assets/illustrations/iso-48-check-two-tone.svg";
-import fileDark from "@/assets/illustrations/iso-48-file-two-tone-dark.svg";
-import file from "@/assets/illustrations/iso-48-file-two-tone.svg";
-import tagDark from "@/assets/illustrations/iso-48-tag-two-tone-dark.svg";
-import tag from "@/assets/illustrations/iso-48-tag-two-tone.svg";
-import briefcaseDark from "@/assets/illustrations/iso-240-briefcase-two-tone-dark.svg";
-import briefcase from "@/assets/illustrations/iso-240-briefcase-two-tone.svg";
-import crateDark from "@/assets/illustrations/iso-240-crate-two-tone-dark.svg";
-import crate from "@/assets/illustrations/iso-240-crate-two-tone.svg";
-import foldersDark from "@/assets/illustrations/iso-240-folders-two-tone-dark.svg";
-import folders from "@/assets/illustrations/iso-240-folders-two-tone.svg";
-import kanbanDark from "@/assets/illustrations/iso-240-kanban-two-tone-dark.svg";
-import kanban from "@/assets/illustrations/iso-240-kanban-two-tone.svg";
-import layoutDark from "@/assets/illustrations/iso-240-layout-two-tone-dark.svg";
-import layout from "@/assets/illustrations/iso-240-layout-two-tone.svg";
-import mailDark from "@/assets/illustrations/iso-240-mail-two-tone-dark.svg";
-import mail from "@/assets/illustrations/iso-240-mail-two-tone.svg";
-import settingsDark from "@/assets/illustrations/iso-240-settings-two-tone-dark.svg";
-import settings from "@/assets/illustrations/iso-240-settings-two-tone.svg";
+import checkDark from "@/assets/illustrations/iso-48-check-stroke-dark.svg";
+import check from "@/assets/illustrations/iso-48-check-stroke.svg";
+import fileDark from "@/assets/illustrations/iso-48-file-stroke-dark.svg";
+import file from "@/assets/illustrations/iso-48-file-stroke.svg";
+import tagDark from "@/assets/illustrations/iso-48-tag-stroke-dark.svg";
+import tag from "@/assets/illustrations/iso-48-tag-stroke.svg";
+import briefcaseDark from "@/assets/illustrations/iso-240-briefcase-stroke-dark.svg";
+import briefcase from "@/assets/illustrations/iso-240-briefcase-stroke.svg";
+import crateDark from "@/assets/illustrations/iso-240-crate-stroke-dark.svg";
+import crate from "@/assets/illustrations/iso-240-crate-stroke.svg";
+import foldersDark from "@/assets/illustrations/iso-240-folders-stroke-dark.svg";
+import folders from "@/assets/illustrations/iso-240-folders-stroke.svg";
+import kanbanDark from "@/assets/illustrations/iso-240-kanban-stroke-dark.svg";
+import kanban from "@/assets/illustrations/iso-240-kanban-stroke.svg";
+import layoutDark from "@/assets/illustrations/iso-240-layout-stroke-dark.svg";
+import layout from "@/assets/illustrations/iso-240-layout-stroke.svg";
+import mailDark from "@/assets/illustrations/iso-240-mail-stroke-dark.svg";
+import mail from "@/assets/illustrations/iso-240-mail-stroke.svg";
+import settingsDark from "@/assets/illustrations/iso-240-settings-stroke-dark.svg";
+import settings from "@/assets/illustrations/iso-240-settings-stroke.svg";
 import { cx } from "@/utils/cx";
 
-/** Overflow Design isometric stills, free tier, two-tone. https://www.overflow.design/isometric/?tier=free */
+/** Overflow Design isometric stills, free tier, stroke (weight 1). https://www.overflow.design/isometric/?tier=free */
 export const emptyIllustrations = {
     kanban: { light: kanban, dark: kanbanDark },
     mail: { light: mail, dark: mailDark },

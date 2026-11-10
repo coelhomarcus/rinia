@@ -19,6 +19,10 @@ import { authorizeChannel, type RealtimeConnection, realtimeHub } from "./realti
 const LIVENESS_INTERVAL_MS = 30_000;
 let socketSerial = 0;
 const PRESENCE_SWEEP_MS = 5_000;
+/** The close code that tells a client the server is restarting: it should reconnect, not give up. */
+export const SERVICE_RESTART = 1012;
+/** How long a client gets to answer the close frame before its socket is cut. */
+const CLOSE_GRACE_MS = 2_000;
 
 export function sessionToken(cookieHeader: string | undefined): string | undefined {
     for (const part of cookieHeader?.split(";") ?? []) {
@@ -62,9 +66,15 @@ function send(socket: WebSocket, message: RealtimeServerMessage) {
 
 type LiveSocket = WebSocket & { alive?: boolean };
 
+export interface Realtime {
+    /** Refuses new sockets and closes every open one with `code`, resolving once they are gone. */
+    close(code: number, reason: string): Promise<void>;
+}
+
 /** Accepts realtime sockets on the API's HTTP server, authenticated with the same session cookie as the REST API. */
-export function attachRealtime(server: Server) {
+export function attachRealtime(server: Server): Realtime {
     realtimeHub.collaboration = documentRooms;
+    let closing = false;
     const wss = new WebSocketServer({ noServer: true, maxPayload: DOCUMENT_MESSAGE_MAX_CHARS + 1024 });
 
     server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -78,7 +88,8 @@ export function attachRealtime(server: Server) {
         } catch {
             return reject(socket, 401);
         }
-        wss.handleUpgrade(req, socket, head, (ws) => void accept(ws, session));
+        // An upgrade that finished after shutdown began is told to come back, like the sockets that were already open.
+        wss.handleUpgrade(req, socket, head, (ws) => (closing ? ws.close(SERVICE_RESTART, "Server restarting") : void accept(ws, session)));
     });
 
     const liveness = setInterval(() => {
@@ -98,6 +109,25 @@ export function attachRealtime(server: Server) {
         clearInterval(liveness);
         clearInterval(sweep);
     });
+
+    return {
+        async close(code, reason) {
+            closing = true;
+            const sockets = [...wss.clients];
+            await Promise.all(
+                sockets.map(
+                    (ws) =>
+                        new Promise<void>((resolve) => {
+                            if (ws.readyState === ws.CLOSED) return resolve();
+                            ws.once("close", () => resolve());
+                            // A client that never answers the close frame is cut rather than waited for.
+                            setTimeout(() => ws.terminate(), CLOSE_GRACE_MS).unref();
+                            ws.close(code, reason);
+                        }),
+                ),
+            );
+        },
+    };
 }
 
 async function accept(ws: LiveSocket, session: SessionToken) {

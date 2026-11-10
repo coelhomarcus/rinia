@@ -5,7 +5,7 @@ import { logger } from "../lib/logger";
 import { logFor } from "../lib/request-context";
 import * as schema from "./schema";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // Read here rather than from config/env, which the seed and reset scripts do not need to satisfy.
 const parsedSlowQueryMs = Number(process.env.SLOW_QUERY_MS);
@@ -53,3 +53,6 @@ pool.connect = ((callback?: (...args: unknown[]) => void) => (callback ? connect
 pool.on("error", (error) => logFor("db").error({ event: "db.pool_error", err: error }, "idle database client failed"));
 
 export const db = drizzle(pool, { schema });
+
+/** Closes the pool once its checked-out clients come back, for shutting down. Nothing may query afterwards. */
+export const closeDatabase = () => pool.end();

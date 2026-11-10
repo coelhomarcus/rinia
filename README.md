@@ -59,6 +59,8 @@ docker run -p 3000:3000 \
   rinia
 ```
 
+Run the container as **a single instance**: keep the replica count at `1` in Dokploy, Compose (`deploy.replicas`), or Swarm and Kubernetes. See [Deployment](#deployment).
+
 ### Local development
 
 You need [Bun](https://bun.com) 1.3.14+ and PostgreSQL.
@@ -78,6 +80,19 @@ Start the API and the web app in separate terminals:
 bun run dev:api   # http://localhost:3000
 bun run dev:web   # http://localhost:5173
 ```
+
+### Deployment
+
+Rinia must run as **a single instance**. Several parts of the API keep their state in the memory of the process:
+
+- **Realtime**: channels, subscriptions, and presence live in the realtime hub. With two replicas, people connected to different ones never see each other's changes or presence.
+- **Collaborative pages**: each open page is a Yjs room in memory, saved to the database a moment after each edit. Two rooms for the same page, one per replica, can overwrite each other's saves.
+- **Rate limits**: the counters are per process, so the limits multiply by the number of replicas.
+- **Cleanup**: the loop that removes expired deletions, unreferenced files, and old sessions runs every minute on every process.
+
+Keep the replica count at `1`. A restart or a rolling deploy is fine, since the instances only overlap for a moment. On startup, Rinia takes a PostgreSQL advisory lock and logs an `instance.duplicate` warning if another instance connected to the same database already holds it, so a second instance does not go unnoticed.
+
+To scale beyond one instance, the realtime fan-out would move to PostgreSQL `LISTEN/NOTIFY` or Redis, and requests for the same page would be routed to the same replica (sticky routing) so that each document room lives in one place. Rate limits would need a shared store, and the cleanup loop a single owner. None of this exists today.
 
 ### Environment variables
 

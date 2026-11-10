@@ -1,11 +1,14 @@
 import { app } from "./app";
 import { CONFIG_KEYS, env } from "./config/env";
+import { closeDatabase } from "./db";
 import { cleanupExpiredDeletes } from "./db/soft-delete-cleanup";
 import { cleanupSessions } from "./features/auth/sessions.service";
 import { cleanupOrphanFiles } from "./features/files/files.orphans";
 import { documentRooms } from "./features/documents/document-rooms";
-import { attachRealtime } from "./features/realtime/realtime.socket";
+import { attachRealtime, SERVICE_RESTART } from "./features/realtime/realtime.socket";
+import { shutdown, trackRequests } from "./lib/graceful-shutdown";
 import { logger } from "./lib/logger";
+import { releaseInstanceLock, warnIfAnotherInstanceRuns } from "./lib/single-instance";
 
 const log = logger.child({ module: "server" });
 
@@ -52,18 +55,32 @@ const server = app.listen(env.PORT, () => {
         `API listening on port ${env.PORT}`,
     );
 });
-attachRealtime(server);
+const realtime = attachRealtime(server);
+const requests = trackRequests(server);
+void warnIfAnotherInstanceRuns();
 
-// Pages being edited are saved a moment after each edit; on shutdown the last moment is saved too.
+// A signal stops the API without cutting anyone off (see `shutdown`); a second one gives up waiting.
+let stopping = false;
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
-    process.once(signal, () => {
+    process.on(signal, () => {
+        if (stopping) {
+            log.warn({ event: "server.stop_forced", signal }, "second signal received, exiting now");
+            process.exit(1);
+        }
+        stopping = true;
         log.info({ event: "server.stopping", signal }, "shutting down");
-        void documentRooms
-            .closeAll()
-            .catch((error: unknown) => log.error({ event: "server.stop_failed", err: error }, "could not save open pages on shutdown"))
-            .finally(() => {
-                log.info({ event: "server.stopped", signal }, "stopped");
-                process.exit(0);
-            });
+        void shutdown({
+            server,
+            requests,
+            closeSockets: () => realtime.close(SERVICE_RESTART, "Server restarting"),
+            // Pages being edited are saved a moment after each edit; on shutdown the last moment is saved too.
+            savePages: () => documentRooms.closeAll(),
+            releaseConnections: releaseInstanceLock,
+            closePool: closeDatabase,
+            log,
+        }).then((code) => {
+            log.info({ event: "server.stopped", signal, code }, "stopped");
+            process.exit(code);
+        });
     });
 }
