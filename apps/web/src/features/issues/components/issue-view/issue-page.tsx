@@ -5,6 +5,9 @@ import { useTranslation } from "react-i18next";
 import { Sheet } from "@/components/base/sheet/sheet";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { useIssueMenuRequests } from "@/features/commands/issue-menu-requests";
+import { GuestShareDialog } from "@/features/projects/components/guest-share-dialog";
+import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
+import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import type { IssueDetail } from "../../api";
 import { IssueFiles } from "../issue-files";
 import { IssueQuickActions } from "./issue-actions-menu";
@@ -38,6 +41,12 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
     const compact = !useBreakpoint("md");
     const wide = useBreakpoint("lg");
     const updater = useIssueUpdater(issue.projectId);
+    const { can } = useProjectPermissions(issue.projectId);
+    // A viewer or guest reads the issue: nothing on it is editable, and guests may still comment below.
+    const canEdit = can("issues.write");
+    const { data: members } = useProjectMembers(issue.projectId);
+    const hasGuests = !!members?.some((member) => member.role === "guest");
+    const [shareOpen, setShareOpen] = useState(false);
     const [openMenu, setOpenMenu] = useState<PropertyMenuId | null>(null);
     const [propertiesOpen, setPropertiesOpen] = useState(false);
     const [relationsOpen, setRelationsOpen] = useState(false);
@@ -45,8 +54,8 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const openProperty = useCallback((menu: PropertyMenuId | null = null) => {
         if (compact) setPropertiesOpen(true);
-        setOpenMenu(menu);
-    }, [compact]);
+        setOpenMenu(canEdit ? menu : null);
+    }, [compact, canEdit]);
     useHotkeys("s", () => openProperty("state"), propertyHotkey);
     useHotkeys("p", () => openProperty("priority"), propertyHotkey);
     useHotkeys("a", () => openProperty("assignee"), propertyHotkey);
@@ -70,14 +79,19 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
     const description = useRef<DescriptionControls>(null);
     const copyActions = useIssueCopyActions(issue, title.currentTitle, description);
 
-    const properties = <IssueProperties issue={issue} updater={updater} openMenu={openMenu} onOpenMenuChange={setOpenMenu} presentation={compact ? "sheet" : "popover"} />;
+    // A disabled fieldset turns every control inside it off at once, so what a role cannot change reads as plain values.
+    const readOnly = (children: React.ReactNode) => <fieldset disabled={!canEdit} className="contents">{children}</fieldset>;
+    const properties = readOnly(<IssueProperties issue={issue} updater={updater} openMenu={openMenu} onOpenMenuChange={setOpenMenu} presentation={compact ? "sheet" : "popover"} />);
     const menuActions = {
-        onAddRelation: () => setRelationsOpen(true),
-        onSetParent: () => {
-            window.setTimeout(() => openProperty("parent"), 0);
-        },
+        onAddRelation: canEdit ? () => setRelationsOpen(true) : undefined,
+        onSetParent: canEdit
+            ? () => {
+                  window.setTimeout(() => openProperty("parent"), 0);
+              }
+            : undefined,
         onOpenHistory: () => setHistoryOpen(true),
-        onDelete: () => setDeleteOpen(true),
+        onDelete: canEdit ? () => setDeleteOpen(true) : undefined,
+        onShare: can("shares.manage") && hasGuests ? () => setShareOpen(true) : undefined,
     };
 
     return (
@@ -87,7 +101,7 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
             <div className="flex min-h-0 flex-1 overflow-hidden">
                 <div className="min-w-0 flex-1 overflow-y-auto">
                     <div className="mx-auto w-full max-w-[48rem] px-6 pt-10 pb-24 lg:px-12">
-                        <IssueTitle identifier={issue.identifier} value={title.title} error={title.error} onChange={title.onChange} onBlur={title.save} />
+                        <IssueTitle identifier={issue.identifier} value={title.title} error={title.error} onChange={title.onChange} onBlur={title.save} readOnly={!canEdit} />
 
                         {compact && <IssuePropertyChips issue={issue} onOpen={(menu) => openProperty(menu ?? null)} />}
                         {!wide && !compact && <div className="mt-6 rounded-xl border border-subtle bg-layer-1 p-2">{properties}</div>}
@@ -101,13 +115,16 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
                             onHistoryOpenChange={setHistoryOpen}
                             onDirtyChange={edit.setDescriptionDirty}
                             onSavingChange={edit.setDescriptionSaving}
+                            editable={canEdit}
                         />
 
-                        <IssueFiles projectId={issue.projectId} issueId={issue.id} />
-
-                        <IssueSubIssues issue={issue} />
-
-                        <IssueRelations projectId={issue.projectId} issueId={issue.id} identifier={issue.identifier} open={relationsOpen} onOpenChange={setRelationsOpen} />
+                        {readOnly(
+                            <>
+                                <IssueFiles projectId={issue.projectId} issueId={issue.id} />
+                                <IssueSubIssues issue={issue} />
+                                <IssueRelations projectId={issue.projectId} issueId={issue.id} identifier={issue.identifier} open={relationsOpen} onOpenChange={setRelationsOpen} />
+                            </>,
+                        )}
 
                         <div className="mt-10 border-t border-subtle pt-8">
                             <IssueActivity issueId={issue.id} identifier={issue.identifier} projectId={issue.projectId} onCommentFilledChange={edit.setCommentFilled} />
@@ -124,6 +141,7 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
             </div>
 
             <IssueDeleteDialog issue={issue} open={deleteOpen} onOpenChange={setDeleteOpen} />
+            {menuActions.onShare && <GuestShareDialog projectId={issue.projectId} base={`/issues/${issue.identifier}`} open={shareOpen} onOpenChange={setShareOpen} />}
 
             {compact && (
                 <Sheet

@@ -1,7 +1,12 @@
-import { bulkDeleteIssuesSchema, bulkUpdateIssuesSchema, commentReactionSchema, reactionEmojiSchema, createIssueCommentSchema, createIssueRelationSchema, createIssueSchema, issueListQuerySchema, updateIssueCommentSchema, updateIssueSchema } from "@rinia/shared";
+import { shareWithGuestSchema, bulkDeleteIssuesSchema, bulkUpdateIssuesSchema, commentReactionSchema, reactionEmojiSchema, createIssueCommentSchema, createIssueRelationSchema, createIssueSchema, issueListQuerySchema, updateIssueCommentSchema, updateIssueSchema } from "@rinia/shared";
+import { inArray } from "drizzle-orm";
 import { z } from "zod";
+import { db } from "../../db";
+import { issues } from "../../db/schema";
 import { asyncHandler } from "../../middleware/async-handler";
-import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { assertIssueAccess, guestSeesIssue } from "../../lib/guest-access";
+import { roleOf } from "../../middleware/project-membership.middleware";
+import { listIssueShares, shareIssue, unshareIssue } from "../shares/shares.service";
 import {
     addCommentReaction,
     bulkDeleteIssues,
@@ -30,7 +35,7 @@ import {
 
 export const list = asyncHandler<{ projectId: string }>(async (req, res) => {
     const query = issueListQuerySchema.parse(req.query);
-    res.json(await listIssuePage(req.params.projectId, query));
+    res.json(await listIssuePage(req.params.projectId, query, { userId: req.user!.sub, role: roleOf(req) }));
 });
 
 export const create = asyncHandler<{ projectId: string }>(async (req, res) => {
@@ -40,8 +45,41 @@ export const create = asyncHandler<{ projectId: string }>(async (req, res) => {
 
 export const getOne = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
     const issue = await getIssueOrThrow(req.params.issueIdentifier);
-    await assertProjectMembership(issue.projectId, req.user!.sub);
-    res.json({ issue: { ...issue, identifier: issueIdentifier(issue) } });
+    const role = await assertIssueAccess(req.user!.sub, issue);
+    res.json({ issue: { ...(role === "guest" ? await forGuest(issue, req.user!.sub) : issue), identifier: issueIdentifier(issue) } });
+});
+
+/** A guest sees the parent and sub-issues only when those were shared with them too. */
+async function forGuest<T extends { parent: { id: string } | null; children: Array<{ id: string }> }>(issue: T, userId: string): Promise<T> {
+    const ids = [...(issue.parent ? [issue.parent.id] : []), ...issue.children.map((child) => child.id)];
+    const relatives = ids.length ? await db.query.issues.findMany({ where: inArray(issues.id, ids), columns: { id: true, assigneeId: true } }) : [];
+    const seen = new Set<string>();
+    for (const relative of relatives) if (await guestSeesIssue(userId, relative)) seen.add(relative.id);
+    return { ...issue, parent: issue.parent && seen.has(issue.parent.id) ? issue.parent : null, children: issue.children.filter((child) => seen.has(child.id)) };
+}
+
+/** Who an issue is shared with. Only guests need it; everyone else already sees the issue. */
+async function shareableIssue(identifier: string, userId: string) {
+    const issue = await getIssueOrThrow(identifier);
+    await assertIssueAccess(userId, issue, "shares.manage");
+    return issue;
+}
+
+export const shares = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
+    const issue = await shareableIssue(req.params.issueIdentifier, req.user!.sub);
+    res.json({ shares: await listIssueShares(issue.id) });
+});
+
+export const addShare = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
+    const issue = await shareableIssue(req.params.issueIdentifier, req.user!.sub);
+    const { userId } = shareWithGuestSchema.parse(req.body);
+    res.status(201).json({ share: await shareIssue(issue, userId, req.user!.sub) });
+});
+
+export const removeShare = asyncHandler<{ issueIdentifier: string; userId: string }>(async (req, res) => {
+    const issue = await shareableIssue(req.params.issueIdentifier, req.user!.sub);
+    await unshareIssue(issue, z.string().uuid().parse(req.params.userId));
+    res.status(204).send();
 });
 
 export const update = asyncHandler<{ issueIdentifier: string }>(async (req, res) => {
@@ -118,7 +156,7 @@ export const bulkUpdate = asyncHandler<{ projectId: string }>(async (req, res) =
 });
 
 export const bulkDelete = asyncHandler<{ projectId: string }>(async (req, res) => {
-    res.json(await bulkDeleteIssues(req.params.projectId, bulkDeleteIssuesSchema.parse(req.body).issueIds));
+    res.json(await bulkDeleteIssues(req.params.projectId, bulkDeleteIssuesSchema.parse(req.body).issueIds, req.user!.sub));
 });
 
 export const bulkRestore = asyncHandler<{ projectId: string }>(async (req, res) => {

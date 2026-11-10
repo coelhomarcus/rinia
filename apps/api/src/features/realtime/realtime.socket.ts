@@ -213,9 +213,9 @@ async function receive(ws: WebSocket, connection: RealtimeConnection, raw: strin
     if (message.type === "presence") return realtimeHub.heartbeat(connection, channel, message.editing);
     if (connection.channels.has(channel)) return send(ws, { type: "subscribed", channel });
     try {
-        const projectId = await authorizeChannel(channel, { id: connection.user.id });
+        const { projectId, role } = await authorizeChannel(channel, { id: connection.user.id });
         if (!realtimeHub.connections.has(connection)) return;
-        realtimeHub.subscribe(connection, channel, projectId);
+        realtimeHub.subscribe(connection, channel, projectId, role);
         // The page is loaded before the client hears it can sync, so its first message finds the room ready.
         if (channel.startsWith("document:")) await documentRooms.join(connection, channel.slice("document:".length));
         send(ws, { type: "subscribed", channel });

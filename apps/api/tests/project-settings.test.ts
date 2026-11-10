@@ -7,7 +7,7 @@ import { projectKeyAliases, projects } from "../src/db/schema";
 import { createProject, getProjectByKey, updateProject } from "../src/features/projects/projects.service";
 import { isProjectKeyConflict } from "../src/features/projects/project-key";
 import { HttpError } from "../src/lib/http-error";
-import { requireProjectOwner } from "../src/middleware/project-membership.middleware";
+import { requireProjectPermission } from "../src/middleware/project-membership.middleware";
 import { stubProjectAccess } from "./fixtures/project-membership";
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
@@ -160,15 +160,17 @@ function authorize(isAdmin: boolean): Promise<number> {
         let status = 200;
         const response = { status(code: number) { status = code; return this; }, json() { resolve(status); } };
         const next: NextFunction = (error?: unknown) => error ? reject(error) : resolve(200);
-        requireProjectOwner({ params: { projectId: "project" }, user: { sub: "user", isAdmin } } as unknown as Request<{ projectId: string }>, response as Response, next);
+        requireProjectPermission("project.delete")({ params: { projectId: "project" }, user: { sub: "user", isAdmin } } as unknown as Request<{ projectId: string }>, response as Response, next);
     });
 }
 
-test("project deletion/settings guard rejects members and nonmembers, site admins included", async () => {
-    let rows = [{ membership: { role: "member" } }];
+test("project deletion guard rejects everyone but the owner, site admins included", async () => {
+    let rows: Array<{ membership: { role: string } | null }> = [{ membership: { role: "member" } }];
     stubProjectAccess(() => rows);
     assert.equal(await authorize(false), 403);
     assert.equal(await authorize(true), 403);
+    rows = [{ membership: { role: "admin" } }];
+    assert.equal(await authorize(false), 403, "an admin manages settings but cannot delete the project");
     rows = [{ membership: null }];
     assert.equal(await authorize(false), 403);
     assert.equal(await authorize(true), 403);

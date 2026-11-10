@@ -30,6 +30,7 @@ export function IssueTimeline({
     onSubmit,
     onDelete,
     onEdit,
+    canComment = true,
 }: {
     activity: ActivityEntry[];
     comments: CommentEntry[];
@@ -50,6 +51,8 @@ export function IssueTimeline({
     onSubmit: () => void | Promise<void>;
     onDelete: (id: string) => void | Promise<void>;
     onEdit: (id: string, contentJson: TiptapDocument) => void | Promise<void>;
+    /** A viewer reads the thread but has no box to write in. */
+    canComment?: boolean;
 }) {
     const { t } = useTranslation();
     // Replies sit inside their thread, oldest first; only the comments that open a thread join the timeline.
@@ -80,7 +83,7 @@ export function IssueTimeline({
                                 entry={item.entry}
                                 replies={replies.get(item.entry.id) ?? []}
                                 currentUser={currentUser}
-                                onReply={onReply}
+                                onReply={canComment ? onReply : undefined}
                                 currentUserId={currentUserId}
                                 onReact={onReact}
                                 mentionItems={mentionItems}
@@ -95,6 +98,7 @@ export function IssueTimeline({
                     )}
                 </ol>
             )}
+            {canComment && (
             <div className="mt-4 rounded-xl border border-subtle bg-layer-1 transition-colors duration-150 focus-within:border-[var(--border-strong-1)]">
                 <RichTextEditor toolbar={false} variant="comment" content={value} onChange={onChange} onSubmitShortcut={onSubmit} placeholder={t("issue.leaveComment")} mentionItems={mentionItems} uploads={uploads} className="issue-comment-composer" />
                 <div className="flex items-center justify-end gap-2 px-3 pb-3">
@@ -113,6 +117,7 @@ export function IssueTimeline({
                     </Tooltip>
                 </div>
             </div>
+            )}
             {error && <p role="alert" className="animate-enter mt-2 text-xs text-danger-primary">{error}</p>}
         </section>
     );

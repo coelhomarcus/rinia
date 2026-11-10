@@ -30,6 +30,7 @@ import { useIssueWindow, useUpdateIssue } from "@/features/issues/hooks/use-issu
 import { signalLongPress, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
 import { filterIssues } from "@/features/issues/lib/issue-filters";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
+import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useRouteProject } from "@/features/projects/route-project";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
@@ -82,6 +83,8 @@ export const Board = ({
     const compact = !useBreakpoint("md");
     const { projectKey } = useRouteProject();
     const { data: columns, isLoading: columnsLoading, isError: columnsError } = useColumns(projectId);
+    // Viewers and guests see the board but cannot move cards or add them.
+    const canWrite = useProjectPermissions(projectId).can("issues.write");
     const [loadedByColumn, setLoadedByColumn] = useState<Map<string, Issue[]>>(new Map());
     const [columnTotals, setColumnTotals] = useState<Map<string, number>>(new Map());
     const onLoaded = useCallback((columnId: string, next: Issue[]) => {
@@ -368,7 +371,7 @@ export const Board = ({
                 </Alert>
             )}
             <DndContext
-                sensors={sensors}
+                sensors={canWrite ? sensors : []}
                 collisionDetection={collisionDetection}
                 measuring={measuring}
                 onDragStart={handleDragStart}
@@ -411,7 +414,7 @@ export const Board = ({
                                         suspendLayout={dragIssues !== null}
                                         onUpdateIssue={onUpdateIssue}
                                         onOpenIssue={onOpenIssue}
-                                        onCreateIssue={setCreateColumnId}
+                                        onCreateIssue={canWrite ? setCreateColumnId : undefined}
                                         onHide={hideColumnWithUndo}
                                         onManageStates={manageStates}
                                         onLoaded={onLoaded}

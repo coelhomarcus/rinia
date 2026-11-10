@@ -15,6 +15,7 @@ const { listIssuePage } = await import("../src/features/issues/issues.service");
 afterEach(() => mock.restore());
 
 const projectId = "5e3f7a91-0000-4000-8000-0000000000aa";
+const member = { userId: "5e3f7a91-0000-4000-8000-000000000001", role: "member" as const };
 const render = (condition: SQL) => new PgDialect().sqlToQuery(condition);
 const isHttp = (status: number) => (error: unknown) => error instanceof HttpError && error.statusCode === status;
 
@@ -44,7 +45,7 @@ test("a cursor round-trips the sort key and continues after that row", () => {
 });
 
 test("a cursor that is not one of ours is rejected", async () => {
-    await assert.rejects(() => listIssuePage(projectId, { orderBy: "position", limit: 10, cursor: "%%%" }), isHttp(400));
+    await assert.rejects(() => listIssuePage(projectId, { orderBy: "position", limit: 10, cursor: "%%%" }, member), isHttp(400));
 });
 
 test("a limited page returns one extra row's worth of cursor and the full count", async () => {
@@ -61,7 +62,7 @@ test("a limited page returns one extra row's worth of cursor and the full count"
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ issueKey: "RIN" }) as never);
     spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ value: 40 }] }) })) as never);
 
-    const page = await listIssuePage(projectId, { orderBy: "position", limit: 2 });
+    const page = await listIssuePage(projectId, { orderBy: "position", limit: 2 }, member);
     assert.equal(limit, 3);
     assert.equal(page.issues.length, 2);
     assert.equal(page.issues[0]?.identifier, "RIN-1");
@@ -74,7 +75,7 @@ test("limit 0 counts without loading rows", async () => {
     const findMany = spyOn(db.query.issues, "findMany");
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ issueKey: "RIN" }) as never);
     spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ value: 12 }] }) })) as never);
-    const page = await listIssuePage(projectId, { orderBy: "position", limit: 0, closed: "only" });
+    const page = await listIssuePage(projectId, { orderBy: "position", limit: 0, closed: "only" }, member);
     assert.equal(findMany.mock.calls.length, 0);
     assert.deepEqual(page, { issues: [], nextCursor: null, total: 12 });
 });

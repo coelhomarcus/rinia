@@ -41,7 +41,10 @@ export const realtimeEventTypeValues = [
     "view.restored",
     "project.updated",
     "member.added",
+    "member.updated",
     "member.removed",
+    "share.created",
+    "share.deleted",
 ] as const;
 export type RealtimeEventType = (typeof realtimeEventTypeValues)[number];
 

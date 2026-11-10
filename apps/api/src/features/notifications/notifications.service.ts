@@ -1,9 +1,9 @@
 import type { NotificationType } from "@rinia/shared";
-import { and, count, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../../db";
-import { boardColumns, issueSubscriptions, notifications, projectMembers, users } from "../../db/schema";
+import { boardColumns, issues, issueSubscriptions, notifications, projectMembers, projectShares, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
-import { reachableProjectIds } from "../../lib/project-access";
+import { visibleIssues } from "../../lib/guest-access";
 import { logFor } from "../../lib/request-context";
 
 const PERSON = { id: true, name: true, username: true, avatarUrl: true } as const;
@@ -100,15 +100,20 @@ export function planIssueChange(change: IssueChange, followers: string[], audien
     return { follow: [...follow].filter((id) => audience.has(id)), notifications: [...planned.values()] };
 }
 
-/** Of `userIds`, the people who can see the project: its members. */
-async function projectAudience(projectId: string, userIds: string[]) {
+/**
+ * Of `userIds`, the people who can see the issue: its project's members, except guests it was not shared with or
+ * assigned to. Mentioning a guest on another issue does not show it to them.
+ */
+async function issueAudience(issue: { id: string; projectId: string }, userIds: string[]) {
     if (userIds.length === 0) return new Set<string>();
     const rows = await db
-        .select({ id: users.id })
+        .select({ id: users.id, role: projectMembers.role, assigneeId: issues.assigneeId, shareId: projectShares.id })
         .from(users)
-        .leftJoin(projectMembers, and(eq(projectMembers.userId, users.id), eq(projectMembers.projectId, projectId)))
-        .where(and(inArray(users.id, userIds), isNotNull(projectMembers.id)));
-    return new Set(rows.map((row) => row.id));
+        .innerJoin(projectMembers, and(eq(projectMembers.userId, users.id), eq(projectMembers.projectId, issue.projectId)))
+        .innerJoin(issues, eq(issues.id, issue.id))
+        .leftJoin(projectShares, and(eq(projectShares.userId, users.id), eq(projectShares.issueId, issue.id)))
+        .where(inArray(users.id, userIds));
+    return new Set(rows.filter((row) => row.role !== "guest" || row.assigneeId === row.id || row.shareId !== null).map((row) => row.id));
 }
 
 /** Records who follows the issue after `change` and notifies the people it concerns. */
@@ -118,7 +123,7 @@ export async function recordIssueChange(issue: { id: string; projectId: string }
     try {
         const followers = (await db.select({ userId: issueSubscriptions.userId }).from(issueSubscriptions).where(eq(issueSubscriptions.issueId, issue.id))).map((row) => row.userId);
         const candidates = new Set([change.actorId, ...followers, ...(change.assigneeId ? [change.assigneeId] : []), ...(change.mentionedIds ?? []), ...(change.threadParticipantIds ?? [])]);
-        const plan = planIssueChange(change, followers, await projectAudience(issue.projectId, [...candidates]));
+        const plan = planIssueChange(change, followers, await issueAudience(issue, [...candidates]));
         if (plan.follow.length > 0) {
             await db.insert(issueSubscriptions).values(plan.follow.map((userId) => ({ userId, issueId: issue.id }))).onConflictDoNothing();
         }
@@ -131,9 +136,12 @@ export async function recordIssueChange(issue: { id: string; projectId: string }
     }
 }
 
-/** Hides notifications from projects the user has left, or that the API token in use cannot reach. */
+/**
+ * Hides notifications from projects the user has left, that the API token in use cannot reach, or, for a guest, about
+ * an issue no longer shared with them.
+ */
 function visibleTo(userId: string) {
-    return inArray(notifications.projectId, reachableProjectIds(userId));
+    return inArray(notifications.issueId, db.select({ id: issues.id }).from(issues).where(visibleIssues(userId)));
 }
 
 export async function listNotifications(userId: string) {

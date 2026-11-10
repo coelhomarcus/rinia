@@ -1,8 +1,10 @@
+import { projectRoleValues } from "@rinia/shared";
 import { pgEnum, pgTable, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { projects } from "./projects";
 import { users } from "./users";
 
-export const projectRoleEnum = pgEnum("project_role", ["owner", "member"]);
+/** What each role may do is in `projectPermissions` in @rinia/shared. */
+export const projectRoleEnum = pgEnum("project_role", projectRoleValues);
 
 export const projectMembers = pgTable(
     "project_members",

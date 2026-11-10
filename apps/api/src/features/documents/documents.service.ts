@@ -1,7 +1,8 @@
-import { resolveLocale, type ActionSource, type CreateDocumentInput, type Locale, type TiptapDocument, type UpdateDocumentInput } from "@rinia/shared";
+import { can, resolveLocale, type ActionSource, type ProjectRole, type CreateDocumentInput, type Locale, type TiptapDocument, type UpdateDocumentInput } from "@rinia/shared";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { projectDocuments, projectMembers, projects, users } from "../../db/schema";
+import { projectDocuments, projects, users } from "../../db/schema";
+import { documentListScope } from "../../lib/guest-access";
 import { HttpError } from "../../lib/http-error";
 import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
@@ -21,9 +22,10 @@ const EMPTY_DOCUMENT_TITLES: Record<Locale, string> = {
   en: "Untitled",
 };
 
-export function listDocuments(projectId: string) {
+/** The project's pages the viewer can see: every page, or for a guest, the ones shared with them. */
+export function listDocuments(projectId: string, viewer: { userId: string; role: ProjectRole }) {
   return db.query.projectDocuments.findMany({
-    where: and(eq(projectDocuments.projectId, projectId), isNull(projectDocuments.deletedAt)),
+    where: and(eq(projectDocuments.projectId, projectId), isNull(projectDocuments.deletedAt), documentListScope(viewer.userId, viewer.role)),
     columns: { contentJson: false, yjsState: false },
     orderBy: [asc(projectDocuments.createdAt), asc(projectDocuments.id)],
   });
@@ -133,23 +135,13 @@ export async function deleteDocument(
   projectId: string,
   documentId: string,
   userId: string,
+  role: ProjectRole,
 ) {
   // Only the author is needed here, not the content a live room would have to convert.
   const document = await db.query.projectDocuments.findFirst({ where: matchingDocument(projectId, documentId), columns: { createdBy: true } });
   if (!document) throw new HttpError(404, "Document not found");
-  if (document.createdBy !== userId) {
-    const owner = await db.query.projectMembers.findFirst({
-      where: and(
-        eq(projectMembers.projectId, projectId),
-        eq(projectMembers.userId, userId),
-        eq(projectMembers.role, "owner"),
-      ),
-    });
-    if (!owner)
-      throw new HttpError(
-        403,
-        "Only the author or project owner can delete this page",
-      );
+  if (document.createdBy !== userId && !can(role, "pages.deleteAny")) {
+    throw new HttpError(403, "Only the author or a project admin can delete this page");
   }
   // Saved before it is marked deleted, so undoing the delete brings back what people last typed.
   await documentRooms.flush(documentId);

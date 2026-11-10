@@ -4,6 +4,7 @@ import { useColumns } from "@/features/board/hooks/use-board";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { issueFilesKey } from "@/features/editor/file-api";
+import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useIssueActivity, useIssueComments, useIssues } from "../../hooks/use-issues";
 import { IssueTimeline } from "./issue-timeline";
@@ -18,6 +19,7 @@ const NONE: never[] = [];
  * render the feed again.
  */
 export const IssueActivity = memo(function IssueActivity({ issueId, identifier, projectId, onCommentFilledChange }: { issueId: string; identifier: string; projectId: string; onCommentFilledChange: (filled: boolean) => void }) {
+    const { can } = useProjectPermissions(projectId);
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { data: comments, isLoading: commentsLoading, isError: commentsLoadFailed } = useIssueComments(identifier);
@@ -51,10 +53,11 @@ export const IssueActivity = memo(function IssueActivity({ issueId, identifier, 
             onChange={composer.onChange}
             isSubmitting={composer.isSubmitting}
             error={composer.error}
-            uploads={uploads}
+            uploads={can("files.write") ? uploads : null}
             onSubmit={composer.submit}
             onDelete={composer.remove}
             onEdit={composer.edit}
+            canComment={can("comments.write")}
         />
     );
 });

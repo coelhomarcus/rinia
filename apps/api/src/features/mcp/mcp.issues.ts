@@ -110,7 +110,7 @@ export function registerIssueTools(context: McpContext) {
 
             const offset = decodeCursor(args.cursor);
             const limit = args.limit ?? 50;
-            const found = await searchIssues({ projectIds: spaces.map((space) => space.project.id), columnIds, categoryIds, assigneeId, priority: args.priority, offset, limit });
+            const found = await searchIssues({ viewerId: user.sub, projectIds: spaces.map((space) => space.project.id), columnIds, categoryIds, assigneeId, priority: args.priority, offset, limit });
             const byProject = new Map<string, Workspace>(spaces.map((space) => [space.project.id, space]));
             return {
                 total: found.total,
@@ -215,7 +215,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
-            const space = await projectByKey(args.project);
+            const space = await projectByKey(args.project, "issues.write");
             const parent = args.parent ? (await issueByIdentifier(args.parent)).issue : undefined;
             const columnId = args.state ? resolveState(space, args.state) : defaultIssueColumn(space.columns)?.id;
             if (!columnId) throw new HttpError(400, `${space.project.issueKey} has no states to put the issue in.`);
@@ -261,7 +261,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
         },
         async (args) => {
-            const { issue, space } = await issueByIdentifier(args.issue);
+            const { issue, space } = await issueByIdentifier(args.issue, "issues.write");
             const identifier = space.identifier(issue);
             if (args.description !== undefined && args.descriptionRevision === undefined) {
                 throw new HttpError(400, `To change ${identifier}'s description, pass descriptionRevision: ${issue.descriptionRevision} (from get_issue), after reading the current description so you keep what others wrote.`);
@@ -320,7 +320,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
         },
         async (args) => {
-            const found = await Promise.all([...new Set(args.issues.map((identifier) => identifier.trim().toUpperCase()))].map(issueByIdentifier));
+            const found = await Promise.all([...new Set(args.issues.map((identifier) => identifier.trim().toUpperCase()))].map((identifier) => issueByIdentifier(identifier, "issues.write")));
             const space = found[0].space;
             const strangers = found.filter((entry) => entry.space.project.id !== space.project.id).map((entry) => entry.space.identifier(entry.issue));
             if (strangers.length) throw new HttpError(400, `Every issue must be in the same project. ${strangers.join(", ")} ${strangers.length === 1 ? "is" : "are"} not in ${space.project.issueKey}.`);
@@ -352,7 +352,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
         },
         async (args) => {
-            const { issue, space } = await issueByIdentifier(args.issue);
+            const { issue, space } = await issueByIdentifier(args.issue, "issues.write");
             const { deletedAt } = await deleteIssue(issue.id, user.sub);
             return { issue: space.identifier(issue), deletedAt };
         },
@@ -371,7 +371,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
         },
         async (args) => {
-            const space = await projectByKey(args.issue.slice(0, args.issue.lastIndexOf("-")));
+            const space = await projectByKey(args.issue.slice(0, args.issue.lastIndexOf("-")), "issues.write");
             await restoreIssue(args.issue.trim(), user.sub, new Date(args.deletedAt));
             return summarize(space, (await issueByIdentifier(args.issue)).issue);
         },
@@ -391,7 +391,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
-            const { issue, space } = await issueByIdentifier(args.issue);
+            const { issue, space } = await issueByIdentifier(args.issue, "issues.write");
             const target = (await issueByIdentifier(args.target)).issue;
             await createIssueRelation(issue.id, { targetIssueIdentifier: target.id, type: args.type }, user.sub, source);
             return { issue: space.identifier(issue), relations: (await relationsOf(issue.id)).map(({ id: _id, ...relation }) => relation) };
@@ -412,7 +412,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
         },
         async (args) => {
-            const { issue, space } = await issueByIdentifier(args.issue);
+            const { issue, space } = await issueByIdentifier(args.issue, "issues.write");
             const target = space.identifier((await issueByIdentifier(args.target)).issue);
             const doomed = (await relationsOf(issue.id)).filter((relation) => relation.issue === target && (!args.type || relation.type === args.type));
             if (!doomed.length) throw new HttpError(404, `${space.identifier(issue)} has no ${args.type ? `"${args.type}" ` : ""}relation with ${target}.`);
@@ -435,7 +435,7 @@ export function registerIssueTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
-            const { issue, space } = await issueByIdentifier(args.issue);
+            const { issue, space } = await issueByIdentifier(args.issue, "comments.write");
             const comment = await createIssueComment(issue.id, { contentJson: markdownToTiptap(args.body, "comment"), parentCommentId: args.replyTo }, user.sub, source);
             if (!comment) throw new HttpError(500, "The comment was saved but could not be read back.");
             const identifier = space.identifier(issue);

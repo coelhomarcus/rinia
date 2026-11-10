@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
-import { PRESENCE_TTL_MS, REALTIME_CLIENT_HEADER, REALTIME_PATH, realtimeClientMessageSchema, type RealtimeServerMessage } from "@rinia/shared";
+import { PRESENCE_TTL_MS, REALTIME_CLIENT_HEADER, REALTIME_PATH, realtimeClientMessageSchema, type RealtimeEvent, type RealtimeServerMessage } from "@rinia/shared";
 import WebSocket from "ws";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
@@ -132,13 +132,60 @@ test("a channel is open to project members only, and deleted issues have none", 
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ projectId }) as never);
     let access = [{ membership: { id: "membership", role: "member" } }];
     stubProjectAccess(() => access);
-    assert.equal(await authorizeChannel(`issue:${issueId}`, { id: ana.id }), projectId);
+    assert.deepEqual(await authorizeChannel(`issue:${issueId}`, { id: ana.id }), { projectId, role: "member" });
 
     access = [{ membership: null }];
     await assert.rejects(authorizeChannel(`issue:${issueId}`, { id: bruno.id }), isHttp(403));
 
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => undefined);
     await assert.rejects(authorizeChannel(`document:${documentId}`, { id: ana.id }), isHttp(404));
+});
+
+test("a guest gets the channel of an issue or page shared with them, and no other", async () => {
+    spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ id: issueId, projectId, assigneeId: null }) as never);
+    spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => ({ projectId }) as never);
+    stubProjectAccess([{ membership: { id: "membership", role: "guest" } }]);
+    let shared = false;
+    spyOn(db.query.projectShares, "findFirst").mockImplementation(async () => (shared ? ({ id: "share" } as never) : undefined));
+    await assert.rejects(authorizeChannel(`issue:${issueId}`, { id: bruno.id }), isHttp(404));
+    await assert.rejects(authorizeChannel(`document:${documentId}`, { id: bruno.id }), isHttp(404));
+    spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: projectId }) as never);
+    assert.deepEqual(await authorizeChannel(`project:${projectId}`, { id: bruno.id }), { projectId, role: "guest" });
+
+    shared = true;
+    assert.deepEqual(await authorizeChannel(`issue:${issueId}`, { id: bruno.id }), { projectId, role: "guest" });
+    assert.deepEqual(await authorizeChannel(`document:${documentId}`, { id: bruno.id }), { projectId, role: "guest" });
+});
+
+test("a guest on the project channel hears about the project, not about its issues and pages", () => {
+    const hub = new RealtimeHub();
+    const member = fakeSocket();
+    const guest = fakeSocket();
+    hub.subscribe(hub.connect(member, ana), `project:${projectId}`, projectId, "member");
+    const guestConnection = hub.connect(guest, bruno);
+    hub.subscribe(guestConnection, `project:${projectId}`, projectId, "guest");
+    hub.subscribe(guestConnection, `issue:${issueId}`, projectId, "guest");
+    const event = (type: RealtimeEvent["type"], id: string) => ({ type, projectId, id, actorId: null, clientId: null });
+    for (const [type, id] of [["issue.updated", issueId], ["issue.created", "other"], ["document.updated", documentId], ["member.added", ana.id], ["column.updated", "c"]] as const) {
+        hub.publish(event(type, id), channelsFor(event(type, id)));
+    }
+    assert.deepEqual(ofType(member.messages, "event").map((message) => message.event.type), ["issue.updated", "issue.created", "document.updated", "member.added", "column.updated"]);
+    // The shared issue still reaches the guest on its own channel.
+    assert.deepEqual(ofType(guest.messages, "event").map((message) => message.event.type), ["issue.updated", "member.added", "column.updated"]);
+});
+
+test("becoming a guest closes the issues and pages open in that project, other changes keep them", () => {
+    const hub = new RealtimeHub();
+    const socket = fakeSocket();
+    const connection = hub.connect(socket, bruno);
+    hub.subscribe(connection, `project:${projectId}`, projectId, "member");
+    hub.subscribe(connection, `document:${documentId}`, projectId, "member");
+    hub.changeRole(projectId, bruno.id, "viewer");
+    assert.equal(connection.roles.get(projectId), "viewer");
+    assert.equal(connection.channels.size, 2);
+    hub.changeRole(projectId, bruno.id, "guest");
+    assert.deepEqual([...connection.channels.keys()], [`project:${projectId}`]);
+    assert.deepEqual(ofType(socket.messages, "denied").map((message) => message.channel), [`document:${documentId}`]);
 });
 
 test("clients may only name project, issue and document channels, and presence is per issue or document", () => {
@@ -181,7 +228,8 @@ test("a bulk delete names every issue it removed", async () => {
         .mockImplementationOnce(async () => ids.map((id) => ({ id, projectId, labels: [] })) as never)
         .mockImplementationOnce(async () => [] as never);
     spyOn(db, "update").mockImplementation((() => ({ set: () => ({ where: async () => undefined }) })) as never);
-    await bulkDeleteIssues(projectId, ids);
+    stubProjectAccess([{ membership: { id: "membership", role: "member" } }]);
+    await bulkDeleteIssues(projectId, ids, ana.id);
     assert.deepEqual(publish.mock.calls.map(([event]) => [event.type, event.id]), ids.map((id) => ["issue.deleted", id]));
 });
 

@@ -51,7 +51,10 @@ export function realtimeTargets(client: QueryClient, event: RealtimeEvent): Targ
         case "project":
             return [{ queryKey: PROJECTS_QUERY_KEY, exact: true }, { queryKey: projectQueryKey(projectId), exact: true }, { queryKey: ["projects", "by-key"] }, { queryKey: FAVORITES_QUERY_KEY }];
         case "member":
-            return [{ queryKey: ["projects", projectId, "members"] }, { queryKey: PROJECTS_QUERY_KEY, exact: true }];
+            // A new role can change what the user may see and do, so the lists refetch with the members.
+            return [{ queryKey: ["projects", projectId, "members"] }, { queryKey: PROJECTS_QUERY_KEY, exact: true }, ...issueLists, { queryKey: documentsKey(projectId), exact: true }];
+        case "share":
+            return [{ queryKey: ["shares"] }];
         default:
             return [];
     }

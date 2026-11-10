@@ -29,7 +29,7 @@ export const ProjectOverviewPage = () => {
     const { data: project, isLoading, isError } = useProject(projectId);
     const { data: documents } = useDocuments(projectId);
     const { data: members } = useProjectMembers(projectId);
-    const { isProjectOwner } = useProjectPermissions(projectId);
+    const { can } = useProjectPermissions(projectId);
     const createDocument = useCreateDocument(projectId);
     const icon = project?.iconAppearance ?? project?.icon;
     const colored = !!projectIconColor(icon);
@@ -54,19 +54,20 @@ export const ProjectOverviewPage = () => {
                                 <ProjectIconControl
                                     projectId={projectId}
                                     icon={icon}
-                                    isProjectOwner={isProjectOwner}
+                                    canManage={can("project.update")}
                                     className={`grid size-9 shrink-0 place-items-center rounded-lg outline-accent-strong ${colored ? "" : "bg-accent-primary text-white"}`}
                                     iconClassName={colored ? "size-9 rounded-lg" : "size-5"}
                                 />
                                 <h1 className="min-w-0 truncate text-[26px] leading-8 font-semibold tracking-tight text-primary">{project.name}</h1>
                             </div>
-                            <ProjectDescription projectId={projectId} description={project.description ?? ""} editable={isProjectOwner} />
+                            <ProjectDescription projectId={projectId} description={project.description ?? ""} editable={can("project.update")} />
 
-                            <ProjectActivity projectId={projectId} accent={projectIconColor(icon)} />
+                            {can("project.stats") && <ProjectActivity projectId={projectId} accent={projectIconColor(icon)} />}
 
                             <section className="mt-12" aria-labelledby="project-resources">
                                 <div className="flex items-center justify-between gap-3">
                                     <h2 id="project-resources" className="text-[17px] font-medium text-primary">{t("projects.homeResources")}</h2>
+                                    {can("pages.write") && (
                                     <Tooltip title={t("documents.newPage")}>
                                     <button
                                         type="button"
@@ -78,6 +79,7 @@ export const ProjectOverviewPage = () => {
                                         <Plus className="size-3.5" />
                                     </button>
                                     </Tooltip>
+                                    )}
                                 </div>
                                 {createDocument.isError && <div className="mt-3"><ErrorMessage message={t("documents.createFailed")} /></div>}
                                 {documents && documents.length > 0 ? (
@@ -125,7 +127,7 @@ export const ProjectOverviewPage = () => {
                                         {members && members.length > 4 && <span className="pl-1 text-xs">+{members.length - 4}</span>}
                                         <ChevronRight className="size-3.5" aria-hidden="true" />
                                     </Link>
-                                    {isProjectOwner && (
+                                    {can("members.manage") && (
                                         <ModalDialog
                                             trigger={
                                                 <Tooltip title={t("settings.addMember")}>
@@ -145,7 +147,7 @@ export const ProjectOverviewPage = () => {
                             <section aria-labelledby="project-go-to">
                                 <h2 id="project-go-to" className="text-[13px] text-tertiary">{t("projects.goTo")}</h2>
                                 <nav className="mt-2 -mx-1.5 grid gap-0.5">
-                                    {isProjectOwner && <GoTo to={urls.projectSettings(projectKey, "general")} icon={AppIcons.Settings} label={t("nav.projectSettings")} />}
+                                    {can("project.update") && <GoTo to={urls.projectSettings(projectKey, "general")} icon={AppIcons.Settings} label={t("nav.projectSettings")} />}
                                     <GoTo to={urls.issues(projectKey)} icon={AppIcons.Issues} label={t("nav.issues")} />
                                     <GoTo to={urls.documents(projectKey)} icon={AppIcons.Documents} label={t("nav.documents")} />
                                     <GoTo to={urls.members(projectKey)} icon={AppIcons.MyIssues} label={t("settings.members")} />

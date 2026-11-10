@@ -1,7 +1,7 @@
 import { myIssuesQuerySchema, updateNotificationSchema } from "@rinia/shared";
 import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
-import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { assertIssueAccess } from "../../lib/guest-access";
 import { getIssueOrThrow, listMyIssues } from "../issues/issues.service";
 import { countUnreadNotifications, followIssue, isFollowingIssue, listNotifications, markAllNotificationsRead, setNotificationRead, unfollowIssue } from "./notifications.service";
 
@@ -27,10 +27,10 @@ export const myIssues = asyncHandler(async (req, res) => {
     res.json({ issues: await listMyIssues(req.user!.sub, myIssuesQuerySchema.parse(req.query)) });
 });
 
-/** Following is per issue and needs access to its project, like reading the issue does. */
+/** Following is per issue and needs to see the issue, like reading it does. */
 async function followableIssue(identifier: string, userId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await assertProjectMembership(issue.projectId, userId);
+    await assertIssueAccess(userId, issue, "issues.follow");
     return issue;
 }
 

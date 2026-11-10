@@ -9,10 +9,7 @@ import { columnsRouter } from "../columns/columns.routes";
 import { viewPreferencesRouter } from "../view-preferences/view-preferences.routes";
 import { viewsRouter } from "../views/views.routes";
 import { requireAuth, requireUnscopedToken } from "../../middleware/auth.middleware";
-import {
-  requireProjectMember,
-  requireProjectOwner,
-} from "../../middleware/project-membership.middleware";
+import { requireProjectMember, requireProjectPermission } from "../../middleware/project-membership.middleware";
 import {
   addMember,
   lookupMember,
@@ -24,7 +21,9 @@ import {
   remove,
   removeMember,
   stats,
+  transfer,
   update,
+  updateMember,
   updatePage,
 } from "./projects.controller";
 
@@ -37,10 +36,11 @@ projectsRouter.post("/", requireUnscopedToken, create);
 
 projectsRouter.get("/by-key/:key", getByKey);
 projectsRouter.get("/:projectId", requireProjectMember, getOne);
-projectsRouter.patch("/:projectId", requireProjectOwner, update);
-projectsRouter.delete("/:projectId", requireProjectOwner, remove);
-projectsRouter.patch("/:projectId/page", requireProjectMember, updatePage);
-projectsRouter.get("/:projectId/stats", requireProjectMember, stats);
+projectsRouter.patch("/:projectId", requireProjectPermission("project.update"), update);
+projectsRouter.delete("/:projectId", requireProjectPermission("project.delete"), remove);
+projectsRouter.post("/:projectId/transfer", requireProjectPermission("project.transfer"), transfer);
+projectsRouter.patch("/:projectId/page", requireProjectPermission("project.page.update"), updatePage);
+projectsRouter.get("/:projectId/stats", requireProjectPermission("project.stats"), stats);
 projectsRouter.use(
   "/:projectId/documents",
   asyncHandler<{ projectId: string }>(async (req, _res, next) => {
@@ -52,17 +52,18 @@ projectsRouter.use(
 );
 
 projectsRouter.get("/:projectId/files", requireProjectMember, listFiles);
-projectsRouter.post("/:projectId/files", requireProjectMember, uploadFile);
-projectsRouter.delete("/:projectId/files/:fileId", requireProjectMember, removeFile);
-projectsRouter.post("/:projectId/files/uploads", requireProjectMember, beginUpload);
-projectsRouter.put("/:projectId/files/uploads/:uploadId", requireProjectMember, uploadChunk);
-projectsRouter.post("/:projectId/files/uploads/:uploadId/complete", requireProjectMember, completeUpload);
+projectsRouter.post("/:projectId/files", requireProjectPermission("files.write"), uploadFile);
+projectsRouter.delete("/:projectId/files/:fileId", requireProjectPermission("files.write"), removeFile);
+projectsRouter.post("/:projectId/files/uploads", requireProjectPermission("files.write"), beginUpload);
+projectsRouter.put("/:projectId/files/uploads/:uploadId", requireProjectPermission("files.write"), uploadChunk);
+projectsRouter.post("/:projectId/files/uploads/:uploadId/complete", requireProjectPermission("files.write"), completeUpload);
 projectsRouter.get("/:projectId/members", requireProjectMember, listMembers);
-projectsRouter.get("/:projectId/members/lookup", requireProjectOwner, lookupMember);
-projectsRouter.post("/:projectId/members", requireProjectOwner, addMember);
+projectsRouter.get("/:projectId/members/lookup", requireProjectPermission("members.manage"), lookupMember);
+projectsRouter.post("/:projectId/members", requireProjectPermission("members.manage"), addMember);
+projectsRouter.patch("/:projectId/members/:userId", requireProjectPermission("members.manage"), updateMember);
 projectsRouter.delete(
   "/:projectId/members/:userId",
-  requireProjectOwner,
+  requireProjectPermission("members.manage"),
   removeMember,
 );
 

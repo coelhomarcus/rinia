@@ -158,27 +158,22 @@ test("only the author, project owner, or admin can delete a page", async () => {
   const findDocument = spyOn(db.query.projectDocuments, "findFirst").mockImplementation(
     async () => page,
   );
-  const findMembership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(
-    async () => undefined,
-  );
   // Deleting is soft: the page is marked and removed for good after the undo window.
   const deleted = spyOn(db, "update").mockImplementation(
     () => ({ set: () => ({ where: async () => undefined }) }) as never,
   );
-  await assert.rejects(
-    deleteDocument(projectId, documentId, otherId, false),
-    (error: unknown) => error instanceof HttpError && error.statusCode === 403,
-  );
-  assert.equal(findDocument.mock.calls.length, 1);
-  assert.equal(findMembership.mock.calls.length, 1);
+  for (const role of ["member", "viewer", "guest"] as const) {
+    await assert.rejects(
+      deleteDocument(projectId, documentId, otherId, role),
+      (error: unknown) => error instanceof HttpError && error.statusCode === 403,
+    );
+  }
+  assert.equal(findDocument.mock.calls.length, 3);
   assert.equal(deleted.mock.calls.length, 0);
 
-  findMembership.mockImplementation(
-    async () => ({ role: "owner" }) as typeof projectMembers.$inferSelect,
-  );
-  await deleteDocument(projectId, documentId, otherId, false);
-  await deleteDocument(projectId, documentId, otherId, true);
-  await deleteDocument(projectId, documentId, authorId, false);
+  await deleteDocument(projectId, documentId, otherId, "owner");
+  await deleteDocument(projectId, documentId, otherId, "admin");
+  await deleteDocument(projectId, documentId, authorId, "member");
   assert.equal(deleted.mock.calls.length, 3);
   assert.equal(projectDocuments.id.name, "id");
 });

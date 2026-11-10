@@ -18,10 +18,11 @@ import { IssueActionsMenu, type CopyActions } from "./issue-actions-menu";
 
 /** What the issue's actions menu can ask the page to do. */
 export interface IssueMenuActions {
-    onAddRelation: () => void;
-    onSetParent: () => void;
+    onAddRelation?: () => void;
+    onSetParent?: () => void;
     onOpenHistory: () => void;
-    onDelete: () => void;
+    onDelete?: () => void;
+    onShare?: () => void;
 }
 
 /**

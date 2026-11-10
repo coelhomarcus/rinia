@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, mock, spyOn, test } from "bun:test";
-import type { RealtimeChannel } from "@rinia/shared";
+import type { ProjectRole, RealtimeChannel } from "@rinia/shared";
 import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/rich-text-schema";
 import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import * as decoding from "lib0/decoding";
@@ -31,9 +31,14 @@ const saved = {
 };
 
 /** One browser tab: a Yjs document that speaks the same sync and awareness messages the web provider does. */
-function tab(rooms: InstanceType<typeof DocumentRooms>, user: typeof ana) {
+function tab(rooms: InstanceType<typeof DocumentRooms>, user: typeof ana, role: ProjectRole = "member") {
     const inbox: Uint8Array[] = [];
-    const connection = { socket: { send: (data: string) => inbox.push(fromBase64(JSON.parse(data).data)) }, user, channels: new Map<RealtimeChannel, string>([[channel, "project"]]) };
+    const connection = {
+        socket: { send: (data: string) => inbox.push(fromBase64(JSON.parse(data).data)) },
+        user,
+        channels: new Map<RealtimeChannel, string>([[channel, "project"]]),
+        roles: new Map<string, ProjectRole>([["project", role]]),
+    };
     const doc = new Y.Doc();
     const awareness = new awarenessProtocol.Awareness(doc);
     const to = (build: (encoder: encoding.Encoder) => void) => {
@@ -245,6 +250,40 @@ test("a tab that left the page cannot change it", async () => {
     await Bun.sleep(5);
     await second.deliver();
     assert.doesNotMatch(second.text(), /Sneaky/);
+    await rooms.closeAll();
+});
+
+test("a viewer reads the page through the socket but cannot change it", async () => {
+    const writes = database({ contentJson: saved, yjsState: null });
+    const rooms = new DocumentRooms();
+    const editor = tab(rooms, ana);
+    const viewer = tab(rooms, bruno, "viewer");
+    await editor.join();
+    await viewer.join();
+    // The viewer still gets the page and what others type.
+    assert.match(viewer.text(), /Ship it/);
+    ((editor.doc.getXmlFragment(DOCUMENT_FRAGMENT).get(1) as Y.XmlElement).get(0) as Y.XmlText).insert(0, "Now ");
+    await Bun.sleep(5);
+    await viewer.deliver();
+    assert.match(viewer.text(), /Now Ship it/);
+
+    const savesBefore = writes.length;
+    ((viewer.doc.getXmlFragment(DOCUMENT_FRAGMENT).get(1) as Y.XmlElement).get(0) as Y.XmlText).insert(0, "Viewer ");
+    await Bun.sleep(5);
+    await editor.deliver();
+    assert.doesNotMatch(editor.text(), /Viewer/);
+    assert.doesNotMatch(JSON.stringify(await rooms.live(documentId)), /Viewer/);
+    await rooms.flush(documentId);
+    assert.ok(writes.slice(savesBefore).every((write) => !JSON.stringify(write.contentJson ?? "").includes("Viewer")));
+
+    // A role change applies to a tab already in the room: promoted to member, it may write.
+    const promoted = tab(rooms, bruno, "viewer");
+    await promoted.join();
+    promoted.connection.roles.set("project", "member");
+    ((promoted.doc.getXmlFragment(DOCUMENT_FRAGMENT).get(0) as Y.XmlElement).get(0) as Y.XmlText).insert(0, "Promoted ");
+    await Bun.sleep(5);
+    await editor.deliver();
+    assert.match(editor.text(), /Promoted /);
     await rooms.closeAll();
 });
 

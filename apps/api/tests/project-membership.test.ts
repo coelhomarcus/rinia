@@ -5,7 +5,7 @@ import { afterEach, mock, spyOn, test } from "bun:test";
 import type { NextFunction, Request, Response } from "express";
 import { db } from "../src/db";
 import { HttpError } from "../src/lib/http-error";
-import { assertProjectMembership, requireProjectMember, requireProjectOwner } from "../src/middleware/project-membership.middleware";
+import { assertProjectAccess, assertProjectMembership, requireProjectMember, requireProjectPermission } from "../src/middleware/project-membership.middleware";
 import { stubProjectAccess } from "./fixtures/project-membership";
 
 afterEach(() => mock.restore());
@@ -36,7 +36,7 @@ function run(handler: typeof requireProjectMember, userId = "user"): Promise<{ s
 test("the membership check is one left join on project_members", () => {
     const source = readFileSync(join(import.meta.dir, "../src/middleware/project-membership.middleware.ts"), "utf8");
     assert.match(source, /leftJoin\(projectMembers/);
-    assert.equal((source.match(/await loadProjectAccess\(/g) ?? []).length, 3);
+    assert.equal((source.match(/await loadProjectAccess\(/g) ?? []).length, 2);
     assert.doesNotMatch(source, /ensureProjectExists|findMembership/);
 });
 
@@ -58,9 +58,12 @@ test("requireProjectMember looks up the project once and keeps 404 vs 403", asyn
     assert.equal((await run(requireProjectMember)).status, 200);
 });
 
-test("requireProjectOwner permits only the owner, and still 404s a missing project", async () => {
+test("requireProjectPermission lets through the roles the map allows, and still 404s a missing project", async () => {
+    const requireProjectOwner = requireProjectPermission("project.delete");
     stubProjectAccess([{ membership: member }]);
-    assert.equal((await run(requireProjectOwner)).status, 403);
+    const refused = await run(requireProjectOwner);
+    assert.equal(refused.status, 403);
+    assert.equal(refused.body?.code, "errors.permissionDenied");
     stubProjectAccess([{ membership: owner }]);
     assert.equal((await run(requireProjectOwner)).status, 200);
     stubProjectAccess([]);
@@ -73,5 +76,6 @@ test("assertProjectMembership shares the same lookup", async () => {
     stubProjectAccess([{ membership: null }]);
     await assert.rejects(assertProjectMembership(projectId, "user"), (error: unknown) => error instanceof HttpError && error.statusCode === 403);
     stubProjectAccess([{ membership: member }]);
-    await assertProjectMembership(projectId, "user");
+    assert.equal(await assertProjectMembership(projectId, "user"), "member");
+    await assert.rejects(assertProjectAccess(projectId, "user", "members.manage"), (error: unknown) => error instanceof HttpError && error.statusCode === 403);
 });

@@ -14,13 +14,13 @@ function asEntityIcon(icon: EntityIcon | string | null | undefined): EntityIcon 
 export function ProjectIconControl({
     projectId,
     icon,
-    isProjectOwner,
+    canManage,
     className,
     iconClassName,
 }: {
     projectId: string;
     icon: EntityIcon | string | null | undefined;
-    isProjectOwner: boolean;
+    canManage: boolean;
     className?: string;
     iconClassName?: string;
 }) {
@@ -28,9 +28,9 @@ export function ProjectIconControl({
     const update = useUpdateProject(projectId);
     const [open, setOpen] = useState(false);
     const appearance = asEntityIcon(icon);
-    const disabled = !isProjectOwner || update.isPending;
+    const disabled = !canManage || update.isPending;
 
-    if (!isProjectOwner) {
+    if (!canManage) {
         return (
             <span className={className}>
                 <ProjectIcon icon={appearance} className={iconClassName} tile />

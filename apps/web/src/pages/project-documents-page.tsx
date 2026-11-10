@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { Dialog } from "@base-ui/react/dialog";
 import { Popover } from "@base-ui/react/popover";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Plus, Search, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { useRouteProject } from "@/features/projects/route-project";
 import { matchDocumentSlug, urls } from "@/lib/urls";
@@ -20,6 +20,7 @@ import { DocumentEditor } from "@/features/documents/components/document-editor"
 import { DocumentExportMenu, ExportAllPagesButton } from "@/features/documents/components/document-export-menu";
 import { documentKey, documentsKey, useCreateDocument, useDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { getDocumentSession } from "@/features/documents/sessions";
+import { GuestShareDialog } from "@/features/projects/components/guest-share-dialog";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { sourceLabel } from "@/features/board/components/issue-property-icons";
@@ -39,6 +40,7 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
     const { t, i18n } = useTranslation();
     const { data: pages, isError } = useDocuments(projectId);
     const create = useCreateDocument(projectId);
+    const { can } = useProjectPermissions(projectId);
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const filtered = pages?.filter((page) => page.title.toLowerCase().includes(search.toLowerCase()));
@@ -59,10 +61,12 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
                         <Input size="sm" aria-label={t("documents.searchPages")} icon={Search} placeholder={`${t("documents.searchPages")}…`} value={search} onChange={setSearch} />
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <ExportAllPagesButton projectId={projectId} disabled={!pages?.length} />
-                        <Button size="sm" iconLeading={Plus} isLoading={create.isPending} onClick={addPage}>
-                            {t("documents.newPage")}
-                        </Button>
+                        {can("pages.export") && <ExportAllPagesButton projectId={projectId} disabled={!pages?.length} />}
+                        {can("pages.write") && (
+                            <Button size="sm" iconLeading={Plus} isLoading={create.isPending} onClick={addPage}>
+                                {t("documents.newPage")}
+                            </Button>
+                        )}
                     </div>
                 </div>
                 {create.isError && <ErrorMessage message={t("documents.createFailed")} />}
@@ -167,7 +171,9 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
     const showToast = useToast();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { isProjectOwner } = useProjectPermissions(page.projectId);
+    const { can } = useProjectPermissions(page.projectId);
+    const canWrite = can("pages.write");
+    const [sharing, setSharing] = useState(false);
     const { data: members = [] } = useProjectMembers(page.projectId);
     const session = useMemo(() => getDocumentSession(userId, page, client), [userId, page.id, page.projectId, client]);
     const state = useSyncExternalStore(session.subscribe, session.getSnapshot);
@@ -269,7 +275,15 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                         {status}
                     </span>
                     <DocumentExportMenu projectId={page.projectId} documentId={page.id} />
-                    {(page.createdBy === userId || isProjectOwner) && (
+                    {can("shares.manage") && members.some((member) => member.role === "guest") && (
+                        <>
+                            <Button color="tertiary" size="sm" iconLeading={UserPlus} onClick={() => setSharing(true)}>
+                                {t("settings.shareWithGuests")}
+                            </Button>
+                            <GuestShareDialog projectId={page.projectId} base={`/projects/${page.projectId}/documents/${page.id}`} open={sharing} onOpenChange={setSharing} />
+                        </>
+                    )}
+                    {canWrite && (page.createdBy === userId || can("pages.deleteAny")) && (
                         <Button
                             color="tertiary"
                             size="sm"
@@ -335,6 +349,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                             placeholder={t("documents.untitled")}
                             className="document-title"
                             disabled={busy || state.status === "deleted"}
+                            readOnly={!canWrite}
                             onChange={(event) => session.edit({ title: event.target.value.replace(/\n/g, " ") })}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
@@ -348,7 +363,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                             user={{ id: userId, name: user?.name ?? "" }}
                             members={members}
                             projectId={page.projectId}
-                            disabled={busy || state.status === "deleted"}
+                            disabled={busy || state.status === "deleted" || !canWrite}
                         />
                     </div>
                 )}

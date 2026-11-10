@@ -13,7 +13,6 @@ process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { projectsRouter } = await import("../src/features/projects/projects.routes");
-const { requireProjectMember } = await import("../src/middleware/project-membership.middleware");
 const { stubProjectAccess } = await import("./fixtures/project-membership");
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
@@ -172,20 +171,22 @@ test("each member's numbers: open counts only open states, and people who left a
     ]);
 });
 
-function guard(member: boolean): Promise<number> {
-    stubProjectAccess([{ membership: member ? { id: "membership", role: "member" } : null }]);
+function guard(role: string | null, handle: (req: Request<{ projectId: string }>, res: Response, next: NextFunction) => unknown): Promise<number> {
+    stubProjectAccess([{ membership: role ? { id: "membership", role } : null }]);
     return new Promise((resolve, reject) => {
         let status = 200;
         const response = { status(code: number) { status = code; return this; }, json() { resolve(status); } };
         const next: NextFunction = (error?: unknown) => (error ? reject(error) : resolve(200));
-        requireProjectMember({ params: { projectId: "project" }, user: { sub: "user" } } as unknown as Request<{ projectId: string }>, response as unknown as Response, next);
+        handle({ params: { projectId: "project" }, user: { sub: "user" } } as unknown as Request<{ projectId: string }>, response as unknown as Response, next);
     });
 }
 
-test("only project members can read the stats", async () => {
+test("project members read the stats, except guests, who see only what was shared with them", async () => {
     const layer = (projectsRouter.stack as Array<{ route?: { path: string; stack: Array<{ handle: unknown }> } }>).find((entry) => entry.route?.path === "/:projectId/stats");
     assert.ok(layer?.route, "the stats route exists");
-    assert.ok(layer.route.stack.some((entry) => entry.handle === requireProjectMember), "the stats route requires membership");
-    assert.equal(await guard(false), 403);
-    assert.equal(await guard(true), 200);
+    const handle = layer.route.stack[0]!.handle as Parameters<typeof guard>[1];
+    assert.equal(await guard(null, handle), 403);
+    assert.equal(await guard("guest", handle), 403);
+    assert.equal(await guard("viewer", handle), 200);
+    assert.equal(await guard("member", handle), 200);
 });

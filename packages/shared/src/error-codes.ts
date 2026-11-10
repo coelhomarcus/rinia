@@ -30,6 +30,8 @@ const messageCodes: Record<string, string> = {
     "You do not have permission to delete this category": "errors.permissionDenied",
     "Only the project owner can do this": "errors.permissionDenied",
     "Only the author or project owner can delete this page": "errors.permissionDenied",
+    "Only the author or a project admin can delete this page": "errors.permissionDenied",
+    "Your role in this project does not allow this": "errors.permissionDenied",
 };
 
 export function resolveApiError(message: string, status: number): { code: string; params?: Record<string, string> } {

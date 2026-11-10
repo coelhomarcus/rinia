@@ -12,6 +12,7 @@ import { AddMemberForm, memberInitials } from "@/features/projects/components/me
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { useProjectMembers, useRemoveProjectMember } from "@/features/projects/hooks/use-project-members";
 import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
+import { MemberRoleControl, TransferOwnershipButton } from "@/features/projects/components/member-role";
 import { ApiError } from "@/lib/api-client";
 import { useTranslation } from "react-i18next";
 import { useRouteProject } from "@/features/projects/route-project";
@@ -20,7 +21,8 @@ export const ProjectMembersPage = () => {
     const { projectId } = useRouteProject();
     const { t, i18n } = useTranslation();
     const { data: members, isLoading, isError } = useProjectMembers(projectId);
-    const { isProjectOwner } = useProjectPermissions(projectId);
+    const permissions = useProjectPermissions(projectId);
+    const canManage = permissions.can("members.manage");
     const removeMember = useRemoveProjectMember(projectId);
     const [descending, setDescending] = useState(false);
     const sorted = [...(members ?? [])].sort((a, b) => a.name.localeCompare(b.name, i18n.language) * (descending ? -1 : 1));
@@ -30,7 +32,7 @@ export const ProjectMembersPage = () => {
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <ProjectWorkspaceHeader projectId={projectId} activeView="members" />
             <main className="min-h-0 flex-1 overflow-y-auto px-3 pt-3">
-                {isProjectOwner && (
+                {canManage && (
                     <div className="mb-2 flex justify-end px-3">
                         <ModalDialog
                             trigger={<Button size="sm" color="secondary" iconLeading={Plus}>{t("settings.addMember")}</Button>}
@@ -58,14 +60,14 @@ export const ProjectMembersPage = () => {
                             </th>
                             <th scope="col" className="hidden w-[28%] px-3 py-2 font-medium md:table-cell">{t("settings.email")}</th>
                             <th scope="col" className="w-40 px-3 py-2 font-medium">{t("settings.role")}</th>
-                            {isProjectOwner && <th scope="col" className="w-10"><span className="sr-only">{t("settings.actions")}</span></th>}
+                            {canManage && <th scope="col" className="w-20"><span className="sr-only">{t("settings.actions")}</span></th>}
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading &&
                             Array.from({ length: 3 }, (_, index) => (
                                 <tr key={index}>
-                                    <td className="px-3 py-3" colSpan={isProjectOwner ? 4 : 3}><Skeleton className="h-8 w-full" /></td>
+                                    <td className="px-3 py-3" colSpan={canManage ? 4 : 3}><Skeleton className="h-8 w-full" /></td>
                                 </tr>
                             ))}
                         {sorted.map((member) => (
@@ -80,15 +82,14 @@ export const ProjectMembersPage = () => {
                                     </div>
                                 </td>
                                 <td className="hidden truncate px-3 py-3 text-secondary md:table-cell">{member.email}</td>
-                                <td className={`px-3 py-3 ${isProjectOwner ? "" : "rounded-r-md"}`}>
-                                    <span className={member.role === "owner" ? "font-medium text-accent-primary" : "text-secondary"}>
-                                        {member.role === "owner" ? t("settings.owner") : t("settings.member")}
-                                    </span>
+                                <td className={`px-3 py-3 ${canManage ? "" : "rounded-r-md"}`}>
+                                    <MemberRoleControl projectId={projectId} member={member} />
                                 </td>
-                                {isProjectOwner && (
+                                {canManage && (
                                     <td className="rounded-r-md px-2 py-3">
                                         {member.role !== "owner" && (
-                                            <div className="opacity-100 can-hover:opacity-0 can-hover:group-focus-within:opacity-100 can-hover:group-hover:opacity-100">
+                                            <div className="flex justify-end gap-1 opacity-100 can-hover:opacity-0 can-hover:group-focus-within:opacity-100 can-hover:group-hover:opacity-100">
+                                                <TransferOwnershipButton projectId={projectId} member={member} />
                                                 <ConfirmDialog
                                                     trigger={<ButtonUtility icon={UserRoundMinus} size="sm" color="tertiary" tooltip={`${t("settings.removeMember")} ${member.name}`} isDisabled={removeMember.isPending} />}
                                                     title={t("settings.removeMember")}

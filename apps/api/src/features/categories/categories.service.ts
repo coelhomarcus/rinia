@@ -32,14 +32,15 @@ export async function createCategory(projectId: string, input: CreateCategoryInp
 
 interface DeleteCategoryRequester {
     userId: string;
-    isProjectOwner: boolean;
+    /** The role may change anyone's label, not only the ones its holder created. */
+    canManageAll: boolean;
 }
 
 export async function updateCategory(projectId: string, categoryId: string, input: UpdateCategoryInput, requester: DeleteCategoryRequester) {
     const category = await db.query.categories.findFirst({ where: and(eq(categories.id, categoryId), eq(categories.projectId, projectId)) });
     if (!category) throw new HttpError(404, "Category not found");
 
-    const canUpdate = requester.isProjectOwner || category.createdBy === requester.userId;
+    const canUpdate = requester.canManageAll || category.createdBy === requester.userId;
     if (!canUpdate) throw new HttpError(403, "You do not have permission to update this category");
 
     if (input.name && input.name !== category.name) {
@@ -61,7 +62,7 @@ export async function deleteCategory(projectId: string, categoryId: string, requ
         throw new HttpError(404, "Category not found");
     }
 
-    const canDelete = requester.isProjectOwner || category.createdBy === requester.userId;
+    const canDelete = requester.canManageAll || category.createdBy === requester.userId;
     if (!canDelete) {
         throw new HttpError(403, "You do not have permission to delete this category");
     }

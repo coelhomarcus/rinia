@@ -4,6 +4,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { createIssueSchema, updateIssueSchema } from "@rinia/shared";
 import { db } from "../src/db";
+import { stubRole } from "./fixtures/project-membership";
 import { issueActivities } from "../src/db/schema";
 import { listIssues, updateIssue } from "../src/features/issues/issues.service";
 
@@ -12,6 +13,7 @@ afterEach(() => mock.restore());
 
 const ana = "4d2e6f80-0000-4000-8000-000000000001";
 const projectId = "4d2e6f80-0000-4000-8000-0000000000aa";
+const member = { userId: ana, role: "member" as const };
 const issueId = "4d2e6f80-0000-4000-8000-0000000000bb";
 const render = (condition: SQL) => new PgDialect().sqlToQuery(condition);
 
@@ -22,7 +24,7 @@ function stubIssue(overrides: Record<string, unknown> = {}) {
 }
 
 function stubMembership(member: boolean) {
-    return spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership" } as never) : undefined));
+    return stubRole(member ? "member" : null);
 }
 
 /** Records every `db.insert(table).values(...)`, by table. */
@@ -68,6 +70,6 @@ test("ordering by due date puts the soonest first and undated issues last", asyn
     let orderBy: SQL[] = [];
     spyOn(db.query.issues, "findMany").mockImplementation(((config: { orderBy: SQL[] }) => ((orderBy = config.orderBy), Promise.resolve([]))) as never);
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ issueKey: "RIN" }) as never);
-    await listIssues(projectId, { orderBy: "due" });
+    await listIssues(projectId, { orderBy: "due" }, member);
     assert.match(render(orderBy[0]).sql, /"due_date" asc nulls last/);
 });

@@ -19,6 +19,7 @@ import { useColumns } from "@/features/board/hooks/use-board";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { listStep } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
+import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { BulkActionBar } from "@/features/issues/components/bulk-action-bar";
 import { DragLift } from "@/features/issues/components/drag-feedback";
 import { SortableIssueListRow } from "@/features/issues/components/sortable-issue-list-row";
@@ -71,6 +72,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const { t, i18n } = useTranslation();
     const { density } = useDensity();
     const { projectId, projectKey } = useRouteProject();
+    // Viewers and guests read the list: no new issues, no dragging, no bulk changes.
+    const canWrite = useProjectPermissions(projectId).can("issues.write");
     const selection = useIssueSelection()!;
     const params = useParams<{ scope: string }>();
     const navigate = useNavigate();
@@ -358,7 +361,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 illustration: "kanban" as const,
                 title: t("issue.noIssues"),
                 description: t("issue.createFirstIssue"),
-                action: (
+                action: canWrite && (
                     <Button size="sm" iconLeading={Plus} onClick={() => startCreating(defaultIssueColumn(columns)?.id ?? null)}>
                         {t("issue.newIssue")}
                     </Button>
@@ -406,7 +409,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 illustration: "kanban" as const,
                 title: t("issue.emptyBacklogTitle"),
                 description: t("issue.emptyBacklog", { states: statesWhere((bucket) => bucket === "backlog") }),
-                action: (
+                action: canWrite && (
                     <Button size="sm" iconLeading={Plus} onClick={() => startCreating(backlogColumn?.id ?? null)}>
                         {t("issue.newIssue")}
                     </Button>
@@ -462,9 +465,11 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 actions={
                     <>
                         {viewActions.menu}
-                        <Button size="md" color="secondary" className={cx(COLLAPSE, "rounded-full")} iconLeading={Plus} onClick={() => startCreating(null)}>
-                            <Label>{t("issue.newIssue")}</Label>
-                        </Button>
+                        {canWrite && (
+                            <Button size="md" color="secondary" className={cx(COLLAPSE, "rounded-full")} iconLeading={Plus} onClick={() => startCreating(null)}>
+                                <Label>{t("issue.newIssue")}</Label>
+                            </Button>
+                        )}
                     </>
                 }
             />
@@ -555,7 +560,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                         {!isLoading && !isError && (
                             <LayoutGroup>
                                 <IssueMotionRoster ids={visibleIds}>
-                                    <DndContext {...reorder.dndProps}>
+                                    <DndContext {...reorder.dndProps} {...(canWrite ? {} : { sensors: [] })}>
                                         <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
                                             <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
                                                 {virtualizer.getVirtualItems().map((virtual) => {
@@ -611,7 +616,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                             </span>
                                                                             <span className="text-tertiary">{row.group.issues.length}</span>
                                                                         </button>
-                                                                        {groupBy === "status" && (
+                                                                        {groupBy === "status" && canWrite && (
                                                                             <button
                                                                                 type="button"
                                                                                 aria-label={t("issue.newIssue")}
@@ -717,14 +722,14 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                     </div>
                 </main>
             )}
-            <BulkActionBar
+            {canWrite && <BulkActionBar
                 projectId={projectId!}
                 issues={selectedIssues}
                 columns={columns ?? []}
                 members={members ?? []}
                 labels={categories ?? []}
                 onClear={selection.clear}
-            />
+            />}
         </div>
     );
 };

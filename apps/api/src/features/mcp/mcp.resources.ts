@@ -17,7 +17,7 @@ type Variables = Record<string, string | string[] | undefined>;
  * @-mention in Claude Code), and prompts for the jobs people most often bring to Rinia.
  */
 export function registerResourcesAndPrompts(context: McpContext) {
-    const { server, user, link, workspace, projectByKey, issueByIdentifier, markdown } = context;
+    const { server, user, link, workspace, viewer, projectByKey, issueByIdentifier, assertPageVisible, markdown } = context;
     // Plain signatures instead of the SDK's generic ones, which exhaust the TypeScript compiler on Zod shapes, as for tools.
     const resource = server.registerResource.bind(server) as unknown as (
         name: string,
@@ -57,7 +57,7 @@ export function registerResourcesAndPrompts(context: McpContext) {
                 const projects = await listProjectsForUser(user.sub);
                 const pages = await Promise.all(
                     projects.map(async (project) =>
-                        (await listDocuments(project.id)).map((document) => ({ uri: `rinia://page/${project.issueKey}/${document.id}`, name: `${project.issueKey}: ${document.title}`, mimeType: MARKDOWN })),
+                        (await listDocuments(project.id, await viewer(project.id))).map((document) => ({ uri: `rinia://page/${project.issueKey}/${document.id}`, name: `${project.issueKey}: ${document.title}`, mimeType: MARKDOWN })),
                     ),
                 );
                 return { resources: pages.flat() };
@@ -66,6 +66,7 @@ export function registerResourcesAndPrompts(context: McpContext) {
         { title: "Page", description: "A project page (document) as Markdown.", mimeType: MARKDOWN },
         async (uri, { project, id }) => {
             const space = await projectByKey(one(project));
+            await assertPageVisible(space.project.id, one(id));
             const document = await getSavedDocument(space.project.id, one(id));
             return { contents: [{ uri: uri.href, mimeType: MARKDOWN, text: `# ${document.title}\n\n${markdown(document.contentJson)}` }] };
         },

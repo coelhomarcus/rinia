@@ -106,7 +106,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const projectId = state?.entity.projectId ?? confirmation?.projectId ?? "";
-    const { isProjectOwner, isLoading: permissionsLoading, isError: permissionsError } = useProjectPermissions(projectId);
+    const { can, isLoading: permissionsLoading, isError: permissionsError } = useProjectPermissions(projectId);
     const deleteIssue = useDeleteIssue(projectId);
 
     const open = useCallback((entity: ContextMenuEntity, anchor: MenuAnchor) => {
@@ -290,10 +290,13 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
     }, [notice]);
 
     const { data: projects } = useProjects();
-    const canDeleteProject = Boolean(user && !permissionsLoading && !permissionsError && isProjectOwner);
+    const known = Boolean(user && !permissionsLoading && !permissionsError);
+    const canDeleteProject = known && can("project.delete");
+    const canOpenSettings = known && can("project.update");
     const canDeleteDocument = Boolean(
-        state?.entity.type === "document" && user && (state.entity.authorId === user.id || (!permissionsLoading && !permissionsError && isProjectOwner)),
+        known && state?.entity.type === "document" && can("pages.write") && (state.entity.authorId === user!.id || can("pages.deleteAny")),
     );
+    const canDeleteIssue = known && can("issues.write");
 
     const actions = useMemo<MenuAction[]>(() => {
         if (!state) return [];
@@ -320,7 +323,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                 openItem,
                 newTabItem,
                 copyLinkItem,
-                { key: "settings", label: t("contextMenu.projectSettings"), icon: Settings2, onSelect: () => navigate(urls.projectSettings(projectKey, "general")) },
+                ...(canOpenSettings ? [{ key: "settings", label: t("contextMenu.projectSettings"), icon: Settings2, onSelect: () => navigate(urls.projectSettings(projectKey, "general")) }] : []),
                 ...(canDeleteProject ? [{ key: "delete", label: t("contextMenu.deleteProject"), icon: Trash2, destructive: true, onSelect: () => setConfirmation(entity) }] : []),
             ];
         }
@@ -351,9 +354,9 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                     setNotice(t("contextMenu.couldNotCopyContent"));
                 }),
             },
-            { key: "delete", label: t("contextMenu.deleteIssue"), icon: Trash2, destructive: true, onSelect: () => setConfirmation(entity) },
+            ...(canDeleteIssue ? [{ key: "delete", label: t("contextMenu.deleteIssue"), icon: Trash2, destructive: true, onSelect: () => setConfirmation(entity) }] : []),
         ];
-    }, [canDeleteDocument, canDeleteProject, copy, navigate, projects, showToast, state, t]);
+    }, [canDeleteDocument, canDeleteIssue, canDeleteProject, canOpenSettings, copy, navigate, projects, showToast, state, t]);
 
     async function confirmDelete() {
         if (!confirmation) return;

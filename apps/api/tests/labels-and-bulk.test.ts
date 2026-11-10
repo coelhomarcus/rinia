@@ -6,7 +6,7 @@ import type { SQL } from "drizzle-orm";
 import { bulkUpdateIssuesSchema, issueListQuerySchema, nextLabels, positionsAtTop, updateIssueSchema } from "@rinia/shared";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
-import { stubProjectAccess } from "./fixtures/project-membership";
+import { stubProjectAccess, stubRole } from "./fixtures/project-membership";
 import { issueActivities, issueLabels, issues } from "../src/db/schema";
 import { bulkDeleteIssues, listIssues, updateIssue } from "../src/features/issues/issues.service";
 import { HttpError } from "../src/lib/http-error";
@@ -98,7 +98,7 @@ test("filtering by several labels matches issues with any of them", async () => 
     let where: SQL | undefined;
     spyOn(db.query.issues, "findMany").mockImplementation(((config: { where: SQL }) => ((where = config.where), Promise.resolve([]))) as never);
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ issueKey: "RIN" }) as never);
-    await listIssues(projectId, { orderBy: "position", categoryIds: [bug, design] });
+    await listIssues(projectId, { orderBy: "position", categoryIds: [bug, design] }, { userId: ana, role: "member" });
     const query = render(where!);
     assert.match(query.sql, /"issue_labels"\."category_id" in \(\$\d+, \$\d+\)/);
     assert.deepEqual(query.params.slice(-2), [bug, design]);
@@ -189,7 +189,8 @@ test("a write failing inside the transaction fails the request and notifies no o
     let selects = 0;
     const select = spyOn(db, "select").mockImplementation((() => {
         selects += 1;
-        if (selects === 1) {
+        // The route checks the role, and the service checks it again for callers that skip the route.
+        if (selects <= 2) {
             return {
                 from: () => ({
                     leftJoin: () => ({
@@ -206,7 +207,7 @@ test("a write failing inside the transaction fails the request and notifies no o
     const response = await call("PATCH", `/projects/${projectId}/issues/bulk`, { issueIds: ids, patch: { assigneeId: ana } });
     assert.equal(response.status, 500);
     assert.ok(writes.every((write) => write.table !== issueActivities));
-    assert.equal(selects, 1, "membership is checked; notifications are not");
+    assert.equal(selects, 2, "membership is checked; notifications are not");
     error.mockRestore();
 });
 
@@ -215,7 +216,8 @@ test("deleting in bulk refuses to leave sub-issues without their parent", async 
         .mockImplementationOnce(async () => [issueRow(ids[0])] as never)
         .mockImplementationOnce(async () => [{ id: ids[5] }] as never);
     const { transaction } = stubTransaction();
-    await assert.rejects(bulkDeleteIssues(projectId, [ids[0]]), isHttp(409));
+    stubRole("member");
+    await assert.rejects(bulkDeleteIssues(projectId, [ids[0]], ana), isHttp(409));
     assert.equal(transaction.mock.calls.length, 0);
 });
 
@@ -225,7 +227,8 @@ test("deleting a parent and its sub-issue together works in one transaction", as
         .mockImplementationOnce(async () => [{ id: ids[1] }] as never);
     const writes: Array<{ kind: string }> = [];
     spyOn(db, "update").mockImplementation((() => ({ set: () => ({ where: async () => void writes.push({ kind: "update" }) }) })) as never);
-    await bulkDeleteIssues(projectId, [ids[0], ids[1]]);
+    stubRole("member");
+    await bulkDeleteIssues(projectId, [ids[0], ids[1]], ana);
     assert.deepEqual(writes.map((write) => write.kind), ["update"]);
 });
 
@@ -243,7 +246,7 @@ function stubSingleMove(top: number | null) {
     spyOn(db, "select").mockImplementation((() => ({
         from: () => ({
             where: async (where: SQL) => (tops.push(where), [{ position: top }]),
-            leftJoin: () => ({ where: async () => [] }),
+            leftJoin: () => ({ where: async () => [{ membership: { id: "membership", role: "member" } }] }),
         }),
     })) as never);
     let written: Record<string, unknown> = {};

@@ -1,11 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult, ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
-import { absoluteStoredFileUrls, appPaths, issuePriorityValues, tiptapToMarkdown, type ActionSource, type ApiTokenAccess, type IssuePriority } from "@rinia/shared";
+import { absoluteStoredFileUrls, appPaths, issuePriorityValues, tiptapToMarkdown, type ActionSource, type ApiTokenAccess, type IssuePriority, type ProjectAction, type ProjectRole } from "@rinia/shared";
 import { z, ZodError } from "zod";
 import { HttpError } from "../../lib/http-error";
 import type { JwtPayload } from "../../lib/jwt";
 import { logFor } from "../../lib/request-context";
-import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { assertDocumentVisible, assertIssueAccess } from "../../lib/guest-access";
+import { assertProjectAccess } from "../../middleware/project-membership.middleware";
 import { listCategories } from "../categories/categories.service";
 import { listColumns } from "../columns/columns.service";
 import { getIssueOrThrow } from "../issues/issues.service";
@@ -137,22 +138,47 @@ export function createMcpContext(server: McpServer, { user, baseUrl, client = nu
         return loaded;
     }
 
-    async function projectByKey(key: string) {
+    /** The user's role in each project the request touched, checked once. */
+    const roles = new Map<string, ProjectRole>();
+
+    /** Checks the role allows `action` in the project, the way the REST route for the same change does. */
+    async function allow(projectId: string, action: ProjectAction = "project.read") {
+        const { role } = await assertProjectAccess(projectId, user.sub, action);
+        roles.set(projectId, role);
+        return role;
+    }
+
+    /** Who is asking, for lists that show a guest only what was shared with them. */
+    async function viewer(projectId: string) {
+        return { userId: user.sub, role: roles.get(projectId) ?? (await allow(projectId)) };
+    }
+
+    /** A project by key, after checking the user may do `action` there. Every tool that changes something names its action. */
+    async function projectByKey(key: string, action?: ProjectAction) {
         const project = await getProjectByKey(key);
-        await assertProjectMembership(project.id, user.sub);
+        await allow(project.id, action);
         return workspace(project);
     }
 
     /** One project by key, or every project the user is in. */
     async function projectsOrAll(key: string | undefined) {
-        return key ? [await projectByKey(key)] : Promise.all((await listProjectsForUser(user.sub)).map((project) => workspace(project)));
+        if (key) return [await projectByKey(key)];
+        // The list already carries the user's role in each project, so no project is looked up twice.
+        return Promise.all((await listProjectsForUser(user.sub)).map((project) => (roles.set(project.id, project.role), workspace(project))));
     }
 
-    async function issueByIdentifier(identifier: string) {
+    /** An issue the user can see, and with `action`, may act on. One a guest was not given is not found. */
+    async function issueByIdentifier(identifier: string, action?: ProjectAction) {
         if (!ISSUE_IDENTIFIER.test(identifier.trim())) throw new HttpError(400, `"${identifier}" is not an issue identifier. Use one such as RIN-4.`);
         const issue = await getIssueOrThrow(identifier.trim());
-        await assertProjectMembership(issue.projectId, user.sub);
+        roles.set(issue.projectId, await assertIssueAccess(user.sub, issue, action));
         return { issue, space: await workspace(issue.project) };
+    }
+
+    /** Checks the user can see the page: a guest only the pages shared with them. */
+    async function assertPageVisible(projectId: string, documentId: string) {
+        const { role } = await viewer(projectId);
+        await assertDocumentVisible(user.sub, role, documentId);
     }
 
     function resolveState(space: Workspace, state: string) {
@@ -198,7 +224,7 @@ export function createMcpContext(server: McpServer, { user, baseUrl, client = nu
         };
     }
 
-    return { server, user, source, link, tool, workspace, projectByKey, projectsOrAll, issueByIdentifier, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize, markdown };
+    return { server, user, source, link, tool, workspace, viewer, projectByKey, projectsOrAll, issueByIdentifier, assertPageVisible, resolveState, resolveAssignee, resolveLabels, issueUrl, summarize, markdown };
 }
 
 export type McpContext = ReturnType<typeof createMcpContext>;

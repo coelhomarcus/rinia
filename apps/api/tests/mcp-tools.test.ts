@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, mock, spyOn, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { markdownToTiptap } from "@rinia/shared";
+import { can, markdownToTiptap, type ProjectAction, type ProjectRole } from "@rinia/shared";
 
 // The services read their settings on import; give them what they need without a local .env.
 process.env.JWT_SECRET ??= "test-secret";
@@ -57,12 +57,16 @@ function issue(overrides: Record<string, unknown> = {}) {
     };
 }
 
-/** The workspace every tool loads: one project, its states, labels and members. */
-function stubWorkspace() {
+/** The workspace every tool loads: one project, its states, labels and members. `role` is the caller's. */
+function stubWorkspace(role = "member") {
     spyOn(projectsService, "getProjectByKey").mockImplementation((async () => project) as never);
     spyOn(projectsService, "listProjectsForUser").mockImplementation((async () => [project]) as never);
     spyOn(projectsService, "listProjectMembers").mockImplementation((async () => members) as never);
-    spyOn(membership, "assertProjectMembership").mockImplementation((async () => ({})) as never);
+    spyOn(membership, "assertProjectMembership").mockImplementation((async () => role) as never);
+    spyOn(membership, "assertProjectAccess").mockImplementation((async (_projectId: string, _userId: string, action = "project.read") => {
+        if (!can(role as ProjectRole, action as ProjectAction)) throw new HttpError(403, membership.ROLE_DENIED_MESSAGE);
+        return { id: "membership", role };
+    }) as never);
     spyOn(columnsService, "listColumns").mockImplementation((async () => columns) as never);
     spyOn(categoriesService, "listCategories").mockImplementation((async () => labels) as never);
 }

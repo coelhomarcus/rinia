@@ -1,10 +1,11 @@
-import { resolveLocale, suggestProjectKey, type CreateProjectInput, type Locale, type UpdateProjectInput, type UpdateProjectPageInput } from "@rinia/shared";
+import { canManageMember, resolveLocale, suggestProjectKey, type AssignableProjectRole, type CreateProjectInput, type Locale, type ProjectRole, type UpdateProjectInput, type UpdateProjectPageInput } from "@rinia/shared";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { boardColumns, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
+import { boardColumns, projectKeyAliases, projectMembers, projectShares, projects, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import { withinTokenScope } from "../../lib/project-access";
 import { logFor } from "../../lib/request-context";
+import { ROLE_DENIED_MESSAGE } from "../../middleware/project-membership.middleware";
 import { DEFAULT_COLUMNS } from "./default-columns";
 import { isProjectKeyConflict } from "./project-key";
 import { publishChange, realtimeHub } from "../realtime/realtime.service";
@@ -110,7 +111,7 @@ export async function listProjectsForUser(userId: string) {
             where: and(eq(projectMembers.userId, userId), withinTokenScope(projectMembers.projectId, userId)),
             with: { project: { columns: PROJECT_LIST_COLUMNS } },
         })
-    ).map((membership) => membership.project);
+    ).map((membership) => ({ ...membership.project, role: membership.role }));
 
     type MemberPreview = { id: string; name: string; avatarUrl: string | null };
     if (projectList.length === 0) return projectList.map((project) => ({ ...project, memberCount: 0, memberPreview: [], owner: null as MemberPreview | null }));
@@ -226,7 +227,8 @@ export async function listProjectMembers(projectId: string) {
     return members.map((member) => ({ ...member.user, role: member.role, joinedAt: member.joinedAt }));
 }
 
-export async function addProjectMember(projectId: string, username: string) {
+export async function addProjectMember(projectId: string, username: string, role: AssignableProjectRole, actorRole: ProjectRole) {
+    if (!canManageMember(actorRole, role, role)) throw new HttpError(403, ROLE_DENIED_MESSAGE);
     const user = await db.query.users.findFirst({
         where: eq(users.username, username),
         columns: { id: true, name: true, username: true, email: true, avatarUrl: true },
@@ -246,9 +248,10 @@ export async function addProjectMember(projectId: string, username: string) {
 
     const [member] = await db
         .insert(projectMembers)
-        .values({ projectId, userId: user.id, role: "member" })
+        .values({ projectId, userId: user.id, role })
         .returning();
     publishChange("member.added", { projectId, id: user.id });
+    logFor("audit").info({ event: "member.added", projectId, userId: user.id, role }, "member added");
 
     return { ...user, role: member.role, joinedAt: member.joinedAt };
 }
@@ -267,19 +270,58 @@ export async function lookupProjectMember(projectId: string, username: string) {
     return { user, isMember: !!membership };
 }
 
-export async function removeProjectMember(projectId: string, userId: string) {
+async function findMember(projectId: string, userId: string) {
     const target = await db.query.projectMembers.findFirst({
         where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),
     });
+    if (!target) throw new HttpError(404, "Member not found");
+    return target;
+}
 
-    if (!target) {
-        throw new HttpError(404, "Member not found");
-    }
+export async function removeProjectMember(projectId: string, userId: string, actorRole: ProjectRole) {
+    const target = await findMember(projectId, userId);
     if (target.role === "owner") {
         throw new HttpError(400, "The project owner cannot be removed");
     }
+    if (!canManageMember(actorRole, target.role)) throw new HttpError(403, ROLE_DENIED_MESSAGE);
 
-    await db.delete(projectMembers).where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+    await db.transaction(async (tx) => {
+        await tx.delete(projectMembers).where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+        // Shares are a guest's only way in; someone who comes back starts with none.
+        await tx.delete(projectShares).where(and(eq(projectShares.projectId, projectId), eq(projectShares.userId, userId)));
+    });
     publishChange("member.removed", { projectId, id: userId });
+    logFor("audit").info({ event: "member.removed", projectId, userId }, "member removed");
     realtimeHub.revoke(projectId, userId);
+}
+
+/** Gives a member another role. The owner keeps theirs: that changes only by transferring the project. */
+export async function updateProjectMemberRole(projectId: string, userId: string, role: AssignableProjectRole, actorRole: ProjectRole) {
+    const target = await findMember(projectId, userId);
+    if (target.role === "owner") throw new HttpError(400, "The owner's role changes only by transferring the project");
+    if (!canManageMember(actorRole, target.role, role)) throw new HttpError(403, ROLE_DENIED_MESSAGE);
+    if (target.role !== role) {
+        await db.update(projectMembers).set({ role }).where(eq(projectMembers.id, target.id));
+        publishChange("member.updated", { projectId, id: userId });
+        logFor("audit").info({ event: "member.role_changed", projectId, userId, from: target.role, to: role }, "member role changed");
+        realtimeHub.changeRole(projectId, userId, role);
+    }
+    const members = await listProjectMembers(projectId);
+    return members.find((member) => member.id === userId)!;
+}
+
+/** Hands the project to another member, who becomes its owner. The previous owner stays on as an admin. */
+export async function transferProject(projectId: string, ownerId: string, nextOwnerId: string) {
+    if (ownerId === nextOwnerId) throw new HttpError(400, "You already own this project");
+    const target = await findMember(projectId, nextOwnerId);
+    if (target.role === "guest") throw new HttpError(400, "A guest cannot own the project. Give them another role first.");
+    await db.transaction(async (tx) => {
+        await tx.update(projectMembers).set({ role: "admin" }).where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, ownerId), eq(projectMembers.role, "owner")));
+        await tx.update(projectMembers).set({ role: "owner" }).where(eq(projectMembers.id, target.id));
+    });
+    for (const [userId, role] of [[ownerId, "admin"], [nextOwnerId, "owner"]] as const) {
+        publishChange("member.updated", { projectId, id: userId });
+        realtimeHub.changeRole(projectId, userId, role);
+    }
+    logFor("audit").info({ event: "project.transferred", projectId, from: ownerId, to: nextOwnerId }, "project ownership transferred");
 }

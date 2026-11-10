@@ -1,5 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
-import { Copy, Ellipsis, GitBranch, History, Link2, ListTree, Sparkles, Trash2 } from "lucide-react";
+import { Copy, Ellipsis, GitBranch, History, Link2, ListTree, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -14,7 +14,8 @@ export interface CopyActions {
     isCopying: boolean;
 }
 
-export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, isCopying, onAddRelation, onSetParent, onOpenHistory, onDelete }: CopyActions & { onAddRelation: () => void; onSetParent: () => void; onOpenHistory: () => void; onDelete: () => void }) {
+/** The actions that change the issue are left out when the role cannot take them. */
+export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, isCopying, onAddRelation, onSetParent, onOpenHistory, onDelete, onShare }: CopyActions & { onAddRelation?: () => void; onSetParent?: () => void; onOpenHistory: () => void; onDelete?: () => void; onShare?: () => void }) {
     const { t } = useTranslation();
     return (
         <Menu.Root>
@@ -29,11 +30,16 @@ export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPro
                         <Menu.Item className={menuItemClass} onClick={onCopyBranch}><GitBranch className="size-4 text-tertiary" />{t("issue.copyBranchName")}</Menu.Item>
                         <Menu.Item className={menuItemClass} disabled={isCopying} onClick={onCopyPrompt}><Sparkles className="size-4 text-tertiary" />{t("issue.copyWithPrompt")}</Menu.Item>
                         <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
-                        <Menu.Item className={menuItemClass} onClick={onAddRelation}><Link2 className="size-4 text-tertiary" />{t("issue.addRelation")}</Menu.Item>
-                        <Menu.Item className={menuItemClass} onClick={onSetParent}><ListTree className="size-4 text-tertiary" />{t("issue.addParent")}</Menu.Item>
+                        {onAddRelation && <Menu.Item className={menuItemClass} onClick={onAddRelation}><Link2 className="size-4 text-tertiary" />{t("issue.addRelation")}</Menu.Item>}
+                        {onSetParent && <Menu.Item className={menuItemClass} onClick={onSetParent}><ListTree className="size-4 text-tertiary" />{t("issue.addParent")}</Menu.Item>}
                         <Menu.Item className={menuItemClass} onClick={onOpenHistory}><History className="size-4 text-tertiary" />{t("issue.descriptionHistory")}</Menu.Item>
-                        <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
-                        <Menu.Item className={cx(menuItemClass, "text-danger-primary data-highlighted:text-danger-primary")} onClick={onDelete}><Trash2 className="size-4" />{t("issue.deleteIssue")}</Menu.Item>
+                        {onShare && <Menu.Item className={menuItemClass} onClick={onShare}><UserPlus className="size-4 text-tertiary" />{t("settings.shareWithGuests")}</Menu.Item>}
+                        {onDelete && (
+                            <>
+                                <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
+                                <Menu.Item className={cx(menuItemClass, "text-danger-primary data-highlighted:text-danger-primary")} onClick={onDelete}><Trash2 className="size-4" />{t("issue.deleteIssue")}</Menu.Item>
+                            </>
+                        )}
                     </Menu.Popup>
                 </Menu.Positioner>
             </Menu.Portal>

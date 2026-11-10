@@ -1,8 +1,8 @@
-import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, issues, projectDocuments, projects } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
-import { reachableProjectIds } from "../../lib/project-access";
+import { visibleDocuments, visibleIssues } from "../../lib/guest-access";
 import { consumeRateLimit } from "../../lib/rate-limit";
 
 export interface SearchOptions {
@@ -20,7 +20,8 @@ function containing(term: string) {
 const richText = (column: SQL | typeof issues.descriptionJson | typeof projectDocuments.contentJson) => sql`jsonb_path_query_array(${column}, 'lax $.**.text')::text`;
 
 /**
- * Issues and pages whose title or text contains the term, from the projects the user can see. An identifier such as
+ * Issues and pages whose title or text contains the term, from what the user can see: every issue and page of their
+ * projects, or for a guest, only what was shared with them. An identifier such as
  * `RIN-4` finds that issue first. Pages are searched in their last saved state.
  */
 export async function searchWorkspace(userId: string, term: string, options: SearchOptions = {}) {
@@ -34,7 +35,6 @@ export async function searchWorkspace(userId: string, term: string, options: Sea
     const pattern = containing(term.trim());
     const scope: SQL[] = [];
     if (options.projectId) scope.push(eq(projects.id, options.projectId));
-    scope.push(inArray(projects.id, reachableProjectIds(userId)));
 
     const identifier = /^([A-Za-z0-9]{2,8})-(\d+)$/.exec(term.trim());
     const issueMatch = or(
@@ -51,14 +51,14 @@ export async function searchWorkspace(userId: string, term: string, options: Sea
             .from(issues)
             .innerJoin(projects, eq(issues.projectId, projects.id))
             .innerJoin(boardColumns, eq(issues.columnId, boardColumns.id))
-            .where(and(isNull(issues.deletedAt), issueMatch, ...scope))
+            .where(and(isNull(issues.deletedAt), issueMatch, visibleIssues(userId), ...scope))
             .orderBy(exactFirst, titleFirst, desc(issues.updatedAt))
             .limit(limit),
         db
             .select({ id: projectDocuments.id, title: projectDocuments.title, updatedAt: projectDocuments.updatedAt, issueKey: projects.issueKey, projectName: projects.name })
             .from(projectDocuments)
             .innerJoin(projects, eq(projectDocuments.projectId, projects.id))
-            .where(and(isNull(projectDocuments.deletedAt), or(ilike(projectDocuments.title, pattern), sql`${richText(projectDocuments.contentJson)} ilike ${pattern}`), ...scope))
+            .where(and(isNull(projectDocuments.deletedAt), or(ilike(projectDocuments.title, pattern), sql`${richText(projectDocuments.contentJson)} ilike ${pattern}`), visibleDocuments(userId), ...scope))
             .orderBy(sql`case when ${projectDocuments.title} ilike ${pattern} then 0 else 1 end`, desc(projectDocuments.updatedAt))
             .limit(limit),
     ]);

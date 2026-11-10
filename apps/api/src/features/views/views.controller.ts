@@ -2,14 +2,15 @@ import { createViewSchema, duplicateViewSchema, updateViewSchema } from "@rinia/
 import type { Request } from "express";
 import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
+import { roleOf } from "../../middleware/project-membership.middleware";
 import { createView, deleteView, duplicateView, listViews, restoreView, updateView, type ViewActor } from "./views.service";
 
 type ProjectParams = { projectId: string };
 type ViewParams = ProjectParams & { viewId: string };
 
-/** Mounted behind `requireProjectMember`, which leaves the member's role on the request. */
+/** Mounted behind `requireProjectPermission`, which leaves the member's role on the request. */
 function actorOf(req: Request<ProjectParams>): ViewActor {
-    return { userId: req.user!.sub, isProjectOwner: req.projectMembership?.role === "owner" };
+    return { userId: req.user!.sub, role: roleOf(req) };
 }
 
 const viewId = (req: Request<ViewParams>) => z.string().uuid().parse(req.params.viewId);

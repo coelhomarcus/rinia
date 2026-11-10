@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search, UserRoundMinus } from "lucide-react";
-import { type AddProjectMemberInput, addProjectMemberSchema } from "@rinia/shared";
+import { type AddProjectMemberInput, type AssignableProjectRole, addProjectMemberSchema } from "@rinia/shared";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -18,13 +18,16 @@ import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { ApiError } from "@/lib/api-client";
 import { useAddProjectMember, useMemberLookup, useProjectMembers, useRemoveProjectMember } from "../hooks/use-project-members";
+import { useProjectPermissions } from "../hooks/use-project-permissions";
+import { MemberRoleControl, RolePicker, TransferOwnershipButton } from "./member-role";
 
-export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
+export const MembersPanel = ({ projectId, canManage }: { projectId: string; canManage: boolean }) => {
     const { t, i18n } = useTranslation();
     const { data: members, isLoading, isError } = useProjectMembers(projectId);
+    const permissions = useProjectPermissions(projectId);
     const removeMutation = useRemoveProjectMember(projectId);
     const [search, setSearch] = useState("");
-    const filtered = members?.filter((member) => `${member.name} ${member.username} ${member.email}`.toLowerCase().includes(search.trim().toLowerCase()));
+    const filtered = members?.filter((member) => `${member.name} ${member.username} ${member.email ?? ""}`.toLowerCase().includes(search.trim().toLowerCase()));
 
     return (
         <div>
@@ -42,7 +45,7 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
                             onChange={setSearch}
                             className="w-48 max-w-full"
                         />
-                        {isProjectOwner && (
+                        {canManage && (
                             <ModalDialog
                                 trigger={
                                     <Button size="sm" iconLeading={Plus}>
@@ -79,19 +82,20 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
                             key={member.id}
                             leading={<Avatar src={member.avatarUrl ?? undefined} initials={memberInitials(member.name)} size="sm" />}
                             title={member.name}
-                            description={member.email}
+                            description={member.email ?? `@${member.username}`}
                         >
                             <span className="hidden text-[13px] whitespace-nowrap text-tertiary sm:inline">
                                 {t("settings.joinedOnDate", {
                                     date: new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(member.joinedAt)),
                                 })}
                             </span>
-                            <span className="w-24 text-right text-[13px] text-secondary">
-                                {member.role === "owner" ? t("settings.owner") : t("settings.member")}
+                            <span className="flex w-32 justify-end text-[13px]">
+                                <MemberRoleControl projectId={projectId} member={member} />
                             </span>
-                            {isProjectOwner && (
-                                <span className="flex w-8 justify-end">
-                                    {member.role !== "owner" && (
+                            {canManage && (
+                                <span className="flex w-16 justify-end gap-1">
+                                    <TransferOwnershipButton projectId={projectId} member={member} />
+                                    {permissions.canManage(member.role) && (
                                         <SettingsRowActions>
                                             <ConfirmDialog
                                                 trigger={
@@ -128,6 +132,7 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
         resolver: zodResolver(addProjectMemberSchema),
         defaultValues: { username: "" },
     });
+    const [role, setRole] = useState<AssignableProjectRole>("member");
     // The lookup waits for a pause in typing, so it does not ask about every letter.
     const typed = (useWatch({ control, name: "username" }) ?? "").trim().toLowerCase().replace(/^@/, "");
     const [username, setUsername] = useState("");
@@ -146,7 +151,7 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
             className="space-y-5"
             noValidate
             onSubmit={handleSubmit((data) =>
-                mutation.mutate(data.username.replace(/^@/, ""), {
+                mutation.mutate({ username: data.username.replace(/^@/, ""), role }, {
                     onSuccess: onClose,
                     onError: (error) => setError("root", { message: error instanceof ApiError ? error.message : t("settings.couldNotAddMember") }),
                 }),
@@ -178,6 +183,10 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
                     {isMember && <p className="text-[13px] text-tertiary">{t("settings.userAlreadyMember", { username: found!.username })}</p>}
                 </div>
             )}
+            <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-secondary">{t("settings.role")}</span>
+                <RolePicker value={role} onChange={setRole} isDisabled={mutation.isPending} label={t("settings.role")} className="w-40" />
+            </div>
             {formState.errors.root && <Alert tone="error">{formState.errors.root.message}</Alert>}
             <div className="flex justify-end gap-2">
                 <Button color="secondary" size="lg" isDisabled={mutation.isPending} onClick={onClose}>

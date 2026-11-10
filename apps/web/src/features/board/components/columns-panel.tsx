@@ -47,7 +47,7 @@ function SortableStateRow({ id, disabled, children }: { id: string; disabled: bo
     );
 }
 
-export const ColumnsPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
+export const ColumnsPanel = ({ projectId, canManage }: { projectId: string; canManage: boolean }) => {
     const { t } = useTranslation();
     const { data: columns, isLoading, isError } = useColumns(projectId);
     const createColumn = useCreateColumn(projectId);
@@ -139,7 +139,7 @@ export const ColumnsPanel = ({ projectId, isProjectOwner }: { projectId: string;
                 <SettingsGroup
                     title={`${t("settings.workflow")} · ${columns?.length ?? 0}`}
                     action={
-                        isProjectOwner && (
+                        canManage && (
                             <ButtonUtility
                                 icon={Plus}
                                 size="sm"
@@ -189,7 +189,7 @@ export const ColumnsPanel = ({ projectId, isProjectOwner }: { projectId: string;
                                         onClose={() => setEditor(null)}
                                     />
                                 ) : (
-                                    <SortableStateRow key={column.id} id={column.id} disabled={!isProjectOwner || editor !== null}>
+                                    <SortableStateRow key={column.id} id={column.id} disabled={!canManage || editor !== null}>
                                         {(handle) => (
                                             <SettingsItemRow
                                                 dense
@@ -201,7 +201,7 @@ export const ColumnsPanel = ({ projectId, isProjectOwner }: { projectId: string;
                                                 }
                                                 title={column.name}
                                             >
-                                                {isProjectOwner && (
+                                                {canManage && (
                                                     <SettingsRowActions>
                                                         <ButtonUtility
                                                             icon={ArrowUp}

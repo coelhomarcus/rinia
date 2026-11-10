@@ -17,9 +17,9 @@ const ownerId = "5b3c1a90-0000-4000-8000-0000000000a1";
 const memberId = "5b3c1a90-0000-4000-8000-0000000000a2";
 const isHttp = (status: number) => (error: unknown) => error instanceof HttpError && error.statusCode === status;
 
-const owner: ViewActor = { userId: ownerId, isProjectOwner: false };
-const member: ViewActor = { userId: memberId, isProjectOwner: false };
-const projectOwner: ViewActor = { userId: "5b3c1a90-0000-4000-8000-0000000000a3", isProjectOwner: true };
+const owner: ViewActor = { userId: ownerId, role: "member" };
+const member: ViewActor = { userId: memberId, role: "member" };
+const projectOwner: ViewActor = { userId: "5b3c1a90-0000-4000-8000-0000000000a3", role: "owner" };
 
 function row(overrides: Record<string, unknown> = {}) {
     return {

@@ -1,7 +1,8 @@
-import { PRESENCE_TTL_MS, type PresenceViewer, type RealtimeChannel, type RealtimeEvent, type RealtimeEventType, type RealtimeServerMessage } from "@rinia/shared";
+import { PRESENCE_TTL_MS, type PresenceViewer, type ProjectRole, type RealtimeChannel, type RealtimeEvent, type RealtimeEventType, type RealtimeServerMessage } from "@rinia/shared";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { issues, projectDocuments, projects } from "../../db/schema";
+import { assertDocumentAccess, assertIssueAccess } from "../../lib/guest-access";
 import { HttpError } from "../../lib/http-error";
 import { currentOrigin, logFor } from "../../lib/request-context";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
@@ -17,6 +18,8 @@ export interface RealtimeConnection {
     user: PresenceViewer["user"];
     /** Each subscribed channel and the project it belongs to, so leaving a project drops its issues and documents too. */
     channels: Map<RealtimeChannel, string>;
+    /** The user's role in each project they listen to, as of subscribing or the last role change. */
+    roles: Map<string, ProjectRole>;
     /** The session that opened the socket, so revoking it can close the socket. */
     sessionId?: string;
 }
@@ -39,7 +42,7 @@ export class RealtimeHub {
     collaboration?: CollaborationHooks;
 
     connect(socket: RealtimeSocket, user: PresenceViewer["user"], sessionId?: string): RealtimeConnection {
-        const connection: RealtimeConnection = { socket, user, channels: new Map(), sessionId };
+        const connection: RealtimeConnection = { socket, user, channels: new Map(), roles: new Map(), sessionId };
         this.connections.add(connection);
         return connection;
     }
@@ -55,8 +58,9 @@ export class RealtimeHub {
         this.connections.delete(connection);
     }
 
-    subscribe(connection: RealtimeConnection, channel: RealtimeChannel, projectId: string) {
+    subscribe(connection: RealtimeConnection, channel: RealtimeChannel, projectId: string, role: ProjectRole = "member") {
         connection.channels.set(channel, projectId);
+        connection.roles.set(projectId, role);
         let listeners = this.channels.get(channel);
         if (!listeners) this.channels.set(channel, (listeners = new Set()));
         listeners.add(connection);
@@ -114,10 +118,38 @@ export class RealtimeHub {
         return [...byUser.values()];
     }
 
-    /** Sends the event once to every connection listening on any of `channels`. */
+    /**
+     * Sends the event once to every connection listening on any of `channels`. A guest on the project channel hears
+     * about the project itself, never about its issues and pages: those reach a guest only on the channel of an issue
+     * or page they were allowed to open.
+     */
     publish(event: RealtimeEvent, channels: RealtimeChannel[]) {
-        const listeners = new Set(channels.flatMap((channel) => [...(this.channels.get(channel) ?? [])]));
+        const listeners = new Set<RealtimeConnection>();
+        const hiddenFromGuests = !PROJECT_EVENT_SUBJECTS.has(event.type.split(".")[0]);
+        for (const channel of channels) {
+            for (const connection of this.channels.get(channel) ?? []) {
+                if (hiddenFromGuests && channel.startsWith("project:") && connection.roles.get(event.projectId) === "guest") continue;
+                listeners.add(connection);
+            }
+        }
         for (const connection of listeners) send(connection, { type: "event", event });
+    }
+
+    /**
+     * Applies a new role to the user's open sockets. Turning into a guest closes the issues and pages they had open,
+     * since each must be shared with them again; any other change keeps them open. Page rooms read the role on every
+     * message, so a page turns read-only, or writable, at once.
+     */
+    changeRole(projectId: string, userId: string, role: ProjectRole) {
+        for (const connection of this.connections) {
+            if (connection.user.id !== userId || !connection.roles.has(projectId)) continue;
+            connection.roles.set(projectId, role);
+            for (const [channel, channelProjectId] of [...connection.channels]) {
+                if (channelProjectId !== projectId || channel.startsWith("project:") || role !== "guest") continue;
+                this.unsubscribe(connection, channel);
+                send(connection, { type: "denied", channel });
+            }
+        }
     }
 
     /** Someone removed from a project stops hearing about it, on its issues and documents too. */
@@ -129,6 +161,15 @@ export class RealtimeHub {
                 this.unsubscribe(connection, channel);
                 send(connection, { type: "denied", channel });
             }
+        }
+    }
+
+    /** Closes one channel for every socket of the user, such as an issue or page no longer shared with them. */
+    revokeChannel(userId: string, channel: RealtimeChannel) {
+        for (const connection of this.connections) {
+            if (connection.user.id !== userId || !connection.channels.has(channel) || connection.roles.get(connection.channels.get(channel)!) !== "guest") continue;
+            this.unsubscribe(connection, channel);
+            send(connection, { type: "denied", channel });
         }
     }
 
@@ -147,20 +188,30 @@ function send(connection: RealtimeConnection, message: RealtimeServerMessage) {
     }
 }
 
+/** Events about the project itself, which a guest on the project channel still hears. */
+const PROJECT_EVENT_SUBJECTS = new Set(["project", "member", "column", "label"]);
+
 export const realtimeHub = new RealtimeHub();
 
-/** The project a channel belongs to, after checking the user may see it. Deleted issues and documents have no channel. */
-export async function authorizeChannel(channel: RealtimeChannel, user: { id: string }): Promise<string> {
+/**
+ * The project a channel belongs to and the user's role in it, after checking the user may see it. Deleted issues and
+ * documents have no channel, and a guest is let into an issue or page only when it was shared with them.
+ */
+export async function authorizeChannel(channel: RealtimeChannel, user: { id: string }): Promise<{ projectId: string; role: ProjectRole }> {
     const [kind, id] = channel.split(":") as ["project" | "issue" | "document", string];
-    const projectId =
-        kind === "project"
-            ? (await db.query.projects.findFirst({ where: eq(projects.id, id), columns: { id: true } }))?.id
-            : kind === "issue"
-              ? (await db.query.issues.findFirst({ where: and(eq(issues.id, id), isNull(issues.deletedAt)), columns: { projectId: true } }))?.projectId
-              : (await db.query.projectDocuments.findFirst({ where: and(eq(projectDocuments.id, id), isNull(projectDocuments.deletedAt)), columns: { projectId: true } }))?.projectId;
-    if (!projectId) throw new HttpError(404, "Channel not found");
-    await assertProjectMembership(projectId, user.id);
-    return projectId;
+    if (kind === "project") {
+        const project = await db.query.projects.findFirst({ where: eq(projects.id, id), columns: { id: true } });
+        if (!project) throw new HttpError(404, "Channel not found");
+        return { projectId: project.id, role: await assertProjectMembership(project.id, user.id) };
+    }
+    if (kind === "issue") {
+        const issue = await db.query.issues.findFirst({ where: and(eq(issues.id, id), isNull(issues.deletedAt)), columns: { id: true, projectId: true, assigneeId: true } });
+        if (!issue) throw new HttpError(404, "Channel not found");
+        return { projectId: issue.projectId, role: await assertIssueAccess(user.id, issue) };
+    }
+    const document = await db.query.projectDocuments.findFirst({ where: and(eq(projectDocuments.id, id), isNull(projectDocuments.deletedAt)), columns: { projectId: true } });
+    if (!document) throw new HttpError(404, "Channel not found");
+    return { projectId: document.projectId, role: await assertDocumentAccess(user.id, document.projectId, id) };
 }
 
 /**

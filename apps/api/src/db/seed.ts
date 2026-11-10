@@ -228,7 +228,7 @@ async function main() {
 
     for (const seed of PROJECTS) {
         const project = await createProject(seed.project, admin);
-        for (const member of seed.members) await addProjectMember(project.id, member);
+        for (const member of seed.members) await addProjectMember(project.id, member, "member", "owner");
 
         const columns = await listColumns(project.id);
         const labelId = new Map<string, string>();

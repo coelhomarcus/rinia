@@ -1,5 +1,5 @@
 import { DOCUMENT_FRAGMENT, documentSchema } from "@rinia/shared/src/rich-text-schema";
-import { isAllowedImageSource, storedFileIds, type PresenceViewer, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
+import { can, isAllowedImageSource, storedFileIds, type PresenceViewer, type ProjectRole, type RealtimeChannel, type TiptapDocument } from "@rinia/shared";
 import { prosemirrorJSONToYDoc, updateYFragment, yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import * as decoding from "lib0/decoding";
@@ -28,6 +28,8 @@ export interface RoomConnection {
     socket: { send(data: string): void };
     user: PresenceViewer["user"];
     channels: Map<RealtimeChannel, string>;
+    /** The user's role in each project, so a role that cannot write pages only reads them. */
+    roles: Map<string, ProjectRole>;
 }
 
 const channelOf = (documentId: string) => `document:${documentId}` as RealtimeChannel;
@@ -159,6 +161,11 @@ class DocumentRoom {
         const decoder = decoding.createDecoder(message);
         switch (decoding.readVarUint(decoder)) {
             case MESSAGE_SYNC: {
+                // A role that cannot write pages may ask for the page (step 1) but not send changes (step 2, update).
+                if (!this.writable(connection) && decoding.peekVarUint(decoder) !== syncProtocol.messageYjsSyncStep1) {
+                    logFor("documents").debug({ event: "document.read_only", documentId: this.documentId, userId: connection.user.id }, "ignoring an edit from a read-only collaborator");
+                    break;
+                }
                 const encoder = encoding.createEncoder();
                 encoding.writeVarUint(encoder, MESSAGE_SYNC);
                 const step = syncProtocol.readSyncMessage(decoder, encoder, this.doc, connection);
@@ -176,6 +183,12 @@ class DocumentRoom {
                 break;
             }
         }
+    }
+
+    /** Read on every message, so a role change applies to tabs already in the room. */
+    private writable(connection: RoomConnection) {
+        const projectId = connection.channels.get(channelOf(this.documentId));
+        return projectId !== undefined && can(connection.roles.get(projectId), "pages.write");
     }
 
     private greet(connection: RoomConnection) {

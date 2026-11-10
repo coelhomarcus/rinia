@@ -25,6 +25,7 @@ export const IssueDescription = memo(function IssueDescription({
     onHistoryOpenChange,
     onDirtyChange,
     onSavingChange,
+    editable = true,
 }: {
     issue: IssueDetail;
     updater: IssueUpdater;
@@ -34,6 +35,7 @@ export const IssueDescription = memo(function IssueDescription({
     onHistoryOpenChange: (open: boolean) => void;
     onDirtyChange: (dirty: boolean) => void;
     onSavingChange: (saving: boolean) => void;
+    editable?: boolean;
 }) {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
@@ -51,6 +53,7 @@ export const IssueDescription = memo(function IssueDescription({
             <div className="issue-description mt-4">
                 <RichTextEditor
                     toolbar={false}
+                    editable={editable}
                     variant="description"
                     content={description.description}
                     uploads={uploads}

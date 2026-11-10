@@ -40,7 +40,7 @@ export function ProjectWorkspaceHeader({
 }) {
     const { data: projectData } = useProject(projectId);
     const { data: projects } = useProjects();
-    const { isProjectOwner } = useProjectPermissions(projectId);
+    const { can } = useProjectPermissions(projectId);
     const project = projectData ?? projects?.find((candidate) => candidate.id === projectId);
     const { t } = useTranslation();
     const { openNavigation } = useAppNavigation();
@@ -86,7 +86,7 @@ export function ProjectWorkspaceHeader({
                 {!actions && project?.repositoryUrl && (
                     <RepositoryButton url={project.repositoryUrl} />
                 )}
-                {!actions && isProjectOwner && project && (
+                {!actions && can("project.update") && project && (
                     <Link to={urls.projectSettings(project.issueKey, "general")} aria-label={t("nav.projectSettings")} className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover">
                         <AppIcons.Settings className="size-4" />
                     </Link>

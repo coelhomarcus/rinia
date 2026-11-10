@@ -10,15 +10,17 @@ const APPEND_ATTEMPTS = 3;
 const pageOutput = { ...outputs.page.shape, revision: z.number().describe("Pass this to update_document to replace the content."), updatedAt: z.string(), content: z.string() };
 
 export function registerDocumentTools(context: McpContext) {
-    const { tool, user, source, link, projectByKey, projectsOrAll, markdown } = context;
+    const { tool, user, source, link, viewer, projectByKey, projectsOrAll, assertPageVisible, markdown } = context;
     const pageUrl = (space: Workspace, document: { id: string; title: string }) => link(appPaths.document(space.project.issueKey, document));
 
     /** A page by its id, URL, slug or title. */
     async function findPage(space: Workspace, reference: string) {
-        const documents = await listDocuments(space.project.id);
+        const documents = await listDocuments(space.project.id, await viewer(space.project.id));
         const cleaned = reference.trim().replace(/[?#].*$/, "").replace(/\/+$/, "");
         const match = matchDocumentSlug(cleaned.slice(cleaned.lastIndexOf("/") + 1), documents) ?? matchByName(documents, cleaned, (document) => document.title)[0];
         if (!match) throw new HttpError(404, `${space.project.issueKey} has no page "${reference}". Its pages are: ${documents.map((document) => document.title).join(", ") || "none"}.`);
+        // The list is already only what the user may see; checked again so no lookup can widen it.
+        await assertPageVisible(space.project.id, match.id);
         return match;
     }
 
@@ -47,7 +49,7 @@ export function registerDocumentTools(context: McpContext) {
             const spaces = await projectsOrAll(args.project);
             const lists = await Promise.all(
                 spaces.map(async (space) =>
-                    (await listDocuments(space.project.id)).map((document) => ({
+                    (await listDocuments(space.project.id, await viewer(space.project.id))).map((document) => ({
                         id: document.id,
                         title: document.title,
                         project: space.project.issueKey,
@@ -94,7 +96,7 @@ export function registerDocumentTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
-            const space = await projectByKey(args.project);
+            const space = await projectByKey(args.project, "pages.write");
             const input = createDocumentSchema.parse({ title: args.title, contentJson: markdownToTiptap(args.content, "document") });
             const document = await createDocument(space.project.id, user.sub, input, source);
             return { id: document.id, title: document.title, project: space.project.issueKey, url: pageUrl(space, document) };
@@ -119,7 +121,7 @@ export function registerDocumentTools(context: McpContext) {
             annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
         },
         async (args) => {
-            const space = await projectByKey(args.project);
+            const space = await projectByKey(args.project, "pages.write");
             const match = await findPage(space, args.document);
             if (args.title === undefined && args.content === undefined) throw new HttpError(400, "Choose something to change: title or content.");
             const mode = args.mode ?? "replace";

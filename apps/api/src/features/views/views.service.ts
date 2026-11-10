@@ -1,4 +1,4 @@
-import { savedViewFiltersSchema, type CreateViewInput, type DuplicateViewInput, type UpdateViewInput } from "@rinia/shared";
+import { can, savedViewFiltersSchema, type ProjectRole, type CreateViewInput, type DuplicateViewInput, type UpdateViewInput } from "@rinia/shared";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { db } from "../../db";
 import { views } from "../../db/schema";
@@ -6,10 +6,10 @@ import { HttpError } from "../../lib/http-error";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { publishChange } from "../realtime/realtime.service";
 
-/** Who is acting on a view. `isProjectOwner` is true for project owners and site admins. */
+/** Who is acting on a view, and their role in its project. */
 export interface ViewActor {
     userId: string;
-    isProjectOwner: boolean;
+    role: ProjectRole;
 }
 
 const VIEW_WITH = { owner: { columns: { id: true, name: true } } } as const;
@@ -27,8 +27,13 @@ function findView(projectId: string, viewId: string, deletedAt: Date | null = nu
 
 const isVisible = (row: Pick<ViewRow, "shared" | "ownerId">, actor: ViewActor) => row.shared || row.ownerId === actor.userId;
 
-/** The owner manages their view; project owners also manage the views shared with their project. */
-const canManage = (row: Pick<ViewRow, "shared" | "ownerId">, actor: ViewActor) => row.ownerId === actor.userId || (row.shared && actor.isProjectOwner);
+/** The owner manages their view; project owners and admins also manage the views shared with their project. */
+const canManage = (row: Pick<ViewRow, "shared" | "ownerId">, actor: ViewActor) => row.ownerId === actor.userId || (row.shared && can(actor.role, "views.manageShared"));
+
+/** Sharing puts a view in front of the whole project, which a viewer cannot do. */
+function assertMayShare(actor: ViewActor) {
+    if (!can(actor.role, "views.share")) throw new HttpError(403, "Your role in this project does not allow this");
+}
 
 function toView(row: ViewRow, actor: ViewActor) {
     // A saved view that no longer parses (the schema moved on) opens as the unfiltered page rather than failing.
@@ -71,6 +76,7 @@ export async function listViews(projectId: string, actor: ViewActor) {
 }
 
 export async function createView(projectId: string, actor: ViewActor, input: CreateViewInput) {
+    if (input.shared) assertMayShare(actor);
     const [inserted] = await db
         .insert(views)
         .values({ projectId, ownerId: actor.userId, name: input.name, shared: input.shared, filters: input.filters })
@@ -87,6 +93,7 @@ export async function updateView(projectId: string, viewId: string, actor: ViewA
     if (input.shared !== undefined && input.shared !== current.shared && current.ownerId !== actor.userId) {
         throw new HttpError(403, "Only the view owner can change who sees it");
     }
+    if (input.shared && !current.shared) assertMayShare(actor);
     await db
         .update(views)
         .set({ ...(input.name !== undefined && { name: input.name }), ...(input.shared !== undefined && { shared: input.shared }), ...(input.filters !== undefined && { filters: input.filters }), updatedAt: new Date() })

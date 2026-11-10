@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { access } from "node:fs/promises";
 import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
+import { assertIssueIdAccess } from "../../lib/guest-access";
 import { HttpError } from "../../lib/http-error";
 import { UPLOAD_CHUNK_BYTES } from "@rinia/shared";
 import { contentDisposition, readMultipart, readRawBody } from "./files.http";
@@ -61,7 +62,10 @@ export const complete = asyncHandler<{ projectId: string; uploadId: string }>(as
 
 export const list = asyncHandler<{ projectId: string }>(async (req, res) => {
     const issueId = z.string().uuid().parse(req.query.issueId);
-    res.json({ files: await listIssueFiles(z.string().uuid().parse(req.params.projectId), issueId) });
+    const projectId = z.string().uuid().parse(req.params.projectId);
+    const { issue } = await assertIssueIdAccess(req.user!.sub, issueId);
+    if (issue.projectId !== projectId) throw new HttpError(404, "Issue not found");
+    res.json({ files: await listIssueFiles(projectId, issueId) });
 });
 
 export const remove = asyncHandler<{ projectId: string; fileId: string }>(async (req, res) => {

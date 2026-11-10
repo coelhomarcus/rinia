@@ -38,7 +38,8 @@ export interface ColumnProps {
     labels: Array<{ id: string; name: string; color: string | null }>;
     onUpdateIssue: (identifier: string, input: UpdateIssueInput) => void;
     onOpenIssue: (identifier: string) => void;
-    onCreateIssue: (columnId: string) => void;
+    /** Left out when the role cannot create issues. */
+    onCreateIssue?: (columnId: string) => void;
     onHide: (columnId: string) => void;
     /** Opens the project's state settings, where states are added and ordered (the board has no "new column" button). */
     onManageStates: () => void;
@@ -251,13 +252,15 @@ export const Column = memo(function Column({
                             </Menu.Positioner>
                         </Menu.Portal>
                     </Menu.Root>
-                    <ButtonUtility
-                        icon={Plus}
-                        size="xs"
-                        color="tertiary"
-                        tooltip={`${t("issue.newIssue")} · ${label}`}
-                        onClick={() => onCreateIssue(column.id)}
-                    />
+                    {onCreateIssue && (
+                        <ButtonUtility
+                            icon={Plus}
+                            size="xs"
+                            color="tertiary"
+                            tooltip={`${t("issue.newIssue")} · ${label}`}
+                            onClick={() => onCreateIssue(column.id)}
+                        />
+                    )}
                 </div>
             </div>
             <ConfirmDialog
@@ -339,14 +342,14 @@ export const Column = memo(function Column({
                     </button>
                 )}
                 {/* Only the hovered (or keyboard-focused) column offers it, so the board stays quiet. */}
-                <button
+                {onCreateIssue && <button
                     type="button"
                     onClick={() => onCreateIssue(column.id)}
                     className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-100 transition-opacity duration-150 hover:bg-layer-1-hover hover:text-secondary motion-reduce:transition-none can-hover:opacity-0 can-hover:group-hover/column:opacity-100 can-hover:group-focus-within/column:opacity-100 can-hover:focus-visible:opacity-100"
                 >
                     <Plus className="size-3.5" />
                     {t("issue.newIssue")}
-                </button>
+                </button>}
             </div>
         </div>
     );

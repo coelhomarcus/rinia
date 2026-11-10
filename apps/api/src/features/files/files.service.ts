@@ -3,9 +3,10 @@ import { unlink } from "node:fs/promises";
 import { storedFileIds } from "@rinia/shared";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { files, issues } from "../../db/schema";
+import { files, issues, projectDocuments, projectShares } from "../../db/schema";
+import { guestSeesIssue } from "../../lib/guest-access";
 import { HttpError } from "../../lib/http-error";
-import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { assertProjectAccess, assertProjectMembership } from "../../middleware/project-membership.middleware";
 import { sanitizeUploadedImage } from "./image-metadata";
 import { inspectUpload, storedFilePath, uniqueFilename, writeStoredFile } from "./files.storage";
 
@@ -21,10 +22,25 @@ function present(row: { id: string; filename: string; contentType: string; byteS
     return { id: row.id, filename: row.filename, contentType: row.contentType, byteSize: row.byteSize, url: `/api/files/${row.id}` };
 }
 
-/** A member may read the file. A deleted issue stops serving the files that belonged to it. */
-export async function assertCanReadFile(userId: string, file: { projectId: string; issueDeleted: boolean }) {
-    await assertProjectMembership(file.projectId, userId);
+/**
+ * A member may read the file. A deleted issue stops serving the files that belonged to it. A guest reads only the files
+ * of issues they can see, and the images in pages shared with them.
+ */
+export async function assertCanReadFile(userId: string, file: { id: string; projectId: string; issueId: string | null; issueDeleted: boolean }) {
+    const role = await assertProjectMembership(file.projectId, userId);
     if (file.issueDeleted) throw new HttpError(404, "File not found");
+    if (role !== "guest") return;
+    if (file.issueId) {
+        const issue = await db.query.issues.findFirst({ where: eq(issues.id, file.issueId), columns: { id: true, assigneeId: true } });
+        if (issue && (await guestSeesIssue(userId, issue))) return;
+        throw new HttpError(404, "File not found");
+    }
+    const shared = await db
+        .select({ contentJson: projectDocuments.contentJson })
+        .from(projectShares)
+        .innerJoin(projectDocuments, eq(projectShares.documentId, projectDocuments.id))
+        .where(and(eq(projectShares.userId, userId), eq(projectShares.projectId, file.projectId), isNull(projectDocuments.deletedAt)));
+    if (!shared.some((page) => storedFileIds(page.contentJson).includes(file.id))) throw new HttpError(404, "File not found");
 }
 
 async function namesOnIssue(projectId: string, issueId: string | null) {
@@ -75,9 +91,9 @@ export async function assertIssueInProject(projectId: string, issueId: string) {
     if (!issue || issue.deletedAt) throw new HttpError(400, "That issue is not in this project");
 }
 
-/** Removes a project file for any member. The bytes go with the row. */
+/** Removes a project file for anyone who may change files. The bytes go with the row. */
 export async function deleteProjectFile(projectId: string, fileId: string, userId: string) {
-    await assertProjectMembership(projectId, userId);
+    await assertProjectAccess(projectId, userId, "files.write");
     const row = await db.query.files.findFirst({
         where: and(eq(files.id, fileId), eq(files.projectId, projectId)),
         columns: { id: true },
@@ -104,7 +120,7 @@ export async function openStoredFile(id: string, userId: string) {
         with: { issue: { columns: { deletedAt: true } } },
     });
     if (!row) throw new HttpError(404, "File not found");
-    await assertCanReadFile(userId, { projectId: row.projectId, issueDeleted: Boolean(row.issue?.deletedAt) });
+    await assertCanReadFile(userId, { id: row.id, projectId: row.projectId, issueId: row.issueId, issueDeleted: Boolean(row.issue?.deletedAt) });
     return { ...present(row), path: storedFilePath(row.id) };
 }
 

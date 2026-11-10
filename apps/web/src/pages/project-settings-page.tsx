@@ -18,11 +18,13 @@ import { useRouteProject } from "@/features/projects/route-project";
 import { NotFound } from "./not-found";
 
 const sections = { general: ProjectDetailsPanel, states: ColumnsPanel, members: MembersPanel, labels: CategoriesPanel };
+/** What each section lets the user change; the rest of the project reads it. */
+const sectionActions = { general: "project.update", states: "states.manage", members: "members.manage", labels: "labels.manage" } as const;
 
 export function ProjectSettingsPage() {
     const { section } = useParams();
     const { projectId, projectKey } = useRouteProject();
-    const { isProjectOwner } = useProjectPermissions(projectId);
+    const { can } = useProjectPermissions(projectId);
     const { data: project } = useProject(projectId);
     const { t } = useTranslation();
     if (!section) return <ProjectSettingsHub projectId={projectId} projectKey={projectKey} />;
@@ -38,7 +40,7 @@ export function ProjectSettingsPage() {
                 icon: <ProjectIcon icon={project?.iconAppearance ?? project?.icon} className="size-3.5 shrink-0" />,
             }}
         >
-            <Panel key={`${projectId}:${section}`} projectId={projectId} isProjectOwner={isProjectOwner} />
+            <Panel key={`${projectId}:${section}`} projectId={projectId} canManage={can(sectionActions[section as keyof typeof sections])} />
         </SettingsPage>
     );
 }

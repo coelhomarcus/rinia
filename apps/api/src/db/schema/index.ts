@@ -16,6 +16,7 @@ import { oauthClients } from "./oauth";
 import { projectDocuments } from "./project-documents";
 import { projectKeyAliases } from "./project-key-aliases";
 import { projectMembers } from "./project-members";
+import { projectShares } from "./project-shares";
 import { projects } from "./projects";
 import { sessions } from "./sessions";
 import { users } from "./users";
@@ -40,6 +41,7 @@ export * from "./password-reset-tokens";
 export * from "./project-documents";
 export * from "./project-key-aliases";
 export * from "./project-members";
+export * from "./project-shares";
 export * from "./projects";
 export * from "./project-view-preferences";
 export * from "./sessions";
@@ -196,4 +198,11 @@ export const issueSubscriptionsRelations = relations(issueSubscriptions, ({ one 
 export const issueLabelsRelations = relations(issueLabels, ({ one }) => ({
     issue: one(issues, { fields: [issueLabels.issueId], references: [issues.id] }),
     category: one(categories, { fields: [issueLabels.categoryId], references: [categories.id] }),
+}));
+
+export const projectSharesRelations = relations(projectShares, ({ one }) => ({
+    project: one(projects, { fields: [projectShares.projectId], references: [projects.id] }),
+    user: one(users, { fields: [projectShares.userId], references: [users.id] }),
+    issue: one(issues, { fields: [projectShares.issueId], references: [issues.id] }),
+    document: one(projectDocuments, { fields: [projectShares.documentId], references: [projectDocuments.id] }),
 }));

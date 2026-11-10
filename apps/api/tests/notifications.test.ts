@@ -25,6 +25,7 @@ const author = "1b6f0c2e-0000-4000-8000-000000000001";
 const creator = "1b6f0c2e-0000-4000-8000-000000000002";
 const ana = "1b6f0c2e-0000-4000-8000-000000000003";
 const outsider = "1b6f0c2e-0000-4000-8000-000000000004";
+const guest = "1b6f0c2e-0000-4000-8000-000000000005";
 const projectId = "1b6f0c2e-0000-4000-8000-0000000000aa";
 const issueId = "1b6f0c2e-0000-4000-8000-0000000000bb";
 const commentId = "1b6f0c2e-0000-4000-8000-0000000000cc";
@@ -122,13 +123,14 @@ test("editing a comment only notifies people it newly mentions", () => {
 
 test("commenting through the API notifies the right people and records who follows", async () => {
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ id: issueId, projectId, number: 1, labels: [], project: { id: projectId, name: "Rinia", issueKey: "RIN" } }) as never);
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ id: "membership" }) as never);
     spyOn(db.query.issueComments, "findFirst").mockImplementation(async () => ({ id: commentId }) as never);
-    // Followers of the issue, then who among the candidates can see the project (the outsider cannot).
-    stubSelects([{ userId: creator }, { userId: author }], [{ id: author }, { id: creator }, { id: ana }]);
+    // The author's membership, followers of the issue, then who among the candidates can see the issue (the outsider
+    // is not in the project; the guest it was not shared with does not see it).
+    const seen = (id: string, role = "member") => ({ id, role, assigneeId: null, shareId: null });
+    stubSelects([{ issueKey: "RIN", membership: { id: "membership", role: "member" } }], [{ userId: creator }, { userId: author }], [seen(author), seen(creator), seen(ana), seen(guest, "guest")]);
     const writes = stubInserts({ id: commentId });
 
-    const response = await call("POST", `/issues/${issueId}/comments`, author, { contentJson: doc({ type: "text", text: "Look " }, mention(ana), mention(outsider)) });
+    const response = await call("POST", `/issues/${issueId}/comments`, author, { contentJson: doc({ type: "text", text: "Look " }, mention(ana), mention(outsider), mention(guest)) });
     assert.equal(response.status, 201);
     assert.equal(writes.get(issueComments)?.length, 1);
     assert.deepEqual(
@@ -171,7 +173,7 @@ test("people cannot read or unread someone else's notification", async () => {
 
 test("only project members can follow an issue", async () => {
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ id: issueId, projectId, number: 1, labels: [], project: { id: projectId, name: "Rinia", issueKey: "RIN" } }) as never);
-    let access: Array<{ membership: { id: string } | null }> = [{ membership: null }];
+    let access: Array<{ membership: { id: string; role: string } | null }> = [{ membership: null }];
     stubProjectAccess(() => access);
     const writes = stubInserts();
     spyOn(db, "delete").mockImplementation(() => { throw new Error("Must not delete"); });
@@ -181,7 +183,14 @@ test("only project members can follow an issue", async () => {
     assert.equal((await call("GET", `/issues/${issueId}/subscription`, outsider)).status, 403);
     assert.equal(writes.size, 0);
 
-    access = [{ membership: { id: "membership" } }];
+    // A guest cannot follow an issue that was not shared with them; it is not found.
+    access = [{ membership: { id: "membership", role: "guest" } }];
+    spyOn(db.query.projectShares, "findFirst").mockImplementation(async () => undefined);
+    assert.equal((await call("PUT", `/issues/${issueId}/subscription`, guest)).status, 404);
+    assert.equal(writes.size, 0);
+
+    // A viewer follows, like any member.
+    access = [{ membership: { id: "membership", role: "viewer" } }];
     const response = await call("PUT", `/issues/${issueId}/subscription`, ana);
     assert.deepEqual(await response.json(), { subscription: { following: true } });
     assert.deepEqual(writes.get(issueSubscriptions), [{ userId: ana, issueId }]);

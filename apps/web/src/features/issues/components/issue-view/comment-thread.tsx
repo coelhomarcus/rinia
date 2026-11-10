@@ -37,7 +37,8 @@ export function TimelineThread({ entry, replies, currentUser, onReply, ...action
     entry: CommentEntry;
     replies: CommentEntry[];
     currentUser: { name: string; avatarUrl: string | null } | null;
-    onReply: (parentCommentId: string, contentJson: TiptapDocument) => Promise<void>;
+    /** Left out when the role cannot comment: the thread has no reply box. */
+    onReply?: (parentCommentId: string, contentJson: TiptapDocument) => Promise<void>;
 }) {
     return (
         <li className="animate-enter my-2 overflow-hidden rounded-xl border border-subtle bg-layer-1">
@@ -47,7 +48,7 @@ export function TimelineThread({ entry, replies, currentUser, onReply, ...action
                     <CommentItem entry={reply} replyCount={0} {...actions} />
                 </div>
             ))}
-            <ReplyComposer currentUser={currentUser} mentionItems={actions.mentionItems} uploads={actions.uploads} onSubmit={(contentJson) => onReply(entry.id, contentJson)} />
+            {onReply && <ReplyComposer currentUser={currentUser} mentionItems={actions.mentionItems} uploads={actions.uploads} onSubmit={(contentJson) => onReply(entry.id, contentJson)} />}
         </li>
     );
 }

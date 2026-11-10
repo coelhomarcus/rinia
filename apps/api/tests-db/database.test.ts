@@ -271,4 +271,71 @@ describe.skipIf(!adminUrl)("against PostgreSQL", () => {
         await direct!.query(`DELETE FROM projects WHERE id = $1`, [ids.project]);
         assert.deepEqual((await authenticateApiToken(scoped.secret, now))?.projectIds, []);
     });
+
+    test("a guest sees only the issues and pages shared with or assigned to them, in every list, search and inbox", async () => {
+        const { listIssuePage, listMyIssues } = await import("../src/features/issues/issues.service");
+        const { listDocuments } = await import("../src/features/documents/documents.service");
+        const { searchWorkspace } = await import("../src/features/search/search.service");
+        const { listNotifications } = await import("../src/features/notifications/notifications.service");
+        const { assertDocumentAccess, assertIssueAccess } = await import("../src/lib/guest-access");
+        const { HttpError } = await import("../src/lib/http-error");
+        const { resetRateLimits } = await import("../src/lib/rate-limit");
+        const g = {
+            project: "6a4b8c02-0000-4000-8000-000000000031",
+            guest: "6a4b8c02-0000-4000-8000-000000000032",
+            viewer: "6a4b8c02-0000-4000-8000-000000000033",
+            column: "6a4b8c02-0000-4000-8000-000000000034",
+            shared: "6a4b8c02-0000-4000-8000-000000000035",
+            assigned: "6a4b8c02-0000-4000-8000-000000000036",
+            hidden: "6a4b8c02-0000-4000-8000-000000000037",
+            sharedPage: "6a4b8c02-0000-4000-8000-000000000038",
+            hiddenPage: "6a4b8c02-0000-4000-8000-000000000039",
+        };
+        const doc = (text: string) => JSON.stringify({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] });
+        await direct!.query(`INSERT INTO users (id, name, username, email, password_hash) VALUES ($1, 'Gina', 'gina', 'gina@test.local', 'x'), ($2, 'Vera', 'vera', 'vera@test.local', 'x')`, [g.guest, g.viewer]);
+        await direct!.query(`INSERT INTO projects (id, name, issue_key, created_by) VALUES ($1, 'Guests', 'GST', $2)`, [g.project, ids.user]);
+        await direct!.query(`INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'guest'), ($1, $4, 'viewer')`, [g.project, ids.user, g.guest, g.viewer]);
+        await direct!.query(`INSERT INTO board_columns (id, project_id, name, position) VALUES ($1, $2, 'To do', 1000)`, [g.column, g.project]);
+        await direct!.query(
+            `INSERT INTO issues (id, project_id, number, column_id, title, description_json, created_by, position, assignee_id) VALUES
+                ($1, $4, 1, $5, 'Shared roadmap', $6, $7, 1000, NULL),
+                ($2, $4, 2, $5, 'Assigned roadmap', $6, $7, 2000, $8),
+                ($3, $4, 3, $5, 'Hidden roadmap', $6, $7, 3000, NULL)`,
+            [g.shared, g.assigned, g.hidden, g.project, g.column, doc("roadmap"), ids.user, g.guest],
+        );
+        await direct!.query(
+            `INSERT INTO project_documents (id, project_id, title, created_by, content_json) VALUES ($1, $3, 'Shared roadmap page', $4, $5), ($2, $3, 'Hidden roadmap page', $4, $5)`,
+            [g.sharedPage, g.hiddenPage, g.project, ids.user, doc("roadmap")],
+        );
+        await direct!.query(`INSERT INTO project_shares (project_id, user_id, issue_id, document_id) VALUES ($1, $2, $3, NULL), ($1, $2, NULL, $4)`, [g.project, g.guest, g.shared, g.sharedPage]);
+        // Left over from when the hidden issue was shared: the guest still follows it and has a notification about it.
+        await direct!.query(`INSERT INTO issue_subscriptions (user_id, issue_id) VALUES ($1, $2), ($1, $3)`, [g.guest, g.shared, g.hidden]);
+        await direct!.query(`INSERT INTO notifications (user_id, actor_id, type, project_id, issue_id) VALUES ($1, $2, 'commented', $3, $4), ($1, $2, 'commented', $3, $5)`, [g.guest, ids.user, g.project, g.shared, g.hidden]);
+
+        const titles = (rows: Array<{ title: string }>) => rows.map((row) => row.title).sort();
+        const guest = { userId: g.guest, role: "guest" as const };
+        assert.deepEqual(titles((await listIssuePage(g.project, { orderBy: "position" }, guest)).issues), ["Assigned roadmap", "Shared roadmap"]);
+        assert.deepEqual(titles((await listIssuePage(g.project, { orderBy: "position" }, { userId: g.viewer, role: "viewer" })).issues), ["Assigned roadmap", "Hidden roadmap", "Shared roadmap"]);
+        assert.deepEqual(titles(await listDocuments(g.project, guest)), ["Shared roadmap page"]);
+
+        resetRateLimits();
+        const found = await searchWorkspace(g.guest, "roadmap");
+        assert.deepEqual(titles(found.issues), ["Assigned roadmap", "Shared roadmap"]);
+        assert.deepEqual(titles(found.documents), ["Shared roadmap page"]);
+        assert.deepEqual(titles(await listMyIssues(g.guest, { filter: "following", orderBy: "position" } as never)), ["Shared roadmap"]);
+        assert.deepEqual((await listNotifications(g.guest)).map((notification) => notification.issue.title), ["Shared roadmap"]);
+
+        const notFound = (error: unknown) => error instanceof HttpError && error.statusCode === 404;
+        const hidden = { id: g.hidden, projectId: g.project, assigneeId: null };
+        await assert.rejects(assertIssueAccess(g.guest, hidden), notFound);
+        await assert.rejects(assertDocumentAccess(g.guest, g.project, g.hiddenPage), notFound);
+        assert.equal(await assertIssueAccess(g.guest, { id: g.shared, projectId: g.project, assigneeId: null }), "guest");
+        assert.equal(await assertIssueAccess(g.guest, { id: g.assigned, projectId: g.project, assigneeId: g.guest }), "guest");
+
+        // As a viewer the same person sees the whole project.
+        await direct!.query(`UPDATE project_members SET role = 'viewer' WHERE project_id = $1 AND user_id = $2`, [g.project, g.guest]);
+        resetRateLimits();
+        assert.deepEqual(titles((await searchWorkspace(g.guest, "roadmap")).issues), ["Assigned roadmap", "Hidden roadmap", "Shared roadmap"]);
+        assert.equal(await assertIssueAccess(g.guest, hidden), "viewer");
+    });
 });

@@ -55,10 +55,10 @@ test("a project member can read a file and someone outside the project cannot", 
     const refused = spyOn(membership, "assertProjectMembership").mockImplementation((async () => {
         throw new HttpError(403, "You are not a member of this project");
     }) as never);
-    await assert.rejects(() => assertCanReadFile("outsider", { projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: false }), (error: unknown) => error instanceof HttpError && error.statusCode === 403);
+    await assert.rejects(() => assertCanReadFile("outsider", { id: "file", issueId: null, projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: false }), (error: unknown) => error instanceof HttpError && error.statusCode === 403);
     refused.mockImplementation((async () => undefined) as never);
-    await assertCanReadFile("member", { projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: false });
-    await assert.rejects(() => assertCanReadFile("member", { projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: true }), (error: unknown) => error instanceof HttpError && error.statusCode === 404);
+    await assertCanReadFile("member", { id: "file", issueId: null, projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: false });
+    await assert.rejects(() => assertCanReadFile("member", { id: "file", issueId: null, projectId: "8b2d1f66-0000-4000-8000-0000000000aa", issueDeleted: true }), (error: unknown) => error instanceof HttpError && error.statusCode === 404);
     refused.mockRestore();
 });
 

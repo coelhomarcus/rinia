@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.middleware";
-import { requireProjectMember } from "../../middleware/project-membership.middleware";
+import { requireProjectPermissionByMethod } from "../../middleware/project-membership.middleware";
 import { follow, subscription, unfollow } from "../notifications/notifications.controller";
-import { addComment, addReaction, bulkDelete, bulkRestore, bulkUpdate, addRelation, activity, comments, create, descriptionRevisions, getOne, list, patchComment, relations, remove, removeComment, removeReaction, removeRelation, restore, restoreComment, restoreDescription, update } from "./issues.controller";
+import { addComment, addReaction, addShare, removeShare, shares, bulkDelete, bulkRestore, bulkUpdate, addRelation, activity, comments, create, descriptionRevisions, getOne, list, patchComment, relations, remove, removeComment, removeReaction, removeRelation, restore, restoreComment, restoreDescription, update } from "./issues.controller";
 
 export const projectIssuesRouter = Router({ mergeParams: true });
-projectIssuesRouter.use(requireProjectMember);
+// Reading the list is open to every role (a guest gets only their issues); every other route here changes issues.
+projectIssuesRouter.use(requireProjectPermissionByMethod("project.read", "issues.write"));
 projectIssuesRouter.get("/", list);
 projectIssuesRouter.post("/", create);
 projectIssuesRouter.patch("/bulk", bulkUpdate);
@@ -28,6 +29,9 @@ issuesRouter.post("/:issueIdentifier/description-revisions/:revisionId/restore",
 issuesRouter.get("/:issueIdentifier/subscription", subscription);
 issuesRouter.put("/:issueIdentifier/subscription", follow);
 issuesRouter.delete("/:issueIdentifier/subscription", unfollow);
+issuesRouter.get("/:issueIdentifier/shares", shares);
+issuesRouter.post("/:issueIdentifier/shares", addShare);
+issuesRouter.delete("/:issueIdentifier/shares/:userId", removeShare);
 
 export const issueCommentsRouter = Router();
 issueCommentsRouter.use(requireAuth);

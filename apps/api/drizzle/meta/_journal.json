@@ -295,6 +295,13 @@
       "when": 1794324730069,
       "tag": "0041_api_token_expiry_and_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794350593318,
+      "tag": "0042_project_roles_and_guest_shares",
+      "breakpoints": true
     }
   ]
 }

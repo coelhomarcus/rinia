@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assignableProjectRoleValues } from "../permissions";
 import { emojiIconSchema, iconColorSchema, imageIconSchema } from "./appearance";
 
 const repositoryUrlSchema = z
@@ -145,5 +146,23 @@ export type UpdateProjectPageInput = z.infer<typeof updateProjectPageSchema>;
 
 export const addProjectMemberSchema = z.object({
     username: z.string().trim().toLowerCase().min(1),
+    role: z.enum(assignableProjectRoleValues).optional(),
 });
 export type AddProjectMemberInput = z.infer<typeof addProjectMemberSchema>;
+
+export const updateProjectMemberSchema = z.object({
+    role: z.enum(assignableProjectRoleValues),
+});
+export type UpdateProjectMemberInput = z.infer<typeof updateProjectMemberSchema>;
+
+/** Hands the project to another member. The previous owner stays on as an admin. */
+export const transferProjectSchema = z.object({
+    userId: z.string().uuid(),
+});
+export type TransferProjectInput = z.infer<typeof transferProjectSchema>;
+
+/** Shares one issue or page with a guest of the project. */
+export const shareWithGuestSchema = z.object({
+    userId: z.string().uuid(),
+});
+export type ShareWithGuestInput = z.infer<typeof shareWithGuestSchema>;

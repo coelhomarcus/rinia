@@ -16,7 +16,7 @@ import { ProjectIconControl } from "./project-appearance-controls";
 import { projectIconColor } from "./project-icon";
 import { useTranslation } from "react-i18next";
 
-export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
+export const ProjectDetailsPanel = ({ projectId, canManage }: { projectId: string; canManage: boolean }) => {
     const { t } = useTranslation();
     const { data: project, isLoading, isError } = useProject(projectId);
     const mutation = useUpdateProject(projectId);
@@ -34,7 +34,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
     });
     if (isLoading) return <LoadingState label={t("settings.loadingProject")} />;
     if (isError || !project) return <ErrorMessage message={t("settings.couldNotLoadProject")} />;
-    const disabled = !isProjectOwner || mutation.isPending;
+    const disabled = !canManage || mutation.isPending;
     const icon = project.iconAppearance ?? project.icon;
     const colored = !!projectIconColor(icon);
 
@@ -53,7 +53,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
                         <ProjectIconControl
                             projectId={projectId}
                             icon={icon}
-                            isProjectOwner={isProjectOwner}
+                            canManage={canManage}
                             className={`grid size-8 shrink-0 place-items-center rounded-lg outline-accent-strong ${colored ? "" : "bg-accent-primary text-white"}`}
                             iconClassName={colored ? "size-8 rounded-lg" : "size-4"}
                         />
@@ -123,7 +123,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
                 <div className="mt-4 flex flex-col gap-3">
                     {formState.errors.root && <Alert tone="error">{formState.errors.root.message}</Alert>}
                     {mutation.isSuccess && !formState.isDirty && <Alert tone="success">{t("settings.projectDetailsSaved")}</Alert>}
-                    {isProjectOwner && (
+                    {canManage && (
                         <div className="flex justify-end">
                             <Button type="submit" size="sm" isLoading={mutation.isPending} isDisabled={!formState.isDirty}>
                                 {t("common.saveChanges")}
@@ -132,7 +132,7 @@ export const ProjectDetailsPanel = ({ projectId, isProjectOwner }: { projectId: 
                     )}
                 </div>
             </form>
-            {isProjectOwner && (
+            {canManage && (
                 <SettingsGroup title={t("settings.dangerZone")}>
                     <SettingsControl title={t("projects.deleteProject")} description={t("settings.deleteProjectDescription")}>
                         <DeleteProjectDialog project={project} />

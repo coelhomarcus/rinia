@@ -10,15 +10,18 @@ import { LoadingState } from "@/components/feedback/loading-state";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { NamedColorForm } from "@/components/settings/named-color-form";
 import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
+import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "../hooks/use-categories";
 import { CATEGORY_COLORS } from "./category-badge";
 import { LabelPresetsDialog } from "./label-presets-dialog";
 
-export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
+export const CategoriesPanel = ({ projectId, canManage }: { projectId: string; canManage: boolean }) => {
     const { t } = useTranslation();
     const { user } = useAuth();
+    // Editors create labels and change their own; `canManage` (managers) changes anyone's.
+    const canCreate = useProjectPermissions(projectId).can("labels.create");
     const { data: categories, isLoading, isError } = useCategories(projectId);
     const createMutation = useCreateCategory(projectId);
     const deleteMutation = useDeleteCategory(projectId);
@@ -34,7 +37,7 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                 description={t("settings.createLabelsDescription")}
                 control={
                     <div className="flex items-center gap-2">
-                        {categories && (
+                        {categories && canCreate && (
                             <LabelPresetsDialog
                                 trigger={
                                     <Button size="sm" color="secondary" isDisabled={pending || !!editor}>
@@ -45,9 +48,9 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                                 onCreate={(preset) => createMutation.mutateAsync(preset)}
                             />
                         )}
-                        <Button size="sm" iconLeading={Plus} isDisabled={pending || !!editor} onClick={() => setEditor("new")}>
+                        {canCreate && <Button size="sm" iconLeading={Plus} isDisabled={pending || !!editor} onClick={() => setEditor("new")}>
                             {t("settings.addLabel")}
-                        </Button>
+                        </Button>}
                     </div>
                 }
             />
@@ -74,7 +77,7 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                         />
                     )}
                     {categories?.map((category) => {
-                        const editable = isProjectOwner || category.createdBy === user?.id;
+                        const editable = canManage || (canCreate && category.createdBy === user?.id);
                         if (editor === category.id)
                             return (
                                 <NamedColorForm

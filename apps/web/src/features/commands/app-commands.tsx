@@ -3,6 +3,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useSearchParams } from "react-router";
 import { defaultIssueColumn } from "@/features/board/column-bucket";
 import { useColumns } from "@/features/board/hooks/use-board";
+import { can } from "@rinia/shared";
 import { IssueQuickCreateModal } from "@/features/issues/components/lazy-issue-quick-create-modal";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
 import { useProjects } from "@/features/projects/hooks/use-projects";
@@ -42,9 +43,11 @@ export function AppCommandsProvider({ children }: { children: ReactNode }) {
 
     const createIssue = useCallback(
         (projectId?: string) => {
-            // The remembered project may since have been deleted or left; only a project still listed counts.
+            // The remembered project may since have been deleted or left; only a project still listed counts, and only
+            // one where the user's role lets them create issues.
+            const writable = projects?.filter((project) => can(project.role, "issues.write"));
             const candidates = [projectId, currentProject?.id, readOpenProjectId()].filter((id): id is string => !!id);
-            const target = projects ? candidates.find((id) => projects.some((project) => project.id === id)) ?? projects[0]?.id : candidates[0];
+            const target = writable ? candidates.find((id) => writable.some((project) => project.id === id)) ?? writable[0]?.id : candidates[0];
             if (target) setCreatingProjectId(target);
         },
         [currentProject?.id, projects],

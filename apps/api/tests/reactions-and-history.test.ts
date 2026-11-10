@@ -56,8 +56,7 @@ function stubIssue(overrides: Record<string, unknown> = {}) {
 }
 
 function stubMembership(member: boolean) {
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership" } as never) : undefined));
-    return stubProjectAccess([{ membership: member ? { id: "membership" } : null }]);
+    return stubProjectAccess([{ membership: member ? { id: "membership", role: "member" } : null }]);
 }
 
 /** Records every `db.insert(table).values(...)`, by table. */

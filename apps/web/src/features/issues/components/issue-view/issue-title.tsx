@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { issueViewTransitionStyle } from "@/lib/view-transition";
 
 /** The title as an auto-growing field: Enter leaves it, and leaving it saves. */
-export function IssueTitle({ identifier, value, error, onChange, onBlur }: { identifier: string; value: string; error: string | null; onChange: (value: string) => void; onBlur: () => void }) {
+export function IssueTitle({ identifier, value, error, onChange, onBlur, readOnly = false }: { identifier: string; value: string; error: string | null; onChange: (value: string) => void; onBlur: () => void; readOnly?: boolean }) {
     const { t } = useTranslation();
     const ref = useRef<HTMLTextAreaElement>(null);
     useEffect(() => {
@@ -18,6 +18,7 @@ export function IssueTitle({ identifier, value, error, onChange, onBlur }: { ide
                 ref={ref}
                 rows={1}
                 value={value}
+                readOnly={readOnly}
                 placeholder={t("issue.issueTitle")}
                 onChange={(event) => onChange(event.target.value)}
                 onKeyDown={(event) => {

@@ -1,4 +1,4 @@
-import type { CreateProjectInput, EntityIcon, ProjectStats, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
+import type { AssignableProjectRole, CreateProjectInput, EntityIcon, ProjectRole, ProjectStats, UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
 import { apiClient } from "@/lib/api-client";
 
 export interface Project {
@@ -18,15 +18,17 @@ export interface Project {
 
 export type ProjectSummary = Omit<Project, "pageContent">;
 export interface ProjectMemberPreview { id: string; name: string; avatarUrl: string | null }
-export type ProjectCardSummary = ProjectSummary & { memberCount: number; memberPreview: ProjectMemberPreview[]; owner: ProjectMemberPreview | null };
+/** A project in the user's list, with their own role in it. */
+export type ProjectCardSummary = ProjectSummary & { memberCount: number; memberPreview: ProjectMemberPreview[]; owner: ProjectMemberPreview | null; role: ProjectRole };
 
 export interface ProjectMember {
     id: string;
     name: string;
     username: string;
-    email: string;
+    /** Left out for a guest, who sees who is in the project but not how to reach them. */
+    email?: string;
     avatarUrl: string | null;
-    role: "owner" | "member";
+    role: ProjectRole;
     joinedAt: string;
 }
 
@@ -63,8 +65,38 @@ export function listProjectMembers(projectId: string): Promise<ProjectMember[]> 
     return apiClient.get<{ members: ProjectMember[] }>(`/projects/${projectId}/members`).then((res) => res.members);
 }
 
-export function addProjectMember(projectId: string, username: string): Promise<ProjectMember> {
-    return apiClient.post<{ member: ProjectMember }>(`/projects/${projectId}/members`, { username }).then((res) => res.member);
+export function addProjectMember(projectId: string, username: string, role: AssignableProjectRole): Promise<ProjectMember> {
+    return apiClient.post<{ member: ProjectMember }>(`/projects/${projectId}/members`, { username, role }).then((res) => res.member);
+}
+
+export function updateProjectMemberRole(projectId: string, userId: string, role: AssignableProjectRole): Promise<ProjectMember> {
+    return apiClient.patch<{ member: ProjectMember }>(`/projects/${projectId}/members/${userId}`, { role }).then((res) => res.member);
+}
+
+/** Makes another member the owner. The current owner stays on as an admin. */
+export function transferProject(projectId: string, userId: string): Promise<void> {
+    return apiClient.post<void>(`/projects/${projectId}/transfer`, { userId });
+}
+
+/** A guest an issue or page is shared with. */
+export interface GuestShare {
+    id: string;
+    user: ProjectMemberPreview & { username: string };
+    sharedBy: string | null;
+    createdAt: string;
+}
+
+/** Where an issue or page's shares live: `/issues/RIN-4` or `/projects/:id/documents/:documentId`. */
+export function listShares(base: string): Promise<GuestShare[]> {
+    return apiClient.get<{ shares: GuestShare[] }>(`${base}/shares`).then((res) => res.shares);
+}
+
+export function addShare(base: string, userId: string): Promise<GuestShare> {
+    return apiClient.post<{ share: GuestShare }>(`${base}/shares`, { userId }).then((res) => res.share);
+}
+
+export function removeShare(base: string, userId: string): Promise<void> {
+    return apiClient.delete<void>(`${base}/shares/${userId}`);
 }
 
 export interface MemberLookup {

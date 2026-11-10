@@ -1,4 +1,5 @@
-import { createCategorySchema, updateCategorySchema } from "@rinia/shared";
+import { can, createCategorySchema, updateCategorySchema } from "@rinia/shared";
+import { roleOf } from "../../middleware/project-membership.middleware";
 import { asyncHandler } from "../../middleware/async-handler";
 import { createCategory, deleteCategory, listCategories, updateCategory } from "./categories.service";
 
@@ -16,7 +17,7 @@ export const create = asyncHandler<{ projectId: string }>(async (req, res) => {
 export const remove = asyncHandler<{ projectId: string; categoryId: string }>(async (req, res) => {
     await deleteCategory(req.params.projectId, req.params.categoryId, {
         userId: req.user!.sub,
-        isProjectOwner: req.projectMembership?.role === "owner",
+        canManageAll: can(roleOf(req), "labels.manage"),
     });
     res.status(204).send();
 });
@@ -25,7 +26,7 @@ export const update = asyncHandler<{ projectId: string; categoryId: string }>(as
     const input = updateCategorySchema.parse(req.body);
     const category = await updateCategory(req.params.projectId, req.params.categoryId, input, {
         userId: req.user!.sub,
-        isProjectOwner: req.projectMembership?.role === "owner",
+        canManageAll: can(roleOf(req), "labels.manage"),
     });
     res.json({ category });
 });

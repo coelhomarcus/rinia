@@ -6,6 +6,7 @@ import { HttpError } from "../../lib/http-error";
 import { reachableProjectIds } from "../../lib/project-access";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { assertDocumentVisible, assertIssueIdAccess, visibleDocuments, visibleIssues } from "../../lib/guest-access";
 
 const FAVORITE_WITH = {
     project: { columns: { id: true, name: true, issueKey: true, icon: true, iconAppearance: true } },
@@ -48,11 +49,21 @@ export async function listFavorites(userId: string) {
     if (activeTargets.length === 0) return activeTargets.map(toFavorite);
 
     const allowed = new Set((await reachableProjectIds(userId)).map((project) => project.id));
-    return activeTargets.filter((row) => allowed.has(row.projectId)).map(toFavorite);
+    // A guest keeps a favorite only for what is still shared with them.
+    const issueIds = activeTargets.flatMap((row) => (row.issueId ? [row.issueId] : []));
+    const documentIds = activeTargets.flatMap((row) => (row.documentId ? [row.documentId] : []));
+    const [seenIssues, seenDocuments] = await Promise.all([
+        issueIds.length ? db.select({ id: issues.id }).from(issues).where(and(inArray(issues.id, issueIds), visibleIssues(userId))) : [],
+        documentIds.length ? db.select({ id: projectDocuments.id }).from(projectDocuments).where(and(inArray(projectDocuments.id, documentIds), visibleDocuments(userId))) : [],
+    ]);
+    const seen = new Set([...seenIssues, ...seenDocuments].map((row) => row.id));
+    return activeTargets
+        .filter((row) => allowed.has(row.projectId) && (!row.issueId || seen.has(row.issueId)) && (!row.documentId || seen.has(row.documentId)))
+        .map(toFavorite);
 }
 
 export async function addFavorite(userId: string, input: CreateFavoriteInput) {
-    await assertProjectMembership(input.projectId, userId);
+    const role = await assertProjectMembership(input.projectId, userId);
     const documentId = input.kind === "document" ? input.documentId : null;
     const issueId = input.kind === "issue" ? input.issueId : null;
     const viewId = input.kind === "view" ? input.viewId : null;
@@ -60,10 +71,12 @@ export async function addFavorite(userId: string, input: CreateFavoriteInput) {
     if (documentId) {
         const document = await db.query.projectDocuments.findFirst({ where: and(eq(projectDocuments.id, documentId), eq(projectDocuments.projectId, input.projectId), isNull(projectDocuments.deletedAt)), columns: { id: true } });
         if (!document) throw new HttpError(404, "Document not found");
+        await assertDocumentVisible(userId, role, documentId);
     }
     if (issueId) {
         const issue = await db.query.issues.findFirst({ where: and(eq(issues.id, issueId), eq(issues.projectId, input.projectId), isNull(issues.deletedAt)), columns: { id: true } });
         if (!issue) throw new HttpError(404, "Issue not found");
+        await assertIssueIdAccess(userId, issueId);
     }
 
     if (viewId) {

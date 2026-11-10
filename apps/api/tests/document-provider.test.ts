@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, mock, spyOn, test } from "bun:test";
-import type { RealtimeChannel } from "@rinia/shared";
+import type { ProjectRole, RealtimeChannel } from "@rinia/shared";
 import { DOCUMENT_FRAGMENT } from "@rinia/shared/src/rich-text-schema";
 import { yDocToProsemirrorJSON } from "@tiptap/y-tiptap";
 import type * as Y from "yjs";
@@ -34,6 +34,7 @@ function browser(rooms: InstanceType<typeof DocumentRooms>, user: typeof ana) {
         socket: { send: (data: string) => handlers.get(channel)?.message(fromBase64(JSON.parse(data).data)) },
         user,
         channels: new Map<RealtimeChannel, string>(),
+        roles: new Map<string, ProjectRole>([["project", "member"]]),
     };
     return {
         client: {

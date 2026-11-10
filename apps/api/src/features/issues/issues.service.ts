@@ -1,11 +1,12 @@
-import { isAllowedIssueImageSource, nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
+import { type ProjectRole, isAllowedIssueImageSource, nextLabels, type ActionSource, positionsAtTop, type BulkUpdateIssuesInput, type CreateIssueCommentInput, type CreateIssueInput, type CreateIssueRelationInput, type IssueListQuery, type IssueOrder, type IssuePriority, type MyIssuesQuery, type TiptapDocument, type UpdateIssueCommentInput, type UpdateIssueInput } from "@rinia/shared";
 import { and, asc, count, desc, eq, inArray, isNull, max, min, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { respaceIssuesIfCrowded } from "../../db/positions";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import type { TiptapDocument as StoredDocument } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
-import { assertTokenReachesProject, reachableProjectIds } from "../../lib/project-access";
+import { assertIssueAccess, guestSeesIssue, issueListScope, visibleIssues } from "../../lib/guest-access";
+import { assertProjectAccess } from "../../middleware/project-membership.middleware";
 import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { mentionedUserIds, newMentions, recordIssueChange } from "../notifications/notifications.service";
@@ -139,15 +140,6 @@ async function ensureColumnInProject(columnId: string, projectId: string) {
     if (!column) throw new HttpError(400, "Status does not belong to this project");
 }
 
-async function ensureProjectMember(userId: string, projectId: string) {
-    assertTokenReachesProject(projectId, userId);
-    const membership = await db.query.projectMembers.findFirst({
-        where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),
-        columns: { id: true },
-    });
-    if (!membership) throw new HttpError(400, "User is not a member of this project");
-}
-
 async function ensureAssigneeInProject(assigneeId: string, projectId: string) {
     const member = await db.query.projectMembers.findFirst({ where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, assigneeId)), columns: { id: true } });
     if (!member) throw new HttpError(400, "User is not a member of this project");
@@ -202,9 +194,17 @@ export interface IssueListPage<T> {
     total: number;
 }
 
+/** Who is reading a list: a guest gets only the issues shared with or assigned to them. */
+export interface IssueViewer {
+    userId: string;
+    role: ProjectRole;
+}
+
 /** One page of a project's issues, in `orderBy` order. Without `limit`, every matching issue. */
-export async function listIssuePage(projectId: string, query: IssueListQuery) {
+export async function listIssuePage(projectId: string, query: IssueListQuery, viewer: IssueViewer) {
     const filters = [eq(issues.projectId, projectId), isNull(issues.deletedAt)];
+    const scope = issueListScope(viewer.userId, viewer.role);
+    if (scope) filters.push(scope);
     if (query.columnId) filters.push(eq(issues.columnId, query.columnId));
     if (query.priority) filters.push(eq(issues.priority, query.priority));
     if (query.assigneeId) filters.push(eq(issues.assigneeId, query.assigneeId));
@@ -245,12 +245,14 @@ export async function listIssuePage(projectId: string, query: IssueListQuery) {
 }
 
 /** Every matching issue. Callers that page use `listIssuePage`. */
-export async function listIssues(projectId: string, query: IssueListQuery) {
-    return (await listIssuePage(projectId, query)).issues;
+export async function listIssues(projectId: string, query: IssueListQuery, viewer: IssueViewer) {
+    return (await listIssuePage(projectId, query, viewer)).issues;
 }
 
 /** What `searchIssues` filters by. `assigneeId: null` asks for unassigned issues; an empty list of states matches nothing. */
 export interface IssueSearch {
+    /** Whose search it is: only the issues they can see match. */
+    viewerId: string;
     projectIds: string[];
     columnIds?: string[];
     priority?: IssuePriority;
@@ -267,7 +269,7 @@ export interface IssueSearch {
  */
 export async function searchIssues(search: IssueSearch) {
     if (search.projectIds.length === 0 || search.columnIds?.length === 0 || search.categoryIds?.length === 0) return { total: 0, issues: [] };
-    const filters = [inArray(issues.projectId, search.projectIds), isNull(issues.deletedAt)];
+    const filters = [inArray(issues.projectId, search.projectIds), isNull(issues.deletedAt), visibleIssues(search.viewerId)];
     if (search.columnIds) filters.push(inArray(issues.columnId, search.columnIds));
     if (search.priority) filters.push(eq(issues.priority, search.priority));
     if (search.assigneeId === null) filters.push(isNull(issues.assigneeId));
@@ -294,7 +296,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
               ? eq(issues.createdBy, userId)
               : inArray(issues.id, db.select({ id: issueSubscriptions.issueId }).from(issueSubscriptions).where(eq(issueSubscriptions.userId, userId))),
     ];
-    filters.push(inArray(issues.projectId, reachableProjectIds(userId)));
+    filters.push(visibleIssues(userId));
 
     const rows = await db.query.issues.findMany({
         where: and(...filters),
@@ -313,7 +315,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
 export async function createIssue(projectId: string, input: CreateIssueInput, actorId: string, source?: ActionSource) {
     assertRichText(input.descriptionJson, "description");
     validateIssueImageUrls(input.descriptionJson);
-    await ensureProjectMember(actorId, projectId);
+    await assertProjectAccess(projectId, actorId, "issues.write");
     if (input.parentIssueId) await ensureParentIsValid(input.parentIssueId, undefined, projectId);
     await ensureColumnInProject(input.columnId, projectId);
     if (input.assigneeId) await ensureAssigneeInProject(input.assigneeId, projectId);
@@ -358,7 +360,7 @@ export async function createIssue(projectId: string, input: CreateIssueInput, ac
 export async function updateIssue(identifier: string, input: UpdateIssueInput, actorId: string, source?: ActionSource) {
     assertRichText(input.descriptionJson, "description");
     const current = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, current.projectId);
+    await assertIssueAccess(actorId, current, "issues.write");
     validateIssueImageUrls(input.descriptionJson);
     if (input.columnId) await ensureColumnInProject(input.columnId, current.projectId);
     if (input.assigneeId) await ensureAssigneeInProject(input.assigneeId, current.projectId);
@@ -426,7 +428,7 @@ export async function updateIssue(identifier: string, input: UpdateIssueInput, a
 
 export async function deleteIssue(identifier: string, actorId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, issue.projectId);
+    await assertIssueAccess(actorId, issue, "issues.write");
     const rows = await db.query.issues.findMany({ where: and(eq(issues.projectId, issue.projectId), isNull(issues.deletedAt)), columns: { id: true, parentIssueId: true } });
     const ids = new Set([issue.id]);
     for (let changed = true; changed;) {
@@ -446,7 +448,7 @@ export async function restoreIssue(identifier: string, actorId: string, deletedA
     const [row] = await db.select({ id: issues.id, projectId: issues.projectId }).from(issues).innerJoin(projects, eq(issues.projectId, projects.id))
         .where(and(eq(projects.issueKey, parsed.key), eq(issues.number, parsed.number), eq(issues.deletedAt, deletedAt)));
     if (!row) throw new HttpError(404, "Issue not found or undo window expired");
-    await ensureProjectMember(actorId, row.projectId);
+    await assertProjectAccess(row.projectId, actorId, "issues.write");
     const descendants = await db.query.issues.findMany({ where: and(eq(issues.projectId, row.projectId), eq(issues.deletedAt, deletedAt)), columns: { id: true, parentIssueId: true } });
     const ids = new Set([row.id]);
     for (let changed = true; changed;) {
@@ -460,7 +462,7 @@ export async function restoreIssue(identifier: string, actorId: string, deletedA
 
 export async function restoreBulkIssues(projectId: string, issueIds: string[], actorId: string, deletedAt: Date) {
     requireUndoWindow(deletedAt);
-    await ensureProjectMember(actorId, projectId);
+    await assertProjectAccess(projectId, actorId, "issues.write");
     const rows = await db.query.issues.findMany({ where: and(eq(issues.projectId, projectId), inArray(issues.id, issueIds), eq(issues.deletedAt, deletedAt)), columns: { id: true } });
     if (rows.length !== issueIds.length) throw new HttpError(404, "Some issues could not be restored");
     await db.update(issues).set({ deletedAt: null }).where(and(eq(issues.projectId, projectId), inArray(issues.id, issueIds), eq(issues.deletedAt, deletedAt)));
@@ -470,7 +472,7 @@ export async function restoreBulkIssues(projectId: string, issueIds: string[], a
 
 export async function listIssueComments(identifier: string, actorId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, issue.projectId);
+    await assertIssueAccess(actorId, issue);
     const rows = await db.query.issueComments.findMany({
         where: and(eq(issueComments.issueId, issue.id), isNull(issueComments.deletedAt)),
         orderBy: [asc(issueComments.createdAt)],
@@ -493,11 +495,12 @@ export function groupReactions(rows: Array<{ emoji: string; user: { id: string; 
     return [...groups.values()];
 }
 
-async function commentForMember(commentId: string, userId: string) {
-    const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), isNull(issueComments.deletedAt)), columns: { id: true, issueId: true }, with: { issue: { columns: { projectId: true, deletedAt: true } } } });
+/** The comment, after checking the user can see its issue and the role allows `action`. */
+async function commentForMember(commentId: string, userId: string, action: "reactions.write" | "comments.write") {
+    const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), isNull(issueComments.deletedAt)), columns: { id: true, issueId: true }, with: { issue: { columns: { id: true, projectId: true, assigneeId: true, deletedAt: true } } } });
     if (!comment) throw new HttpError(404, "Comment not found");
     if (comment.issue.deletedAt) throw new HttpError(404, "Issue not found");
-    await ensureProjectMember(userId, comment.issue.projectId);
+    await assertIssueAccess(userId, comment.issue, action);
     return comment;
 }
 
@@ -513,7 +516,7 @@ async function commentReactionGroups(commentId: string) {
 
 /** Adds the user's reaction. Reacting twice with the same emoji keeps one. Returns the comment's reactions. */
 export async function addCommentReaction(commentId: string, emoji: string, userId: string) {
-    const comment = await commentForMember(commentId, userId);
+    const comment = await commentForMember(commentId, userId, "reactions.write");
     await db.insert(commentReactions).values({ commentId, userId, emoji }).onConflictDoNothing();
     publishChange("comment.reacted", { projectId: comment.issue.projectId, id: commentId, issueId: comment.issueId });
     return commentReactionGroups(commentId);
@@ -521,7 +524,7 @@ export async function addCommentReaction(commentId: string, emoji: string, userI
 
 /** Removes the user's own reaction; other people's stay. Returns the comment's reactions. */
 export async function removeCommentReaction(commentId: string, emoji: string, userId: string) {
-    const comment = await commentForMember(commentId, userId);
+    const comment = await commentForMember(commentId, userId, "reactions.write");
     await db.delete(commentReactions).where(and(eq(commentReactions.commentId, commentId), eq(commentReactions.userId, userId), eq(commentReactions.emoji, emoji)));
     publishChange("comment.reacted", { projectId: comment.issue.projectId, id: commentId, issueId: comment.issueId });
     return commentReactionGroups(commentId);
@@ -537,7 +540,7 @@ async function threadOf(parentCommentId: string, issueId: string) {
 export async function createIssueComment(identifier: string, input: CreateIssueCommentInput, authorId: string, source?: ActionSource) {
     assertRichText(input.contentJson, "comment");
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(authorId, issue.projectId);
+    await assertIssueAccess(authorId, issue, "comments.write");
     const threadId = input.parentCommentId ? await threadOf(input.parentCommentId, issue.id) : null;
     // Everyone who already wrote in the thread hears about the reply, followers of the issue or not.
     const threadParticipantIds = threadId
@@ -552,7 +555,7 @@ export async function createIssueComment(identifier: string, input: CreateIssueC
 
 export async function updateIssueComment(commentId: string, input: UpdateIssueCommentInput, authorId: string) {
     assertRichText(input.contentJson, "comment");
-    await commentForMember(commentId, authorId);
+    await commentForMember(commentId, authorId, "comments.write");
     const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), isNull(issueComments.deletedAt)) });
     if (!comment) throw new HttpError(404, "Comment not found");
     if (comment.authorId !== authorId) throw new HttpError(403, "Only the comment author can edit it");
@@ -564,7 +567,7 @@ export async function updateIssueComment(commentId: string, input: UpdateIssueCo
 }
 
 export async function deleteIssueComment(commentId: string, authorId: string) {
-    const { issue } = await commentForMember(commentId, authorId);
+    const { issue } = await commentForMember(commentId, authorId, "comments.write");
     const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), isNull(issueComments.deletedAt)) });
     if (!comment) throw new HttpError(404, "Comment not found");
     if (comment.authorId !== authorId) throw new HttpError(403, "Only the comment author can delete it");
@@ -576,10 +579,10 @@ export async function deleteIssueComment(commentId: string, authorId: string) {
 
 export async function restoreIssueComment(commentId: string, authorId: string, deletedAt: Date) {
     requireUndoWindow(deletedAt);
-    const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), eq(issueComments.deletedAt, deletedAt)), with: { issue: { columns: { projectId: true } } } });
+    const comment = await db.query.issueComments.findFirst({ where: and(eq(issueComments.id, commentId), eq(issueComments.deletedAt, deletedAt)), with: { issue: { columns: { id: true, projectId: true, assigneeId: true } } } });
     if (!comment) throw new HttpError(404, "Comment not found or undo window expired");
     if (comment.authorId !== authorId) throw new HttpError(403, "Only the comment author can restore it");
-    await ensureProjectMember(authorId, comment.issue.projectId);
+    await assertIssueAccess(authorId, comment.issue, "comments.write");
     await db.update(issueComments).set({ deletedAt: null }).where(and(or(eq(issueComments.id, commentId), eq(issueComments.parentCommentId, commentId)), eq(issueComments.deletedAt, deletedAt)));
     publishChange("comment.restored", { projectId: comment.issue.projectId, id: commentId, issueId: comment.issueId });
     return { restored: true };
@@ -587,7 +590,7 @@ export async function restoreIssueComment(commentId: string, authorId: string, d
 
 export async function listIssueActivity(identifier: string, actorId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, issue.projectId);
+    await assertIssueAccess(actorId, issue);
     return db.query.issueActivities.findMany({
         where: eq(issueActivities.issueId, issue.id),
         orderBy: [desc(issueActivities.createdAt)],
@@ -597,21 +600,25 @@ export async function listIssueActivity(identifier: string, actorId: string) {
 
 export async function listIssueRelations(identifier: string, actorId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, issue.projectId);
+    const role = await assertIssueAccess(actorId, issue);
     const relations = await db.query.issueRelations.findMany({
         where: or(eq(issueRelations.sourceIssueId, issue.id), eq(issueRelations.targetIssueId, issue.id)),
         with: {
-            source: { columns: { id: true, number: true, title: true, projectId: true }, with: { project: { columns: { issueKey: true } } } },
-            target: { columns: { id: true, number: true, title: true, projectId: true }, with: { project: { columns: { issueKey: true } } } },
+            source: { columns: { id: true, number: true, title: true, projectId: true, assigneeId: true }, with: { project: { columns: { issueKey: true } } } },
+            target: { columns: { id: true, number: true, title: true, projectId: true, assigneeId: true }, with: { project: { columns: { issueKey: true } } } },
         },
     });
-    return relations.map((relation) => ({ ...relation, target: relation.sourceIssueId === issue.id ? relation.target : relation.source }));
+    const listed = relations.map((relation) => ({ ...relation, target: relation.sourceIssueId === issue.id ? relation.target : relation.source }));
+    // A guest sees a related issue only when they can see that issue too.
+    const visible = role === "guest" ? await Promise.all(listed.map((relation) => guestSeesIssue(actorId, relation.target))) : null;
+    const withoutAssignee = <T extends { assigneeId: string | null }>({ assigneeId: _assigneeId, ...rest }: T) => rest;
+    return listed.filter((_relation, index) => !visible || visible[index]).map((relation) => ({ ...relation, source: withoutAssignee(relation.source), target: withoutAssignee(relation.target) }));
 }
 
 export async function createIssueRelation(identifier: string, input: CreateIssueRelationInput, actorId: string, source?: ActionSource) {
     const from = await getIssueOrThrow(identifier);
     const target = await getIssueOrThrow(input.targetIssueIdentifier);
-    await ensureProjectMember(actorId, from.projectId);
+    await assertIssueAccess(actorId, from, "issues.write");
     if (from.projectId !== target.projectId) throw new HttpError(400, "Issues must belong to the same project");
     if (from.id === target.id) throw new HttpError(400, "An issue cannot relate to itself");
     const existing = await db.query.issueRelations.findFirst({ where: and(eq(issueRelations.sourceIssueId, from.id), eq(issueRelations.targetIssueId, target.id), eq(issueRelations.type, input.type)) });
@@ -627,7 +634,7 @@ export async function deleteIssueRelation(relationId: string, actorId: string, s
     const relation = await db.query.issueRelations.findFirst({ where: eq(issueRelations.id, relationId) });
     if (!relation) throw new HttpError(404, "Relation not found");
     const from = await getIssueOrThrow(relation.sourceIssueId);
-    await ensureProjectMember(actorId, from.projectId);
+    await assertIssueAccess(actorId, from, "issues.write");
     await db.delete(issueRelations).where(eq(issueRelations.id, relationId));
     await db.insert(issueActivities).values({ issueId: from.id, actorId, type: "relation_removed", payload: { relationId, targetIssueId: relation.targetIssueId, relationType: relation.type }, ...(source && { source }) });
     for (const issueId of [relation.sourceIssueId, relation.targetIssueId]) publishChange("relation.deleted", { projectId: from.projectId, id: relationId, issueId });
@@ -654,7 +661,7 @@ export async function recordDescriptionRevision(input: { issueId: string; revisi
 
 export async function listDescriptionRevisions(identifier: string, actorId: string) {
     const issue = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, issue.projectId);
+    await assertIssueAccess(actorId, issue);
     return db.query.issueDescriptionRevisions.findMany({
         where: eq(issueDescriptionRevisions.issueId, issue.id),
         orderBy: [desc(issueDescriptionRevisions.createdAt)],
@@ -666,7 +673,7 @@ export async function listDescriptionRevisions(identifier: string, actorId: stri
 /** Brings back an older version as the description. The restore is a new version; the ones before it stay. */
 export async function restoreDescriptionRevision(identifier: string, revisionId: string, actorId: string) {
     const current = await getIssueOrThrow(identifier);
-    await ensureProjectMember(actorId, current.projectId);
+    await assertIssueAccess(actorId, current, "issues.write");
     const version = await db.query.issueDescriptionRevisions.findFirst({
         where: and(eq(issueDescriptionRevisions.id, revisionId), eq(issueDescriptionRevisions.issueId, current.id)),
     });
@@ -706,9 +713,10 @@ async function issuesInProject(projectId: string, issueIds: string[]) {
 
 /**
  * Applies one change to many issues of a project in a single transaction, with an activity entry for each issue
- * that actually changed. Membership is checked once, by the project route.
+ * that actually changed. The role is checked once, for the whole project.
  */
 export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssuesInput, actorId: string, source?: ActionSource) {
+    await assertProjectAccess(projectId, actorId, "issues.write");
     const { issueIds, patch } = input;
     if (patch.columnId) await ensureColumnInProject(patch.columnId, projectId);
     if (patch.assigneeId) await ensureAssigneeInProject(patch.assigneeId, projectId);
@@ -770,7 +778,8 @@ export async function bulkUpdateIssues(projectId: string, input: BulkUpdateIssue
  * Deletes several issues at once, or none. Sub-issues of a deleted issue must be deleted with it; otherwise the
  * request is refused, as for a single issue.
  */
-export async function bulkDeleteIssues(projectId: string, issueIds: string[]) {
+export async function bulkDeleteIssues(projectId: string, issueIds: string[], actorId: string) {
+    await assertProjectAccess(projectId, actorId, "issues.write");
     await issuesInProject(projectId, issueIds);
     const selected = new Set(issueIds);
     const children = await db.query.issues.findMany({ where: and(inArray(issues.parentIssueId, issueIds), isNull(issues.deletedAt)), columns: { id: true } });
