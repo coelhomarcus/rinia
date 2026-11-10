@@ -119,6 +119,14 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const [creatingColumnId, setCreatingColumnId] = useState<string | null>(null);
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    // Collapsing or expanding a group moves every row below it at once. The headers jump, so a row that glided there
+    // would slide across the next header's text: the glide stays off until the list has settled.
+    const [togglingGroup, setTogglingGroup] = useState(false);
+    useEffect(() => {
+        if (!togglingGroup) return;
+        const timer = window.setTimeout(() => setTogglingGroup(false), 200);
+        return () => window.clearTimeout(timer);
+    }, [togglingGroup]);
     const [showClosed, setShowClosed] = useState(false);
     const [listScroll, setListScroll] = useState<HTMLElement | null>(null);
 
@@ -578,14 +586,15 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                         <button
                                                                             type="button"
                                                                             aria-expanded={!collapsedGroups.has(row.group.key)}
-                                                                            onClick={() =>
+                                                                            onClick={() => {
+                                                                                setTogglingGroup(true);
                                                                                 setCollapsedGroups((current) => {
                                                                                     const next = new Set(current);
                                                                                     if (next.has(row.group.key)) next.delete(row.group.key);
                                                                                     else next.add(row.group.key);
                                                                                     return next;
-                                                                                })
-                                                                            }
+                                                                                });
+                                                                            }}
                                                                             className="flex min-w-0 flex-1 items-center gap-2 text-left"
                                                                         >
                                                                             <ChevronDown
@@ -637,6 +646,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                 identifierWidth={identifierWidth}
                                                                 sortable={manualOrder}
                                                                 suspendLayout={reorder.suspendLayout}
+                                                                layoutAnimation={!togglingGroup}
                                                                 column={columnById.get(issue.columnId)}
                                                                 columns={columns ?? []}
                                                                 member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
