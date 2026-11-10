@@ -55,6 +55,7 @@ docker run -p 3000:3000 \
   -e DATABASE_URL=postgres://... \
   -e JWT_SECRET=... \
   -e SPECIAL_REGISTRATION_CODE=... \
+  -e APP_URL=https://rinia.example.com \
   rinia
 ```
 
@@ -90,7 +91,7 @@ Set these in `apps/api/.env`, or pass them to the container.
 | `SPECIAL_REGISTRATION_CODE` | Code required to create an account |
 | `ADMIN_USERNAMES` | Comma-separated admin usernames |
 | `PORT` | API port, default `3000` |
-| `APP_URL` | Public address of Rinia, used for links in emails and MCP results and as the OAuth issuer. Defaults to the address each request came to |
+| `APP_URL` | Public address of Rinia, used for links in emails and MCP results and as the OAuth issuer. Required in production. In development, defaults to the address each request came to |
 | `RESEND_API_KEY` | [Resend](https://resend.com) API key. With `RESEND_FROM_EMAIL`, turns on password recovery and email change by email. In development without it, the email is written to the log |
 | `RESEND_FROM_EMAIL` | Sender of Rinia's email, such as `Rinia <noreply@example.com>`, on a domain verified in Resend |
 | `LOG_LEVEL` | `trace`, `debug`, `info`, `warn`, `error`, `fatal`, or `silent`. Default `info` in production, `debug` in development, `silent` in tests |

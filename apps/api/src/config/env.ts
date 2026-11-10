@@ -8,8 +8,11 @@ const envSchema = z.object({
     SPECIAL_REGISTRATION_CODE: z.string().min(1, "SPECIAL_REGISTRATION_CODE is required"),
     ADMIN_USERNAMES: z.string().default(""),
     PORT: z.coerce.number().int().positive().default(3000),
-    /** Where people open Rinia, for links the API hands out (MCP results). Defaults to the host each request came to. */
-    APP_URL: z.string().url().optional(),
+    /** Where people open Rinia, for links the API hands out (email, MCP results) and the OAuth issuer. Required in production; otherwise the host each request came to. */
+    APP_URL: z.preprocess(
+        (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+        z.string().trim().url().optional(),
+    ),
     /** Resend sends Rinia's email (password recovery). Without both, recovery by email is turned off. */
     RESEND_API_KEY: z.string().trim().optional().transform((value) => value || undefined),
     /** The sender, such as `Rinia <noreply@example.com>`, on a domain verified in Resend. */
@@ -30,7 +33,17 @@ export const CONFIG_KEYS = Object.keys(envSchema.shape) as (keyof typeof envSche
 
 // Bun loads apps/api/.env by itself (it reads .env from the cwd), so there is no dotenv import.
 // In production the container passes the variables instead.
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema
+    .superRefine((data, ctx) => {
+        if (data.NODE_ENV === "production" && !data.APP_URL) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["APP_URL"],
+                message: "APP_URL is required in production",
+            });
+        }
+    })
+    .safeParse(process.env);
 
 if (!parsed.success) {
     // Plain console on purpose: the settings that failed may be the logger's own, and this message must show whatever they are.

@@ -59,8 +59,8 @@ oauthRouter.post(
 );
 
 /**
- * Discovery for MCP clients (RFC 8414 and RFC 9728). Both documents name the address the request came in on unless
- * APP_URL is set, so they are built per request.
+ * Discovery for MCP clients (RFC 8414 and RFC 9728). In production both documents use APP_URL. Outside production,
+ * when it is unset, they name the address the request came in on, so they are built per request.
  */
 export const oauthMetadataRouter = Router();
 
