@@ -55,7 +55,7 @@ export function ProjectWorkspaceHeader({
     const showSection = !hideSection && activeView !== "overview" && activeView !== "members";
     const title = activeView === "views" ? t("views.title") : activeView === "issues" || activeView === "board" ? t("nav.issues") : activeView === "documents" ? t("nav.documents") : activeView === "settings" ? t("nav.projectSettings") : t("nav.overview");
     return (
-        <header className="flex h-11 shrink-0 select-none items-center justify-between gap-3 border-b border-subtle px-3">
+        <header className="flex h-11 shrink-0 select-none items-center justify-between gap-3 border-b border-subtle px-3" data-print-hide>
             <div className="flex min-w-0 items-center gap-1 text-[13px]">
                 <span className="md:hidden">
                     <ButtonUtility icon={AppIcons.Menu} color="tertiary" tooltip={t("nav.expand")} onClick={openNavigation} />

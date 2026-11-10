@@ -6,6 +6,7 @@ import {
 } from "@rinia/shared";
 import { asyncHandler } from "../../middleware/async-handler";
 import { z } from "zod";
+import { attachmentDisposition, documentMarkdown, markdownFilename } from "./document-export";
 import * as service from "./documents.service";
 
 // Mounted behind authentication and project membership in projects.routes.ts.
@@ -28,6 +29,30 @@ documentsRouter.post(
           createDocumentSchema.parse(req.body),
         ),
       });
+  }),
+);
+const exportQuerySchema = z.object({ format: z.literal("md").optional() });
+
+documentsRouter.get(
+  "/export",
+  asyncHandler<{ projectId: string }>(async (req, res) => {
+    const file = await service.exportProjectZip(req.params.projectId);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", attachmentDisposition(file.filename));
+    res.send(file.body);
+  }),
+);
+documentsRouter.get(
+  "/:documentId/export",
+  asyncHandler(async (req, res) => {
+    const { projectId, documentId } = documentParamsSchema.parse(req.params);
+    exportQuerySchema.parse({ format: req.query.format });
+    const document = await service.getDocument(projectId, documentId);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.setHeader("Content-Disposition", attachmentDisposition(markdownFilename(document)));
+    res.send(documentMarkdown(document.contentJson));
   }),
 );
 documentsRouter.get(

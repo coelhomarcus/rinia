@@ -151,6 +151,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {children}
             <div
                 aria-live="polite"
+                data-print-hide
                 className="pointer-events-none fixed right-4 bottom-4 z-[80] grid w-[min(22rem,calc(100vw-2rem))]"
                 onMouseEnter={() => hold("hover")}
                 onMouseLeave={() => release("hover")}

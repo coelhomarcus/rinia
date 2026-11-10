@@ -66,8 +66,8 @@ export const AppShell = () => {
                 </div>
                 <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
                     <Dialog.Portal>
-                        <Dialog.Backdrop className="fixed inset-0 z-40 bg-backdrop transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-                        <Dialog.Popup className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
+                        <Dialog.Backdrop data-print-hide className="fixed inset-0 z-40 bg-backdrop transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                        <Dialog.Popup data-print-hide className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
                             <Dialog.Title className="sr-only">{t("nav.navigation")}</Dialog.Title>
                             <Sidebar onNavigate={() => setMobileOpen(false)} />
                         </Dialog.Popup>
@@ -140,6 +140,7 @@ function SidebarResizeHandle({
                 aria-valuemin={220}
                 aria-valuemax={360}
                 tabIndex={0}
+                data-print-hide
                 className="group absolute top-2 bottom-2 left-1 z-20 hidden w-2 cursor-ew-resize touch-none outline-none md:block"
                 onPointerDown={(event) => {
                     if (event.button !== 0) return;

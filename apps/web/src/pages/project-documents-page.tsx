@@ -17,6 +17,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { type DocumentPage, deleteDocument, getDocument, restoreDocument } from "@/features/documents/api";
 import { DocumentProvider, type DocumentProviderState } from "@/features/documents/collab/document-provider";
 import { DocumentEditor } from "@/features/documents/components/document-editor";
+import { DocumentExportMenu, ExportAllPagesButton } from "@/features/documents/components/document-export-menu";
 import { documentKey, documentsKey, useCreateDocument, useDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { getDocumentSession } from "@/features/documents/sessions";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
@@ -57,9 +58,12 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
                     <div className="w-64 max-w-full">
                         <Input size="sm" aria-label={t("documents.searchPages")} icon={Search} placeholder={`${t("documents.searchPages")}…`} value={search} onChange={setSearch} />
                     </div>
-                    <Button size="sm" iconLeading={Plus} isLoading={create.isPending} onClick={addPage}>
-                        {t("documents.newPage")}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <ExportAllPagesButton projectId={projectId} disabled={!pages?.length} />
+                        <Button size="sm" iconLeading={Plus} isLoading={create.isPending} onClick={addPage}>
+                            {t("documents.newPage")}
+                        </Button>
+                    </div>
                 </div>
                 {create.isError && <ErrorMessage message={t("documents.createFailed")} />}
                 {isError && <ErrorMessage message={t("documents.loadFailed")} />}
@@ -255,7 +259,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
     }[state.status === "saved" ? (collab.ready && !collab.connected ? "offline" : collab.unsynced ? "pending" : "saved") : state.status];
     return (
         <>
-            <div className="flex h-[45px] shrink-0 items-center justify-between gap-3 border-b border-subtle px-4 lg:px-5">
+            <div className="flex h-[45px] shrink-0 items-center justify-between gap-3 border-b border-subtle px-4 lg:px-5" data-print-hide>
                 <Link to={urls.documents(projectKey)} className="inline-flex items-center gap-2 text-sm text-tertiary hover:text-primary">
                     <ArrowLeft className="size-4" />
                     {t("documents.allPages")}
@@ -264,6 +268,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                     <span role="status" aria-live="polite" className="text-xs text-tertiary">
                         {status}
                     </span>
+                    <DocumentExportMenu projectId={page.projectId} documentId={page.id} />
                     {(page.createdBy === userId || isProjectOwner) && (
                         <Button
                             color="tertiary"
@@ -287,18 +292,28 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                 ) : (
                     <div className="document-writing-surface">
                         {state.status === "error" && (
-                            <ErrorMessage message={`${t((state.error || "documents.couldNotSave") as "documents.couldNotSave")} ${t("documents.retrySave")}`} />
+                            <div data-print-hide>
+                                <ErrorMessage message={`${t((state.error || "documents.couldNotSave") as "documents.couldNotSave")} ${t("documents.retrySave")}`} />
+                            </div>
                         )}
-                        {!collab.connected && <p className="mb-4 text-sm text-tertiary">{t("documents.offlineHint")}</p>}
+                        {!collab.connected && (
+                            <p className="mb-4 text-sm text-tertiary" data-print-hide>
+                                {t("documents.offlineHint")}
+                            </p>
+                        )}
                         {state.status === "deleted" && (
-                            <div role="alert" className="mb-5 rounded-md border border-strong bg-layer-1 p-4">
+                            <div role="alert" className="mb-5 rounded-md border border-strong bg-layer-1 p-4" data-print-hide>
                                 <p className="text-sm font-medium">{t("documents.deletedMessage")}</p>
                             </div>
                         )}
-                        {actionError && !confirmingDelete && <ErrorMessage message={actionError} />}
-                        <div className="relative z-10 mb-5 flex flex-wrap items-end gap-2">
+                        {actionError && !confirmingDelete && (
+                            <div data-print-hide>
+                                <ErrorMessage message={actionError} />
+                            </div>
+                        )}
+                        <div className="document-page-icon-row relative z-10 mb-5 flex flex-wrap items-end gap-2" data-print-hide={state.iconAppearance ? undefined : true}>
                             <Popover.Root open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-                                <Popover.Trigger disabled={busy || state.status === "deleted"} aria-label={state.iconAppearance ? t("appearance.changePageIcon") : t("appearance.addPageIcon")} className={`flex items-center justify-center rounded-md border border-subtle bg-layer-2 text-secondary hover:bg-layer-2-hover ${state.iconAppearance ? "size-12" : "h-7 gap-1.5 px-2 text-xs font-medium"}`}>
+                                <Popover.Trigger disabled={busy || state.status === "deleted"} aria-label={state.iconAppearance ? t("appearance.changePageIcon") : t("appearance.addPageIcon")} data-print-hide={state.iconAppearance ? undefined : true} className={`document-page-icon flex items-center justify-center rounded-md border border-subtle bg-layer-2 text-secondary hover:bg-layer-2-hover ${state.iconAppearance ? "size-12" : "h-7 gap-1.5 px-2 text-xs font-medium"}`}>
                                     {state.iconAppearance ? <ProjectIcon icon={state.iconAppearance} className="size-6" /> : <><Sparkles className="size-3.5" /> {t("appearance.addPageIcon")}</>}
                                 </Popover.Trigger>
                                 <Popover.Portal>

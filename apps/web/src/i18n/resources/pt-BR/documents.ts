@@ -22,6 +22,8 @@ const documents = {
         numberedList: "Lista numerada", orderedList: "Lista ordenada", todoList: "Lista de tarefas", checklist: "Lista de verificação", quote: "Citação",
         blockquote: "Bloco de citação", codeBlock: "Bloco de código", preformatted: "Texto pré-formatado", divider: "Divisor", horizontalRule: "Linha horizontal",
         image: "Imagem", insertImageUrl: "Inserir URL de imagem", table: "Tabela", tableDimensions: "3 × 3 com cabeçalho",
+        pageMenu: "Ações da página", downloadMarkdown: "Baixar Markdown", downloadAllPages: "Baixar todas as páginas (.zip)", printPdf: "Imprimir / Salvar como PDF",
+        couldNotExport: "Não foi possível exportar.",
     } as const;
 
 export default documents;

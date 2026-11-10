@@ -1,11 +1,12 @@
 import { resolveLocale, type ActionSource, type CreateDocumentInput, type Locale, type TiptapDocument, type UpdateDocumentInput } from "@rinia/shared";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { projectDocuments, projectMembers, users } from "../../db/schema";
+import { projectDocuments, projectMembers, projects, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { publishChange } from "../realtime/realtime.service";
+import { projectExportFilename, projectMarkdownZip } from "./document-export";
 import { documentRooms } from "./document-rooms";
 
 const matchingDocument = (projectId: string, documentId: string) =>
@@ -26,6 +27,22 @@ export function listDocuments(projectId: string) {
     columns: { contentJson: false, yjsState: false },
     orderBy: [asc(projectDocuments.createdAt), asc(projectDocuments.id)],
   });
+}
+
+/** Every page in the project, including edits still open in a room. There is no nesting, so the archive is flat. */
+export async function exportProjectZip(projectId: string) {
+    const documents = await db.query.projectDocuments.findMany({
+        where: and(eq(projectDocuments.projectId, projectId), isNull(projectDocuments.deletedAt)),
+        columns: { id: true, title: true, contentJson: true },
+        orderBy: [asc(projectDocuments.createdAt), asc(projectDocuments.id)],
+    });
+    const pages = [];
+    for (const document of documents) {
+        const live = await documentRooms.live(document.id);
+        pages.push({ id: document.id, title: document.title, contentJson: live ?? document.contentJson });
+    }
+    const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { issueKey: true } });
+    return { filename: projectExportFilename(project?.issueKey), body: projectMarkdownZip(pages) };
 }
 
 export async function getDocument(projectId: string, documentId: string) {
