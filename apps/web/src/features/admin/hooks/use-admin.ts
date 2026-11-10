@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getAdminProject, getAdminUser, listAdminProjects, listAdminUsers, resetAdminUserPassword, revokeAdminUserSessions, updateAdminUser, type AdminUser } from "../api";
+import { getAdminProject, getAdminUser, listAdminProjects, listAdminUsers, resetAdminUserPassword, revokeAdminUserSessions, sendAdminUserResetLink, updateAdminUser, type AdminUser } from "../api";
 
 const adminProjectsKey = ["admin", "projects"] as const;
 const adminUsersKey = ["admin", "users"] as const;
@@ -38,4 +38,8 @@ export function useRevokeAdminUserSessions(userId: string) {
 
 export function useResetAdminUserPassword(userId: string) {
     return useMutation({ mutationFn: () => resetAdminUserPassword(userId) });
+}
+
+export function useSendAdminUserResetLink(userId: string) {
+    return useMutation({ mutationFn: () => sendAdminUserResetLink(userId) });
 }

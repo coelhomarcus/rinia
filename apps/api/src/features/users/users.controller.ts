@@ -1,8 +1,12 @@
 import { createReadStream } from "node:fs";
 import { access } from "node:fs/promises";
-import { updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
+import { changePasswordSchema, updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
 import { z } from "zod";
+import { setSessionCookie } from "../../lib/cookies";
 import { HttpError } from "../../lib/http-error";
+import { signToken } from "../../lib/jwt";
+import { changePassword } from "../auth/password.service";
+import { realtimeHub } from "../realtime/realtime.service";
 import { asyncHandler } from "../../middleware/async-handler";
 import { contentDisposition, readMultipart } from "../files/files.http";
 import { avatarFilePath } from "../files/files.storage";
@@ -52,4 +56,14 @@ export const updateLocale = asyncHandler(async (req, res) => {
     const { locale } = updateLocaleSchema.parse(req.body);
     const user = await updateUserLocale(req.user!.sub, locale);
     res.json({ user });
+});
+
+/** Changing the password signs out every other session; this one gets a fresh cookie so the person stays in. */
+export const updatePassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    await changePassword(req.user!.sub, currentPassword, newPassword);
+    setSessionCookie(res, signToken({ sub: req.user!.sub, username: req.user!.username, isAdmin: req.user!.isAdmin }));
+    // Once this browser has its new cookie, sockets reconnect: this one with the new session, the others are refused.
+    res.on("finish", () => realtimeHub.closeUser(req.user!.sub, "recheck"));
+    res.status(204).send();
 });

@@ -1,4 +1,5 @@
 const errors = {
+        resetLinkInvalid: "This link is invalid or has expired.", incorrectPassword: "The current password is incorrect.", emailUnavailable: "Email is not set up on this server.", emailFailed: "Could not send the email. Try again later.", tooManyPasswordAttempts: "Too many password attempts. Try again in a few minutes.",
         notAuthenticated: "Not authenticated", invalidSession: "Invalid or expired session", invalidData: "Please check the highlighted fields.", unsupportedContent: "This content has blocks this field does not support.",
         requestFailed: "The request could not be completed.", internal: "An internal error occurred. Please try again.",
         tooLarge: "This document is too large to save. Split its content into smaller pages.",

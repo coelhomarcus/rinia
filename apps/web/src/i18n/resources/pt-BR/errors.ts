@@ -1,4 +1,5 @@
 const errors = {
+        resetLinkInvalid: "Este link é inválido ou expirou.", incorrectPassword: "A senha atual está incorreta.", emailUnavailable: "O envio de e-mails não está configurado neste servidor.", emailFailed: "Não foi possível enviar o e-mail. Tente novamente mais tarde.", tooManyPasswordAttempts: "Muitas tentativas com senha. Tente novamente em alguns minutos.",
         notAuthenticated: "Você não está autenticado", invalidSession: "Sessão inválida ou expirada", invalidData: "Confira os campos destacados.", unsupportedContent: "Este conteúdo tem blocos que este campo não aceita.",
         requestFailed: "Não foi possível concluir a solicitação.", internal: "Ocorreu um erro interno. Tente novamente.",
         tooLarge: "Este documento é grande demais para salvar. Divida o conteúdo em páginas menores.",

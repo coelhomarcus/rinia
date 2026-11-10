@@ -9,8 +9,9 @@ import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { SettingsControl, SettingsGroup, SettingsLinkRow, SettingsPage } from "@/components/settings/settings-layout";
 import type { AdminUser } from "@/features/admin/api";
 import { UserBadges } from "@/features/admin/components/user-badges";
-import { useAdminUser, useResetAdminUserPassword, useRevokeAdminUserSessions, useUpdateAdminUser } from "@/features/admin/hooks/use-admin";
+import { useAdminUser, useResetAdminUserPassword, useRevokeAdminUserSessions, useSendAdminUserResetLink, useUpdateAdminUser } from "@/features/admin/hooks/use-admin";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useAuthOptions } from "@/features/auth/hooks/use-auth-options";
 import { CopyField } from "@/features/integrations/components/copy-field";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { memberInitials } from "@/features/projects/components/members-panel";
@@ -101,9 +102,11 @@ function UserActions({ user }: { user: AdminUser }) {
     const update = useUpdateAdminUser(user.id);
     const revokeSessions = useRevokeAdminUserSessions(user.id);
     const resetPassword = useResetAdminUserPassword(user.id);
+    const sendResetLink = useSendAdminUserResetLink(user.id);
+    const { data: options } = useAuthOptions();
     const [password, setPassword] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
-    const failed = [update, revokeSessions, resetPassword].find((mutation) => mutation.isError);
+    const failed = [update, revokeSessions, resetPassword, sendResetLink].find((mutation) => mutation.isError);
     const suspended = user.suspendedAt !== null;
     const names = { name: user.name, username: user.username };
 
@@ -139,6 +142,20 @@ function UserActions({ user }: { user: AdminUser }) {
                         }}
                     />
                 </SettingsControl>
+                {options?.passwordRecovery && (
+                    <SettingsControl title={t("settings.sendResetLink")} description={t("settings.sendResetLinkHint", { email: user.email })}>
+                        <ConfirmDialog
+                            trigger={<Button size="sm" color="secondary" isLoading={sendResetLink.isPending}>{t("settings.sendResetLinkAction")}</Button>}
+                            title={t("settings.sendResetLink")}
+                            description={t("settings.sendResetLinkDescription", { ...names, email: user.email })}
+                            confirmLabel={t("settings.sendResetLinkAction")}
+                            onConfirm={() => {
+                                setNotice(null);
+                                sendResetLink.mutate(undefined, { onSuccess: (email) => setNotice(t("settings.resetLinkSent", { email })) });
+                            }}
+                        />
+                    </SettingsControl>
+                )}
                 <SettingsControl title={t("settings.resetPassword")} description={t("settings.resetPasswordHint")}>
                     <ConfirmDialog
                         trigger={<Button size="sm" color="secondary" isLoading={resetPassword.isPending}>{t("settings.resetPassword")}</Button>}

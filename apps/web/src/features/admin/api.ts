@@ -53,3 +53,5 @@ export const updateAdminUser = (userId: string, changes: { isAdmin?: boolean; su
 export const revokeAdminUserSessions = (userId: string) => apiClient.post<void>(`/admin/users/${userId}/sessions/revoke`);
 /** The new password is in this response only; it is never shown again. */
 export const resetAdminUserPassword = (userId: string) => apiClient.post<{ password: string }>(`/admin/users/${userId}/password`).then((res) => res.password);
+/** Emails the person a link to choose a new password themselves; returns the address it went to. */
+export const sendAdminUserResetLink = (userId: string) => apiClient.post<{ email: string }>(`/admin/users/${userId}/password-reset-email`).then((res) => res.email);

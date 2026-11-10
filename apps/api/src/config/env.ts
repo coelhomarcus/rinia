@@ -10,6 +10,10 @@ const envSchema = z.object({
     PORT: z.coerce.number().int().positive().default(3000),
     /** Where people open Rinia, for links the API hands out (MCP results). Defaults to the host each request came to. */
     APP_URL: z.string().url().optional(),
+    /** Resend sends Rinia's email (password recovery). Without both, recovery by email is turned off. */
+    RESEND_API_KEY: z.string().trim().optional().transform((value) => value || undefined),
+    /** The sender, such as `Rinia <noreply@example.com>`, on a domain verified in Resend. */
+    RESEND_FROM_EMAIL: z.string().trim().optional().transform((value) => value || undefined),
     /** Where uploaded files are written. In Dokploy set `/data/uploads` and bind-mount a host directory there. */
     UPLOAD_DIR: z.string().optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -36,6 +40,9 @@ if (!parsed.success) {
 
 export const env = {
     ...parsed.data,
+    emailEnabled: Boolean(parsed.data.RESEND_API_KEY && parsed.data.RESEND_FROM_EMAIL),
+    /** Recovery by email works with Resend set up, and in development, where the email is written to the log instead. */
+    passwordRecoveryEnabled: Boolean(parsed.data.RESEND_API_KEY && parsed.data.RESEND_FROM_EMAIL) || parsed.data.NODE_ENV === "development",
     adminUsernames: parsed.data.ADMIN_USERNAMES.split(",")
         .map((username) => username.trim().toLowerCase())
         .filter(Boolean),

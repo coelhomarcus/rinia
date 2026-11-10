@@ -106,7 +106,7 @@ export async function getAdminUser(userId: string) {
 }
 
 /** Admins act on other people's accounts; their own goes through their profile, so nobody locks themselves out. */
-function assertNotSelf(actorId: string, userId: string) {
+export function assertNotSelf(actorId: string, userId: string) {
     if (actorId === userId) throw new HttpError(403, "You cannot do this to your own account");
 }
 

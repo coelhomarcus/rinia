@@ -1,4 +1,4 @@
-import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type CreateApiTokenInput, type LoginInput, type RegisterInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
+import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type ChangePasswordInput, type CreateApiTokenInput, type ForgotPasswordInput, type LoginInput, type RegisterInput, type ResetPasswordInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { TAB_ID } from "@/lib/tab-id";
 
@@ -34,6 +34,23 @@ export async function register(input: RegisterInput): Promise<AuthUser> {
 export function logout(): Promise<void> {
     return apiClient.post<void>("/auth/logout");
 }
+
+/** What this server offers on the sign-in page. Password recovery needs email set up on the server. */
+export interface AuthOptions {
+    passwordRecovery: boolean;
+}
+
+export const AUTH_OPTIONS_QUERY_KEY = ["auth", "options"] as const;
+
+export const fetchAuthOptions = () => apiClient.get<AuthOptions>("/auth/options");
+
+/** Answers the same whether or not the account exists. */
+export const requestPasswordReset = (input: ForgotPasswordInput) => apiClient.post<void>("/auth/forgot-password", input);
+
+export const resetPassword = (input: ResetPasswordInput) => apiClient.post<void>("/auth/reset-password", input);
+
+/** Signs out every other session; this one keeps working. */
+export const changePassword = (input: ChangePasswordInput) => apiClient.put<void>("/users/me/password", input);
 
 export async function updateProfile(input: UpdateProfileInput): Promise<AuthUser> {
     const { user } = await apiClient.patch<{ user: AuthUser }>("/users/me", input);

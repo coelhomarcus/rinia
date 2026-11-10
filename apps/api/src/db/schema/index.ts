@@ -34,6 +34,7 @@ export * from "./issue-relations";
 export * from "./issues";
 export * from "./notifications";
 export * from "./oauth";
+export * from "./password-reset-tokens";
 export * from "./project-documents";
 export * from "./project-key-aliases";
 export * from "./project-members";

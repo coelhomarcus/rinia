@@ -1,4 +1,6 @@
 const settings = {
+        sendResetLink: "Enviar link de redefinição", sendResetLinkAction: "Enviar link", sendResetLinkHint: "Envia para {{email}} um link para a pessoa escolher a própria senha. Vale por 24 horas.",
+        sendResetLinkDescription: "{{name}} (@{{username}}) receberá em {{email}} um link para escolher uma nova senha. A senha atual continua valendo até o link ser usado.", resetLinkSent: "Link enviado para {{email}}.",
         general: "Geral", states: "Estados", members: "Membros", labels: "Etiquetas", manageDetails: "Gerencie os dados do projeto.",
         defineWorkflow: "Defina o fluxo de trabalho do projeto.", managePeople: "Gerencie as pessoas que trabalham neste projeto.",
         organizeIssues: "Organize e categorize suas tarefas.", fullName: "Nome completo", username: "Nome de usuário", email: "E-mail",

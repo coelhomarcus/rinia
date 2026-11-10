@@ -42,9 +42,14 @@ export class RealtimeHub {
         return connection;
     }
 
-    /** Closes every socket a person has open, as when an admin suspends them or signs them out everywhere. */
-    closeUser(userId: string) {
-        for (const connection of [...this.connections]) if (connection.user.id === userId) connection.socket.close?.(4401, "Session ended");
+    /**
+     * Closes every socket a person has open. `signOut` tells each tab its session is over, as when an admin suspends
+     * someone. `recheck` lets each tab reconnect, so a tab that still holds a valid session (the one that just changed
+     * the password) comes straight back while the others are refused.
+     */
+    closeUser(userId: string, mode: "signOut" | "recheck" = "signOut") {
+        const [code, reason] = mode === "signOut" ? [4401, "Session ended"] : [4001, "Session changed"];
+        for (const connection of [...this.connections]) if (connection.user.id === userId) connection.socket.close?.(code, reason);
     }
 
     disconnect(connection: RealtimeConnection) {

@@ -260,6 +260,13 @@
       "when": 1794278929086,
       "tag": "0036_user_suspension",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794279617855,
+      "tag": "0037_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { appBaseUrl } from "../../lib/app-url";
 import { logFor } from "../../lib/request-context";
+import { sendAdminResetLink } from "../auth/password.service";
 import { asyncHandler } from "../../middleware/async-handler";
-import { getAdminProject, getAdminUser, listAdminProjects, listAdminUsers, resetUserPassword, revokeUserSessions, updateAdminUser } from "./admin.service";
+import { assertNotSelf, getAdminProject, getAdminUser, listAdminProjects, listAdminUsers, resetUserPassword, revokeUserSessions, updateAdminUser } from "./admin.service";
 
 // Admins see every project, members included, so each look is recorded.
 export const listProjects = asyncHandler(async (_req, res) => {
@@ -50,4 +52,12 @@ export const resetPassword = asyncHandler<{ userId: string }>(async (req, res) =
     const password = await resetUserPassword(req.user!.sub, userId);
     logFor("audit").warn({ event: "admin.user_password_reset", targetUserId: userId }, "admin reset a user's password");
     res.json({ password });
+});
+
+export const sendResetLink = asyncHandler<{ userId: string }>(async (req, res) => {
+    const userId = userIdSchema.parse(req.params.userId);
+    assertNotSelf(req.user!.sub, userId);
+    const sent = await sendAdminResetLink(userId, appBaseUrl(req));
+    logFor("audit").warn({ event: "admin.user_reset_link_sent", targetUserId: userId }, "admin emailed a user a password reset link");
+    res.json(sent);
 });

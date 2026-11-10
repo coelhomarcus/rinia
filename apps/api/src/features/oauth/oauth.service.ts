@@ -19,10 +19,9 @@ const CODE_LIFETIME_MS = 10 * 60 * 1000;
 /** Scopes Rinia understands. `write` includes reading, as it does for API tokens. */
 export const OAUTH_SCOPES: ApiTokenAccess[] = ["read", "write"];
 
-/** Where Rinia is opened: APP_URL when set, otherwise the address the request came in on. */
-export function appBaseUrl(req: Request) {
-    return env.APP_URL ?? `${req.protocol}://${req.get("host")}`;
-}
+import { appBaseUrl } from "../../lib/app-url";
+
+export { appBaseUrl };
 
 const hashCode = (code: string) => createHash("sha256").update(code).digest("hex");
 

@@ -1,4 +1,6 @@
 const settings = {
+        sendResetLink: "Send reset link", sendResetLinkAction: "Send link", sendResetLinkHint: "Emails {{email}} a link to choose their own password. It works for 24 hours.",
+        sendResetLinkDescription: "{{name}} (@{{username}}) will get a link at {{email}} to choose a new password. The current password keeps working until the link is used.", resetLinkSent: "Link sent to {{email}}.",
         general: "General", states: "States", members: "Members", labels: "Labels", manageDetails: "Manage your project details.",
         defineWorkflow: "Define the workflow for your project.", managePeople: "Manage the people working on this project.",
         organizeIssues: "Organize and categorize your issues.", fullName: "Full name", username: "Username", email: "Email",

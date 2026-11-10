@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth, requireSession } from "../../middleware/auth.middleware";
 import { requireAdmin } from "../../middleware/admin.middleware";
-import { getProject, getUser, listProjects, listUsers, resetPassword, revokeSessions, updateUser } from "./admin.controller";
+import { getProject, getUser, listProjects, listUsers, resetPassword, revokeSessions, sendResetLink, updateUser } from "./admin.controller";
 
 export const adminRouter = Router();
 
@@ -14,3 +14,4 @@ adminRouter.get("/users/:userId", getUser);
 adminRouter.patch("/users/:userId", requireSession, updateUser);
 adminRouter.post("/users/:userId/sessions/revoke", requireSession, revokeSessions);
 adminRouter.post("/users/:userId/password", requireSession, resetPassword);
+adminRouter.post("/users/:userId/password-reset-email", requireSession, sendResetLink);
