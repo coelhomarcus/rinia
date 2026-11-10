@@ -10,7 +10,9 @@ import { urls, type ProjectSettingsSection } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
 
 const ProjectSettingsPage = lazy(() => import("@/pages/project-settings-page").then((module) => ({ default: module.ProjectSettingsPage })));
-const AdminSettingsPage = lazy(() => import("@/pages/admin-settings-page").then((module) => ({ default: module.AdminSettingsPage })));
+const AdminProjectsPage = lazy(() => import("@/pages/admin-projects-page").then((module) => ({ default: module.AdminProjectsPage })));
+const AdminUsersPage = lazy(() => import("@/pages/admin-users-page").then((module) => ({ default: module.AdminUsersPage })));
+const AdminUserPage = lazy(() => import("@/pages/admin-user-page").then((module) => ({ default: module.AdminUserPage })));
 const AdminProjectSettingsPage = lazy(() => import("@/pages/admin-project-settings-page").then((module) => ({ default: module.AdminProjectSettingsPage })));
 const ProfileSettingsPage = lazy(() => import("@/pages/profile-settings-page").then((module) => ({ default: module.ProfileSettingsPage })));
 const DesignSystemPage = lazy(() => import("@/pages/design-system-page").then((module) => ({ default: module.default })));
@@ -96,8 +98,12 @@ export const AppRoutes = () => {
                     {/* Where these pages lived before integrations had a catalog of their own. */}
                     <Route path="/settings/agent/tokens" element={<Navigate to={urls.apiTokens()} replace />} />
                     <Route path="/settings/agent/*" element={<Navigate to={urls.integrations()} replace />} />
-                    <Route path="/settings/admin" element={<AdminSettingsPage />} />
+                    {/* Administration was one page before it had a page for projects and one for users. */}
+                    <Route path="/settings/admin" element={<Navigate to={urls.adminProjects()} replace />} />
+                    <Route path="/settings/admin/projects" element={<AdminProjectsPage />} />
                     <Route path="/settings/admin/projects/:projectId" element={<AdminProjectSettingsPage />} />
+                    <Route path="/settings/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/settings/admin/users/:userId" element={<AdminUserPage />} />
                     <Route path="/settings/project/:projectKey" element={<ProjectRoute><ProjectSettingsPage /></ProjectRoute>} />
                     <Route path="/settings/project/:projectKey/:section" element={<ProjectRoute><ProjectSettingsPage /></ProjectRoute>} />
                     <Route path="/project/:projectKey" element={<ProjectRoute><ProjectOverviewPage /></ProjectRoute>} />

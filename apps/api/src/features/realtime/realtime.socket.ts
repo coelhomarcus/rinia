@@ -7,6 +7,7 @@ import { db } from "../../db";
 import { users } from "../../db/schema";
 import { SESSION_COOKIE_NAME } from "../../lib/cookies";
 import { type JwtPayload, verifyToken } from "../../lib/jwt";
+import { sessionRevoked } from "../auth/auth.service";
 import type { Logger } from "../../lib/logger";
 import { logFor } from "../../lib/request-context";
 import { HttpError } from "../../lib/http-error";
@@ -118,14 +119,14 @@ async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
     });
 
     const user = await db.query.users
-        .findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true } })
+        .findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true, suspendedAt: true, sessionsRevokedAt: true } })
         .catch((error: unknown) => {
             log.error({ event: "realtime.user_lookup_failed", err: error }, "could not load the user of a realtime socket");
             return undefined;
         });
-    if (!user) return ws.close(4401, "Invalid session");
+    if (!user || user.suspendedAt || sessionRevoked(session.iat, user.sessionsRevokedAt)) return ws.close(4401, "Invalid session");
     if (ws.readyState !== ws.OPEN) return;
-    connection = realtimeHub.connect(ws, user);
+    connection = realtimeHub.connect(ws, { id: user.id, name: user.name, username: user.username, avatarUrl: user.avatarUrl });
     log.info({ event: "realtime.connected", connections: realtimeHub.connections.size }, "realtime connected");
     // The session cookie outlives nothing: once the token expires, the socket closes and the client signs in again.
     if (session.exp) {

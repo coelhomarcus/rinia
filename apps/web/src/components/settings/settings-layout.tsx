@@ -148,12 +148,12 @@ export function SettingsRowIcon({ icon: Icon }: { icon: ComponentType<SVGProps<S
  * A row that opens another settings page, with an optional summary value before the chevron. `leading` replaces the
  * icon square when the item has its own picture, such as a project icon.
  */
-export function SettingsLinkRow({ to, icon, leading, title, description, value }: { to: string; title: string; description: string; value?: ReactNode } & ({ icon: ComponentType<SVGProps<SVGSVGElement>>; leading?: never } | { icon?: never; leading: ReactNode })) {
+export function SettingsLinkRow({ to, icon, leading, title, description, value }: { to: string; title: ReactNode; description: ReactNode; value?: ReactNode } & ({ icon: ComponentType<SVGProps<SVGSVGElement>>; leading?: never } | { icon?: never; leading: ReactNode })) {
     return (
         <Link to={to} className="group -mx-4 flex min-h-15 items-center gap-3 px-4 py-3 select-none first:rounded-t-lg last:rounded-b-lg hover:bg-layer-transparent-hover">
             {icon ? <SettingsRowIcon icon={icon} /> : leading}
             <span className="min-w-0 flex-1">
-                <span className="block text-md font-medium text-primary">{title}</span>
+                <span className="flex min-w-0 items-center gap-2 text-md font-medium text-primary">{title}</span>
                 <span className="block truncate text-xs text-tertiary">{description}</span>
             </span>
             {value !== undefined && <span className="shrink-0 text-[13px] text-tertiary">{value}</span>}

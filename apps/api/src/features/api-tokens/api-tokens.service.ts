@@ -65,9 +65,10 @@ export async function authenticateApiToken(token: string, now = new Date()): Pro
     const row = await db.query.apiTokens.findFirst({
         where: eq(apiTokens.tokenHash, hashApiToken(token)),
         columns: { id: true, access: true, lastUsedAt: true },
-        with: { user: { columns: { id: true, username: true, isAdmin: true } } },
+        with: { user: { columns: { id: true, username: true, isAdmin: true, suspendedAt: true } } },
     });
-    if (!row) return null;
+    // A suspended account's tokens stop working with it, and work again if it is restored.
+    if (!row || row.user.suspendedAt) return null;
     if (!row.lastUsedAt || now.getTime() - row.lastUsedAt.getTime() >= LAST_USED_PRECISION_MS) {
         await db
             .update(apiTokens)

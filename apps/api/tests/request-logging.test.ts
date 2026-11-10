@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
-import { afterAll, afterEach, beforeAll, beforeEach, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, mock, test } from "bun:test";
 import express, { Router } from "express";
 import { z } from "zod";
 
@@ -15,6 +15,7 @@ const { assignRequestId, logFor, requestContext } = await import("../src/lib/req
 const { accessLog, accessLogLevel } = await import("../src/middleware/access-log.middleware");
 const { asyncHandler } = await import("../src/middleware/async-handler");
 const { errorHandler } = await import("../src/middleware/error-handler.middleware");
+const { stubSessionAccounts } = await import("./fixtures/sessions");
 
 type Entry = Record<string, unknown> & { level: string; msg: string };
 let lines: string[] = [];
@@ -28,6 +29,7 @@ beforeEach(() => {
     setLogDestination({ write: (line: string) => void lines.push(line) });
 });
 afterEach(() => {
+    mock.restore();
     logger.level = previousLevel;
     setLogDestination();
 });
@@ -230,7 +232,8 @@ test("a request with a session cookie is logged with its user and how they signe
     const { signToken } = await import("../src/lib/jwt");
     const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
     const token = signToken({ sub: "8b2d1f66-0000-4000-8000-000000000001", username: "ana", isAdmin: false });
-    // Not an admin: refused before any database access, and logged as a refused permission.
+    // Not an admin: refused once the account is checked, and logged as a refused permission.
+    stubSessionAccounts();
     const response = await fetch(`${appBase}/api/admin/projects`, { headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` } });
     await settle();
     assert.equal(response.status, 403);

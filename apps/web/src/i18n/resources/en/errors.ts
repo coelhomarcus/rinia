@@ -4,7 +4,7 @@ const errors = {
         tooLarge: "This document is too large to save. Split its content into smaller pages.",
         projectNotFound: "Project not found", issueNotFound: "Issue not found", documentNotFound: "Document not found", viewNotFound: "View not found",
         notFound: "The requested item could not be found.", accountFieldInUse: "This {{field}} is already in use.", requestLimit: "Too many requests. Please try again later.",
-        incorrectCredentials: "Incorrect username or password", invalidSpecialCode: "Invalid special code", projectKeyInUse: "Project ID is already in use",
+        accountSuspended: "This account is suspended. Contact an admin.", ownAccount: "You cannot do this to your own account.", incorrectCredentials: "Incorrect username or password", invalidSpecialCode: "Invalid special code", projectKeyInUse: "Project ID is already in use",
         projectKeyLocked: "Project ID cannot change after the first issue is created", membershipRequired: "You are not a member of this project",
         permissionDenied: "You do not have permission to perform this action.", conflict: "This item was updated elsewhere. Refresh and try again.",
         tooManyLoginAttempts: "Too many login attempts. Try again in a few minutes.", tooManyRegistrationAttempts: "Too many registration attempts. Try again later.",

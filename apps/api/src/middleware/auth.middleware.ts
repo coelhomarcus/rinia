@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { authenticateApiToken } from "../features/api-tokens/api-tokens.service";
+import { sessionUser } from "../features/auth/auth.service";
 import { SESSION_COOKIE_NAME } from "../lib/cookies";
 import { verifyToken } from "../lib/jwt";
 import { identifyRequest, logFor } from "../lib/request-context";
@@ -48,14 +49,24 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
         return;
     }
 
+    let session;
     try {
-        req.user = verifyToken(token);
-        req.authMethod = "session";
-        identifyRequest(req);
-        next();
+        session = verifyToken(token);
     } catch {
         res.status(401).json({ error: "Invalid or expired session", code: "errors.invalidSession" });
+        return;
     }
+    // A suspended account, or one an admin signed out everywhere, loses its sessions at once.
+    const user = await sessionUser(session);
+    if (!user) {
+        logFor("auth").warn({ event: "auth.session_rejected", userId: session.sub, ip: req.ip }, "session of a suspended, signed-out or deleted account used");
+        res.status(401).json({ error: "Invalid or expired session", code: "errors.invalidSession" });
+        return;
+    }
+    req.user = user;
+    req.authMethod = "session";
+    identifyRequest(req);
+    next();
 });
 
 /** For actions only a signed-in person may take, never a script holding an API token. Runs after `requireAuth`. */

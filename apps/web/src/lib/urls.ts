@@ -31,6 +31,8 @@ export const urls = {
     integrations: () => "/settings/integrations",
     integration: (slug: string) => `/settings/integrations/${slug}`,
     apiTokens: () => "/settings/api-tokens",
-    admin: () => "/settings/admin",
+    adminProjects: () => "/settings/admin/projects",
     adminProject: (projectId: string) => `/settings/admin/projects/${projectId}`,
+    adminUsers: () => "/settings/admin/users",
+    adminUser: (userId: string) => `/settings/admin/users/${userId}`,
 };

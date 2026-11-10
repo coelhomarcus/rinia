@@ -253,6 +253,13 @@
       "when": 1794238698282,
       "tag": "0035_align_constraint_names",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794278929086,
+      "tag": "0036_user_suspension",
+      "breakpoints": true
     }
   ]
 }

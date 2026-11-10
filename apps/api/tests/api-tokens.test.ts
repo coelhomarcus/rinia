@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
-import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, mock, spyOn, test } from "bun:test";
 import { markdownToTiptap, tiptapToMarkdown } from "@rinia/shared";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
+import { stubSessionAccounts } from "./fixtures/sessions";
 
 // The app reads its settings on import; give it what it needs without a local .env.
 process.env.JWT_SECRET ??= "test-secret";
@@ -19,6 +20,8 @@ const { realtimeHub } = await import("../src/features/realtime/realtime.service"
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
+// Every account behind a session cookie exists and is active, unless a test says otherwise.
+beforeEach(() => void stubSessionAccounts());
 
 const memberProjectId = "8b2d1f66-0000-4000-8000-0000000000aa";
 const otherProjectId = "8b2d1f66-0000-4000-8000-0000000000bb";

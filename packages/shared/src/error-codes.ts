@@ -10,6 +10,8 @@ const messageCodes: Record<string, string> = {
     "View not found": "errors.viewNotFound",
     "Incorrect username or password": "errors.incorrectCredentials",
     "Invalid special code": "errors.invalidSpecialCode",
+    "This account is suspended": "errors.accountSuspended",
+    "You cannot do this to your own account": "errors.ownAccount",
     "Project key is already in use": "errors.projectKeyInUse",
     "Project key cannot change after the first issue is created": "errors.projectKeyLocked",
     "You are not a member of this project": "errors.membershipRequired",

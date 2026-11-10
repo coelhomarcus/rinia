@@ -9,6 +9,7 @@ import { assertProjectMembership } from "../../middleware/project-membership.mid
 /** The part of a WebSocket the hub uses, so tests can pass a plain object. */
 export interface RealtimeSocket {
     send(data: string): void;
+    close?(code?: number, reason?: string): void;
 }
 
 export interface RealtimeConnection {
@@ -39,6 +40,11 @@ export class RealtimeHub {
         const connection: RealtimeConnection = { socket, user, channels: new Map() };
         this.connections.add(connection);
         return connection;
+    }
+
+    /** Closes every socket a person has open, as when an admin suspends them or signs them out everywhere. */
+    closeUser(userId: string) {
+        for (const connection of [...this.connections]) if (connection.user.id === userId) connection.socket.close?.(4401, "Session ended");
     }
 
     disconnect(connection: RealtimeConnection) {

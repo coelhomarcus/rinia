@@ -18,7 +18,7 @@ export function AdminProjectSettingsPage() {
     const { projectId = "" } = useParams();
     const { data: project, isLoading, isError } = useAdminProject(user?.isAdmin ? projectId : "");
     if (!user?.isAdmin) return <NotFound />;
-    const back = { to: urls.admin(), label: t("nav.administration") };
+    const back = { to: urls.adminProjects(), label: t("nav.adminProjects") };
     if (isLoading) return <SettingsPage back={back}><LoadingState className="py-10" /></SettingsPage>;
     if (isError || !project) return <SettingsPage back={back}><ErrorMessage message={t("settings.couldNotLoadAdminProject")} /></SettingsPage>;
 

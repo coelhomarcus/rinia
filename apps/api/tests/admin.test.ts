@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
 import { db } from "../src/db";
+import { stubSessionAccounts } from "./fixtures/sessions";
 
 // The app reads its settings on import; give it what it needs without a local .env.
 process.env.JWT_SECRET ??= "test-secret";
@@ -28,8 +29,11 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-const get = (path: string, isAdmin: boolean) =>
-    fetch(`${baseUrl}/api${path}`, { headers: { Cookie: `${SESSION_COOKIE_NAME}=${signToken({ sub: adminId, username: "admin", isAdmin })}` } });
+/** Admin rights are read from the account on each request, so the cookie claims them and the account decides. */
+const get = (path: string, isAdmin: boolean) => {
+    stubSessionAccounts(isAdmin ? [adminId] : []);
+    return fetch(`${baseUrl}/api${path}`, { headers: { Cookie: `${SESSION_COOKIE_NAME}=${signToken({ sub: adminId, username: "admin", isAdmin: true })}` } });
+};
 
 /** Answers the per-project count queries: one issue count, one document count. */
 function stubCounts(issueCount: number, documentCount: number) {
@@ -95,4 +99,57 @@ test("a project's admin page lists its members and counts, and a missing project
 
     findFirst.mockImplementation((async () => undefined) as never);
     assert.equal((await get(`/admin/projects/${projectId}`, true)).status, 404);
+});
+
+const send = (method: string, path: string, body?: unknown) =>
+    fetch(`${baseUrl}/api${path}`, {
+        method,
+        headers: { "Content-Type": "application/json", Cookie: `${SESSION_COOKIE_NAME}=${signToken({ sub: adminId, username: "admin", isAdmin: true })}` },
+        body: body === undefined ? undefined : JSON.stringify(body),
+    });
+
+test("the user list shows who each person is and where they work, never a password", async () => {
+    stubSessionAccounts([adminId]);
+    const findMany = spyOn(db.query.users, "findMany").mockImplementation((async () => [
+        { id: ana.id, name: ana.name, username: "ana", email: "ana@rinia.local", avatarUrl: null, isAdmin: false, suspendedAt: null, createdAt: new Date(0) },
+    ]) as never);
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ groupBy: async () => [{ userId: ana.id, value: 4 }] }) })) as never);
+    const response = await send("GET", "/admin/users");
+    assert.equal(response.status, 200);
+    const { users } = (await response.json()) as { users: Array<Record<string, unknown>> };
+    assert.equal(users[0].projectCount, 4);
+    const columns = Object.keys((findMany.mock.calls[0][0] as { columns: object }).columns);
+    for (const field of ["passwordHash", "sessionsRevokedAt"]) assert.ok(!columns.includes(field), `must not read ${field}`);
+});
+
+test("admins cannot suspend, demote or reset their own account", async () => {
+    stubSessionAccounts([adminId]);
+    const update = spyOn(db, "update");
+    assert.equal((await send("PATCH", `/admin/users/${adminId}`, { suspended: true })).status, 403);
+    assert.equal((await send("PATCH", `/admin/users/${adminId}`, { isAdmin: false })).status, 403);
+    assert.equal((await send("POST", `/admin/users/${adminId}/password`)).status, 403);
+    assert.equal((await send("POST", `/admin/users/${adminId}/sessions/revoke`)).status, 403);
+    assert.equal(update.mock.calls.length, 0);
+    assert.equal((await send("PATCH", `/admin/users/${ana.id}`, {})).status, 400);
+});
+
+test("a reset password is returned once, stored hashed, and ends the person's sessions", async () => {
+    stubSessionAccounts([adminId]);
+    let saved: Record<string, unknown> = {};
+    spyOn(db, "update").mockImplementation((() => ({ set: (values: Record<string, unknown>) => ((saved = values), { where: () => ({ returning: async () => [{ id: ana.id }] }) }) })) as never);
+    const response = await send("POST", `/admin/users/${ana.id}/password`);
+    assert.equal(response.status, 200);
+    const { password } = (await response.json()) as { password: string };
+    assert.ok(password.length >= 12);
+    assert.notEqual(saved.passwordHash, password);
+    assert.ok(saved.sessionsRevokedAt instanceof Date);
+});
+
+test("a suspended account, or a session from before a sign-out everywhere, is refused", async () => {
+    const { sessionRevoked } = await import("../src/features/auth/auth.service");
+    spyOn(db.query.users, "findFirst").mockImplementation((async () => ({ id: adminId, isAdmin: true, suspendedAt: new Date(), sessionsRevokedAt: null })) as never);
+    assert.equal((await send("GET", "/admin/users")).status, 401);
+    assert.equal(sessionRevoked(100, new Date(101_000)), true);
+    assert.equal(sessionRevoked(101, new Date(101_000)), false);
+    assert.equal(sessionRevoked(100, null), false);
 });

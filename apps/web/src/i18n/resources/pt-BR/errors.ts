@@ -4,7 +4,7 @@ const errors = {
         tooLarge: "Este documento é grande demais para salvar. Divida o conteúdo em páginas menores.",
         projectNotFound: "Projeto não encontrado", issueNotFound: "Tarefa não encontrada", documentNotFound: "Documento não encontrado", viewNotFound: "View não encontrada",
         notFound: "O item solicitado não foi encontrado.", accountFieldInUse: "Este campo ({{field}}) já está em uso.", requestLimit: "Muitas solicitações. Tente novamente mais tarde.",
-        incorrectCredentials: "Usuário ou senha incorretos", invalidSpecialCode: "Código especial inválido", projectKeyInUse: "Este ID de projeto já está em uso",
+        accountSuspended: "Esta conta está suspensa. Fale com um administrador.", ownAccount: "Você não pode fazer isso com a sua própria conta.", incorrectCredentials: "Usuário ou senha incorretos", invalidSpecialCode: "Código especial inválido", projectKeyInUse: "Este ID de projeto já está em uso",
         projectKeyLocked: "O ID do projeto não pode ser alterado depois da criação da primeira tarefa", membershipRequired: "Você não é membro deste projeto",
         permissionDenied: "Você não tem permissão para realizar esta ação.", conflict: "Este item foi atualizado em outro lugar. Atualize e tente novamente.",
         tooManyLoginAttempts: "Muitas tentativas de acesso. Tente novamente em alguns minutos.", tooManyRegistrationAttempts: "Muitas tentativas de cadastro. Tente novamente mais tarde.",

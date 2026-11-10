@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { Blocks, ChevronDown, ChevronLeft, Circle, House, KeyRound, Layers, Plus, Search, ShieldCheck, SlidersHorizontal, SquarePen, UserRound, X } from "lucide-react";
+import { Blocks, ChevronDown, ChevronLeft, Circle, FolderKanban, House, KeyRound, Layers, Plus, Search, SlidersHorizontal, SquarePen, UserRound, UsersRound, X } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AppIcons } from "@/components/foundations/icons";
 import type { AppIcon } from "@/components/foundations/icons";
@@ -223,7 +223,8 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
     const integrationLinks = [link(urls.integrations(), t("nav.allIntegrations"), Blocks), link(urls.apiTokens(), t("nav.apiTokens"), KeyRound)].filter(Boolean);
     const projectLinks = (projects ?? []).filter((project) => matches(project.name));
     const projectGroups = groupProjectsByOwner(projectLinks, user?.id, t);
-    const admin = user?.isAdmin ? [link("/settings/admin", t("nav.administration"), ShieldCheck)].filter(Boolean) : [];
+    // Site admins oversee the whole instance: every project and every account on it.
+    const admin = user?.isAdmin ? [link(urls.adminProjects(), t("nav.adminProjects"), FolderKanban), link(urls.adminUsers(), t("nav.adminUsers"), UsersRound)].filter(Boolean) : [];
     const backProject = projects?.find((project) => project.id === projectId);
 
     return (

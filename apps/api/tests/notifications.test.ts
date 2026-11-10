@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
-import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, mock, spyOn, test } from "bun:test";
 import { PgDialect, PgSelectBase } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
+import { stubSessionAccounts } from "./fixtures/sessions";
 import { issueComments, issueSubscriptions, notifications } from "../src/db/schema";
 import { mentionedUserIds, newMentions, planIssueChange, plainTextExcerpt } from "../src/features/notifications/notifications.service";
 
@@ -17,6 +18,8 @@ const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
+// Every account behind a session cookie exists and is active, unless a test says otherwise.
+beforeEach(() => void stubSessionAccounts());
 
 const author = "1b6f0c2e-0000-4000-8000-000000000001";
 const creator = "1b6f0c2e-0000-4000-8000-000000000002";
