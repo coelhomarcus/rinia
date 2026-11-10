@@ -363,7 +363,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
             if (confirmation.type === "issue") {
                 const { deletedAt } = await deleteIssue.mutateAsync(confirmation.identifier);
                 const key = projects?.find((project) => project.id === confirmation.projectId)?.issueKey;
-                if (key) navigate(urls.issues(key), issueNavigation());
+                if (key) void navigate(urls.issues(key), issueNavigation());
                 showToast({
                     title: t("issue.deletedOne"),
                     action: {
@@ -376,7 +376,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                                     queryClient.invalidateQueries({ queryKey: ["my-issues"] }),
                                     queryClient.invalidateQueries({ queryKey: ["issues"] }),
                                 ]);
-                                navigate(urls.issue(confirmation.identifier, confirmation.title), issueNavigation(confirmation.title));
+                                void navigate(urls.issue(confirmation.identifier, confirmation.title), issueNavigation(confirmation.title));
                             } catch {
                                 showToast({ tone: "error", title: t("issue.couldNotUndo") });
                             }
@@ -399,7 +399,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                 await queryClient.invalidateQueries({ queryKey: ["favorites"] });
                 const deletedKey = projects?.find((project) => project.id === confirmation.projectId)?.issueKey;
                 if (deletedKey && location.pathname.startsWith(`${urls.documents(deletedKey)}/`) && location.pathname.endsWith(confirmation.documentId.replace(/-/g, "").slice(0, 12))) {
-                    navigate(urls.documents(deletedKey), { replace: true });
+                    void navigate(urls.documents(deletedKey), { replace: true });
                 }
                 showToast({
                     title: t("documents.pageDeleted"),
@@ -413,7 +413,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                                 queryClient.setQueryData(documentKey(confirmation.projectId, confirmation.documentId), restored);
                                 await queryClient.invalidateQueries({ queryKey: documentsKey(confirmation.projectId), exact: true });
                                 await queryClient.invalidateQueries({ queryKey: ["favorites"] });
-                                if (deletedKey) navigate(urls.document(deletedKey, restored));
+                                if (deletedKey) void navigate(urls.document(deletedKey, restored));
                             } catch {
                                 showToast({ tone: "error", title: t("issue.couldNotUndo") });
                             }

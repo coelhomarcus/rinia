@@ -47,7 +47,7 @@ export function ProjectRoute({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!project || project.issueKey === projectKey) return;
         const pathname = location.pathname.replace(/(\/project\/)[^/]+/, `$1${project.issueKey}`);
-        navigate(`${pathname}${location.search}`, { replace: true });
+        void navigate(`${pathname}${location.search}`, { replace: true });
     }, [location.pathname, location.search, navigate, project, projectKey]);
 
     if (!project) return projectsLoading || lookup.isLoading ? <LoadingState label={t("common.loadingPage")} className="p-6" /> : <NotFound />;

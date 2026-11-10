@@ -28,7 +28,7 @@ export function SidebarAccount({ variant = "icon" }: { variant?: "icon" | "row" 
                 });
             queryClient.setQueryData(AUTH_QUERY_KEY, null);
             queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== AUTH_QUERY_KEY[0] });
-            navigate("/login", { replace: true });
+            void navigate("/login", { replace: true });
         },
     });
     if (!user) return null;

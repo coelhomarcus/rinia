@@ -1,4 +1,5 @@
 import { AddOutline, ArrowNarrowRightOutline, SearchOutline, SettingsOutline } from "@makeplane/propel/icons";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
@@ -6,9 +7,8 @@ import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
-import { StateIcon } from "@/features/board/components/issue-property-icons";
 import { AppIcons } from "@/components/foundations/icons";
-import { useTranslation } from "react-i18next";
+import { StateIcon } from "@/features/board/components/issue-property-icons";
 
 export default function DesignSystemPage() {
     const { t } = useTranslation();
@@ -55,7 +55,11 @@ export default function DesignSystemPage() {
                                 { id: "done", label: t("designSystem.done"), icon: <StateIcon name="done" /> },
                             ]}
                         >
-                            {(item) => <Select.Item id={item.id} icon={item.icon}>{item.label}</Select.Item>}
+                            {(item) => (
+                                <Select.Item id={item.id} icon={item.icon}>
+                                    {item.label}
+                                </Select.Item>
+                            )}
                         </Select>
                         <Checkbox label={t("designSystem.includeCompleted")} defaultSelected />
                     </div>
@@ -74,27 +78,29 @@ export default function DesignSystemPage() {
                     <h2 className="text-sm font-medium">{t("designSystem.boardCard")}</h2>
                     <div className="w-80 rounded-lg bg-surface-2 p-2">
                         <div className="rounded-lg bg-surface-1 px-2 pb-2">
-                        <header className="flex h-10 items-center gap-2 px-0.5">
-                            <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
-                                <span className="bg-blue-600 size-3.5 rounded-full" />
-                                {t("designSystem.inProgress")}
-                            </span>
-                            <span className="text-xs text-tertiary">2</span>
-                            <span className="ml-auto">
-                                <ButtonUtility icon={ArrowNarrowRightOutline} tooltip={t("designSystem.columnActions")} size="xs" />
-                            </span>
-                        </header>
-                        <article className="rounded-md border border-subtle bg-surface-1 px-3 py-3">
-                            <span className="text-[11px] font-medium tracking-wide text-tertiary">PLAT-12</span>
-                            <h3 className="mt-1 text-[13px] leading-5 font-medium">{t("designSystem.buildWorkspace")}</h3>
-                            <div className="mt-2 flex items-center gap-2">
-                                <span className="inline-flex h-[22px] items-center gap-1 rounded-md border border-subtle px-1.5 text-[11px] text-secondary">{t("designSystem.inProgress")}</span>
-                            </div>
-                            <span className="mt-2 inline-flex items-center gap-2 text-[11px] text-secondary">
-                                <span className="size-2 rounded-[2px] bg-accent-primary" />
-                                {t("designSystem.design")}
-                            </span>
-                        </article>
+                            <header className="flex h-10 items-center gap-2 px-0.5">
+                                <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
+                                    <span className="bg-blue-600 size-3.5 rounded-full" />
+                                    {t("designSystem.inProgress")}
+                                </span>
+                                <span className="text-xs text-tertiary">2</span>
+                                <span className="ml-auto">
+                                    <ButtonUtility icon={ArrowNarrowRightOutline} tooltip={t("designSystem.columnActions")} size="xs" />
+                                </span>
+                            </header>
+                            <article className="rounded-md border border-subtle bg-surface-1 px-3 py-3">
+                                <span className="text-[11px] font-medium tracking-wide text-tertiary">PLAT-12</span>
+                                <h3 className="mt-1 text-[13px] leading-5 font-medium">{t("designSystem.buildWorkspace")}</h3>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="inline-flex h-[22px] items-center gap-1 rounded-md border border-subtle px-1.5 text-[11px] text-secondary">
+                                        {t("designSystem.inProgress")}
+                                    </span>
+                                </div>
+                                <span className="mt-2 inline-flex items-center gap-2 text-[11px] text-secondary">
+                                    <span className="size-2 rounded-[2px] bg-accent-primary" />
+                                    {t("designSystem.design")}
+                                </span>
+                            </article>
                         </div>
                     </div>
                 </section>

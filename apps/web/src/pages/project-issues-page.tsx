@@ -402,17 +402,17 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     }
 
     function openIssue(identifier: string, title?: string) {
-        navigate(urls.issue(identifier), issueNavigation(title ?? issues?.find((issue) => issue.identifier === identifier)?.title));
+        void navigate(urls.issue(identifier), issueNavigation(title ?? issues?.find((issue) => issue.identifier === identifier)?.title));
     }
 
     function setScope(next: Scope) {
         // A saved view keeps its own scope; the scope pills lead back to the plain issue list.
         if (savedView) {
-            navigate(urls.issues(projectKey, next));
+            void navigate(urls.issues(projectKey, next));
             return;
         }
         const query = searchParams.toString();
-        navigate(`${urls.issues(projectKey, next)}${query ? `?${query}` : ""}`, { replace: true });
+        void navigate(`${urls.issues(projectKey, next)}${query ? `?${query}` : ""}`, { replace: true });
     }
 
     return (

@@ -78,7 +78,7 @@ export function useViewActions({
                 onSuccess: (view) => {
                     closeDialog();
                     showToast({ title: t("views.saved") });
-                    openView(view);
+                    void openView(view);
                 },
                 onError: (reason) => setError(message(reason)),
             },
@@ -94,7 +94,7 @@ export function useViewActions({
                 onSuccess: (view) => {
                     closeDialog();
                     // The name is part of the address, so keep the link tidy without leaving the screen as it is.
-                    navigate({ pathname: urls.view(projectKey, view), search: location.search }, { replace: true });
+                    void navigate({ pathname: urls.view(projectKey, view), search: location.search }, { replace: true });
                 },
                 onError: (reason) => setError(message(reason)),
             },
@@ -127,7 +127,7 @@ export function useViewActions({
             {
                 onSuccess: (view) => {
                     showToast({ title: t("views.duplicated") });
-                    openView(view);
+                    void openView(view);
                 },
                 onError: (reason) => showToast({ tone: "error", title: message(reason) }),
             },

@@ -112,9 +112,9 @@ export function useUpdateMyIssue() {
             showToast({ tone: "error", title: error instanceof ApiError ? error.message : t("errors.requestFailed") });
         },
         onSettled: (_data, _error, { issue }) => {
-            queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: ["projects", issue.projectId, "issues"] });
-            queryClient.invalidateQueries({ queryKey: issueKey(issue.identifier) });
+            void queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: ["projects", issue.projectId, "issues"] });
+            void queryClient.invalidateQueries({ queryKey: issueKey(issue.identifier) });
         },
     });
 }
@@ -203,9 +203,9 @@ export function useUpdateIssue(projectId: string) {
         onSuccess: (issue) => {
             const { createdBy: _createdBy, ...updatedFields } = issue;
             queryClient.setQueryData<IssueDetail>(issueKey(issue.identifier), (current) => (current ? { ...current, ...updatedFields } : current));
-            queryClient.invalidateQueries({ queryKey: ["projects", projectId, "issues"] });
-            queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: issueKey(issue.identifier) });
+            void queryClient.invalidateQueries({ queryKey: ["projects", projectId, "issues"] });
+            void queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: issueKey(issue.identifier) });
         },
         // Invalidating the issue also refreshes whether you follow it, which assigning or mentioning can change.
         onSettled: (_data, _error, variables) => queryClient.invalidateQueries({ queryKey: issueKey(variables.identifier) }),
@@ -271,7 +271,7 @@ export function useCreateIssueComment(identifier: string) {
         onSuccess: (comment, _input, context) => {
             queryClient.setQueryData<IssueComment[]>(commentsKey, (current) => current?.map((item) => (item.id === context?.pendingId ? comment : item)));
             // Commenting makes you follow the issue.
-            queryClient.invalidateQueries({ queryKey: [...issueKey(identifier), "subscription"] });
+            void queryClient.invalidateQueries({ queryKey: [...issueKey(identifier), "subscription"] });
         },
         onSettled: () => queryClient.invalidateQueries({ queryKey: commentsKey }),
     });
@@ -386,8 +386,8 @@ export function useRestoreDescriptionRevision(identifier: string) {
     return useMutation({
         mutationFn: (revisionId: string) => restoreDescriptionRevision(identifier, revisionId),
         onSuccess: (issue) => {
-            queryClient.invalidateQueries({ queryKey: issueKey(identifier) });
-            queryClient.invalidateQueries({ queryKey: ["projects", issue.projectId, "issues"] });
+            void queryClient.invalidateQueries({ queryKey: issueKey(identifier) });
+            void queryClient.invalidateQueries({ queryKey: ["projects", issue.projectId, "issues"] });
         },
     });
 }
@@ -439,10 +439,10 @@ export function useBulkUpdateIssues(projectId: string) {
             context?.previousDetails.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: lists });
-            queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: ["favorites"] });
-            queryClient.invalidateQueries({ queryKey: ["issues"] });
+            void queryClient.invalidateQueries({ queryKey: lists });
+            void queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+            void queryClient.invalidateQueries({ queryKey: ["issues"] });
         },
     });
 }
@@ -464,10 +464,10 @@ export function useBulkDeleteIssues(projectId: string) {
         },
         onError: (_error, _variables, context) => context?.previous.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data)),
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: lists });
-            queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: ["favorites"] });
-            queryClient.invalidateQueries({ queryKey: ["issues"] });
+            void queryClient.invalidateQueries({ queryKey: lists });
+            void queryClient.invalidateQueries({ queryKey: MY_ISSUES_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: ["favorites"] });
+            void queryClient.invalidateQueries({ queryKey: ["issues"] });
         },
     });
 }

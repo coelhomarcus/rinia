@@ -97,8 +97,8 @@ export function useToggleIssueSubscription(identifier: string) {
             showToast({ tone: "error", title: error instanceof ApiError ? error.message : t("errors.requestFailed") });
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: subscriptionKey(identifier) });
-            queryClient.invalidateQueries({ queryKey: ["my-issues"] });
+            void queryClient.invalidateQueries({ queryKey: subscriptionKey(identifier) });
+            void queryClient.invalidateQueries({ queryKey: ["my-issues"] });
         },
     });
 }

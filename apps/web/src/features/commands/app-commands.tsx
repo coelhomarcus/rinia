@@ -66,9 +66,9 @@ export function AppCommandsProvider({ children }: { children: ReactNode }) {
         { enableOnFormTags: true, enableOnContentEditable: true, eventListenerOptions: { capture: true } },
     );
     useHotkeys("c", () => createIssue(), globalHotkey, [createIssue]);
-    useHotkeys("g>i", () => navigate(urls.inbox()), globalHotkey);
-    useHotkeys("g>m", () => navigate(urls.myIssues()), globalHotkey);
-    useHotkeys("g>s", () => navigate("/settings/profile"), globalHotkey);
+    useHotkeys("g>i", () => void navigate(urls.inbox()), globalHotkey);
+    useHotkeys("g>m", () => void navigate(urls.myIssues()), globalHotkey);
+    useHotkeys("g>s", () => void navigate("/settings/profile"), globalHotkey);
 
     // `?new=issue` (the installed app's "New issue" shortcut) opens the new-issue modal once the projects are known.
     const [searchParams, setSearchParams] = useSearchParams();

@@ -8,6 +8,7 @@
         "build": "tsc -b && vite build",
         "preview": "vite preview",
         "typecheck": "tsc -b --noEmit",
+        "lint": "eslint .",
         "test:unit": "bun test tests/",
         "check:ui-scale": "bun scripts/check-ui-scale.mjs",
         "check:design-system": "bun scripts/check-design-system.mjs"
@@ -59,13 +60,10 @@
         "yjs": "13.6.33"
     },
     "devDependencies": {
-        "@trivago/prettier-plugin-sort-imports": "^6.0.2",
         "@types/node": "^25.5.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.1",
-        "prettier": "^3.8.1",
-        "prettier-plugin-tailwindcss": "^0.7.2",
         "react-grab": "^0.2.0",
         "typescript": "^5.9.3",
         "vite": "^8.0.2"

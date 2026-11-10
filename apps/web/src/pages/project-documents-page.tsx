@@ -45,7 +45,7 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
     async function addPage() {
         try {
             const page = await create.mutateAsync({});
-            navigate(urls.document(projectKey, page));
+            void navigate(urls.document(projectKey, page));
         } catch {
             /* The mutation error is displayed below. */
         }
@@ -135,7 +135,7 @@ export function ProjectDocumentPage() {
     // The slug follows the title, so renaming a page updates the address bar without reloading the editor.
     const canonicalUrl = page ? urls.document(projectKey, page) : null;
     useEffect(() => {
-        if (canonicalUrl && location.pathname !== canonicalUrl) navigate(`${canonicalUrl}${location.search}`, { replace: true });
+        if (canonicalUrl && location.pathname !== canonicalUrl) void navigate(`${canonicalUrl}${location.search}`, { replace: true });
     }, [canonicalUrl, location.pathname, location.search, navigate]);
     return (
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
@@ -221,7 +221,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
             client.removeQueries({ queryKey: documentKey(page.projectId, page.id) });
             void client.invalidateQueries({ queryKey: documentsKey(page.projectId), exact: true });
             void client.invalidateQueries({ queryKey: ["favorites"] });
-            navigate(urls.documents(projectKey), { replace: true });
+            void navigate(urls.documents(projectKey), { replace: true });
             showToast({
                 title: t("documents.pageDeleted"),
                 action: {
@@ -234,7 +234,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                             client.setQueryData(documentKey(page.projectId, page.id), restored);
                             await client.invalidateQueries({ queryKey: documentsKey(page.projectId), exact: true });
                             await client.invalidateQueries({ queryKey: ["favorites"] });
-                            navigate(urls.document(projectKey, restored));
+                            void navigate(urls.document(projectKey, restored));
                         } catch {
                             showToast({ tone: "error", title: t("issue.couldNotUndo") });
                         }

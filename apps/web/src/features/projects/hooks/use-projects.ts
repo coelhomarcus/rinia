@@ -18,7 +18,7 @@ export function useCreateProject() {
     return useMutation({
         mutationFn: createProject,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
         },
     });
 }
@@ -71,7 +71,7 @@ export function useDeleteProject(project: Pick<Project, "id" | "issueKey">) {
         mutationFn: () => deleteProject(project.id),
         onSuccess: async () => {
             if (user) await clearDocumentDrafts(user.id, project.id).catch(() => console.warn("Could not clear local drafts for the deleted project."));
-            navigate("/", { replace: true, flushSync: true });
+            void navigate("/", { replace: true, flushSync: true });
             const filters = {
                 predicate: (query: { queryKey: readonly unknown[] }) =>
                     (query.queryKey[0] === "projects" && query.queryKey[1] === project.id) ||
@@ -104,8 +104,8 @@ export function useUpdateProjectPage(projectId: string) {
             }
         },
         onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
-            queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
+            void queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+            void queryClient.invalidateQueries({ queryKey: projectQueryKey(projectId) });
         },
     });
 }

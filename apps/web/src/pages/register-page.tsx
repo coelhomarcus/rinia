@@ -30,7 +30,7 @@ export const RegisterPage = () => {
         mutationFn: register,
         onSuccess: (authUser) => {
             queryClient.setQueryData(AUTH_QUERY_KEY, authUser);
-            navigate(returnPath(location), { replace: true });
+            void navigate(returnPath(location), { replace: true });
         },
         onError: (error) => {
             setError("root", { message: error instanceof ApiError ? error.message : t("auth.unableToCreateAccount") });

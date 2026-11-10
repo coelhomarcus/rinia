@@ -37,7 +37,7 @@ export const ProjectOverviewPage = () => {
 
     async function addDocument() {
         const page = await createDocument.mutateAsync({});
-        navigate(urls.document(projectKey, page));
+        void navigate(urls.document(projectKey, page));
     }
 
     return (

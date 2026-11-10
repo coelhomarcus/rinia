@@ -32,7 +32,7 @@ export const ResetPasswordPage = () => {
         onSuccess: () => {
             // Every session ended with the old password, this browser's included.
             queryClient.setQueryData(AUTH_QUERY_KEY, null);
-            navigate("/login", { replace: true, state: { notice: "passwordReset" } });
+            void navigate("/login", { replace: true, state: { notice: "passwordReset" } });
         },
         onError: (error) => setError("root", { message: error instanceof ApiError ? error.message : t("auth.couldNotResetPassword") }),
     });

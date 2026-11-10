@@ -142,7 +142,7 @@ export const IssueView = () => {
     const canonicalUrl = issue ? urls.issue(issue.identifier, issue.title) : null;
     useEffect(() => {
         if (!canonicalUrl || location.pathname === canonicalUrl) return;
-        navigate(`${canonicalUrl}${location.search}`, { replace: true });
+        void navigate(`${canonicalUrl}${location.search}`, { replace: true });
     }, [canonicalUrl, location.pathname, location.search, navigate]);
     const [relationsOpen, setRelationsOpen] = useState(false);
     const [description, setDescription] = useState<TiptapDocument>(EMPTY_TIPTAP_DOCUMENT);
@@ -664,7 +664,7 @@ export const IssueView = () => {
                                         const key = descriptionDraftKey.current;
                                         if (key) void issueDescriptionDrafts.clearDescription(key).catch(() => undefined);
                                         descriptionDirty.current = false;
-                                        navigate(urls.issue(created.identifier, created.title), issueNavigation(created.title));
+                                        void navigate(urls.issue(created.identifier, created.title), issueNavigation(created.title));
                                     } catch (reason) {
                                         setDescriptionSaveError(errorMessage(reason, t("issue.couldNotSaveIssue")));
                                     }
@@ -784,7 +784,7 @@ export const IssueView = () => {
                 isPending={deleteIssue.isPending}
                 onConfirm={() => deleteIssue.mutate(issue.identifier, {
                     onSuccess: ({ deletedAt }) => {
-                        navigate(urls.issues(issue.project.issueKey), issueNavigation());
+                        void navigate(urls.issues(issue.project.issueKey), issueNavigation());
                         showToast({
                             title: t("issue.deletedOne"),
                             action: {
@@ -797,7 +797,7 @@ export const IssueView = () => {
                                             queryClient.invalidateQueries({ queryKey: ["my-issues"] }),
                                             queryClient.invalidateQueries({ queryKey: ["issues"] }),
                                         ]);
-                                        navigate(urls.issue(issue.identifier, issue.title), issueNavigation(issue.title));
+                                        void navigate(urls.issue(issue.identifier, issue.title), issueNavigation(issue.title));
                                     } catch {
                                         showToast({ tone: "error", title: t("issue.couldNotUndo") });
                                     }

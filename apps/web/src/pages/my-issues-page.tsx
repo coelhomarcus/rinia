@@ -117,7 +117,7 @@ export const MyIssuesPage = () => {
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
-                navigate(urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title), issueNavigation(orderedIssues[currentIndex].title));
+                void navigate(urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title), issueNavigation(orderedIssues[currentIndex].title));
             }
             if (event.key === "Escape") setSelectedIssueId(null);
         }
@@ -144,7 +144,7 @@ export const MyIssuesPage = () => {
     function setFilter(next: MyIssuesFilter) {
         setSelectedIssueId(null);
         const query = searchParams.toString();
-        navigate(`${urls.myIssues(next)}${query ? `?${query}` : ""}`, { replace: true });
+        void navigate(`${urls.myIssues(next)}${query ? `?${query}` : ""}`, { replace: true });
     }
 
     /** Says what is empty: the filters that match nothing, or the tab itself. */

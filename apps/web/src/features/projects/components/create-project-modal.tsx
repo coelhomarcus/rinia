@@ -80,7 +80,7 @@ export const CreateProjectModal = ({ trigger }: { trigger?: ReactNode }) => {
                             clearImage();
                             reset();
                             close();
-                            navigate(urls.project(project.issueKey));
+                            void navigate(urls.project(project.issueKey));
                         } catch (error) {
                             setError(error instanceof ApiError && error.status === 409 ? "issueKey" : "root", {
                                 message: error instanceof ApiError ? error.message : t("projects.couldNotCreate"),

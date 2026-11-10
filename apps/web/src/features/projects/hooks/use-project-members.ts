@@ -29,7 +29,7 @@ export function useAddProjectMember(projectId: string) {
     return useMutation({
         mutationFn: (username: string) => addProjectMember(projectId, username),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: membersQueryKey(projectId) });
+            void queryClient.invalidateQueries({ queryKey: membersQueryKey(projectId) });
         },
     });
 }
@@ -40,7 +40,7 @@ export function useRemoveProjectMember(projectId: string) {
     return useMutation({
         mutationFn: (userId: string) => removeProjectMember(projectId, userId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: membersQueryKey(projectId) });
+            void queryClient.invalidateQueries({ queryKey: membersQueryKey(projectId) });
         },
     });
 }

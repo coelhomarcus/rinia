@@ -116,7 +116,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
             { id: "shortcuts", group: "actions", title: t("commands.showShortcuts"), keywords: "keyboard teclado help ajuda", icon: <Keyboard className={icon} />, shortcut: shortcutKeys("help"), run: close(onShowShortcuts) },
         );
 
-        const go = (path: string, title?: string) => close(() => navigate(path, issueNavigation(title)));
+        const go = (path: string, title?: string) => close(() => void navigate(path, issueNavigation(title)));
         list.push(
             { id: "inbox", group: "navigation", title: t("commands.goInbox"), icon: <AppIcons.Inbox className={icon} />, shortcut: shortcutKeys("inbox"), run: go(urls.inbox()) },
             { id: "my-issues", group: "navigation", title: t("commands.goMyIssues"), icon: <AppIcons.MyIssues className={icon} />, shortcut: shortcutKeys("my-issues"), run: go(urls.myIssues()) },
