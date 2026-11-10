@@ -32,6 +32,7 @@ const ProjectOverviewPage = lazy(() => import("@/pages/project-overview-page").t
 const IntegrationsSettingsPage = lazy(() => import("@/pages/integrations-settings-page").then((module) => ({ default: module.IntegrationsSettingsPage })));
 const IntegrationSettingsPage = lazy(() => import("@/pages/integration-settings-page").then((module) => ({ default: module.IntegrationSettingsPage })));
 const ApiTokensSettingsPage = lazy(() => import("@/pages/api-tokens-settings-page").then((module) => ({ default: module.ApiTokensSettingsPage })));
+const SecuritySettingsPage = lazy(() => import("@/pages/security-settings-page").then((module) => ({ default: module.SecuritySettingsPage })));
 const PreferencesSettingsPage = lazy(() => import("@/pages/preferences-settings-page").then((module) => ({ default: module.PreferencesSettingsPage })));
 const OAuthConsentPage = lazy(() => import("@/pages/oauth-consent-page").then((module) => ({ default: module.OAuthConsentPage })));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password-page").then((module) => ({ default: module.ForgotPasswordPage })));
@@ -98,6 +99,7 @@ export const AppRoutes = () => {
                     <Route path="/my-issues/:filter" element={<MyIssuesPage />} />
                     <Route path="/settings/profile" element={<ProfileSettingsPage />} />
                     <Route path="/settings/preferences" element={<PreferencesSettingsPage />} />
+                    <Route path="/settings/security" element={<SecuritySettingsPage />} />
                     <Route path="/settings/integrations" element={<IntegrationsSettingsPage />} />
                     <Route path="/settings/integrations/:slug" element={<IntegrationSettingsPage />} />
                     <Route path="/settings/api-tokens" element={<ApiTokensSettingsPage />} />

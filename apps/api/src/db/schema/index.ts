@@ -17,6 +17,7 @@ import { projectDocuments } from "./project-documents";
 import { projectKeyAliases } from "./project-key-aliases";
 import { projectMembers } from "./project-members";
 import { projects } from "./projects";
+import { sessions } from "./sessions";
 import { users } from "./users";
 import { views } from "./views";
 
@@ -41,6 +42,7 @@ export * from "./project-key-aliases";
 export * from "./project-members";
 export * from "./projects";
 export * from "./project-view-preferences";
+export * from "./sessions";
 export * from "./users";
 export * from "./views";
 
@@ -54,6 +56,11 @@ export const usersRelations = relations(users, ({ many }) => ({
     activities: many(issueActivities),
     apiTokens: many(apiTokens),
     files: many(files),
+    sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+    user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
 export const apiTokensRelations = relations(apiTokens, ({ one }) => ({

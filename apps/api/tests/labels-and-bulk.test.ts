@@ -5,7 +5,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { bulkUpdateIssuesSchema, issueListQuerySchema, nextLabels, positionsAtTop, updateIssueSchema } from "@rinia/shared";
 import { db } from "../src/db";
-import { stubSessionAccounts } from "./fixtures/sessions";
+import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
 import { issueActivities, issueLabels, issues } from "../src/db/schema";
 import { bulkDeleteIssues, listIssues, updateIssue } from "../src/features/issues/issues.service";
 import { HttpError } from "../src/lib/http-error";
@@ -15,7 +15,6 @@ process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { app } = await import("../src/app");
-const { signToken } = await import("../src/lib/jwt");
 const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
@@ -47,7 +46,7 @@ afterAll(() => server.close());
 function call(method: string, path: string, body?: unknown) {
     return fetch(`${baseUrl}/api${path}`, {
         method,
-        headers: { "Content-Type": "application/json", Cookie: `${SESSION_COOKIE_NAME}=${signToken({ sub: ana, username: "ana", isAdmin: false })}` },
+        headers: { "Content-Type": "application/json", Cookie: sessionCookie(ana) },
         body: body === undefined ? undefined : JSON.stringify(body),
     });
 }

@@ -274,6 +274,13 @@
       "when": 1794280545488,
       "tag": "0038_email_change_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794281169238,
+      "tag": "0039_sessions",
+      "breakpoints": true
     }
   ]
 }

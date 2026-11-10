@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { authenticateApiToken } from "../features/api-tokens/api-tokens.service";
-import { sessionUser } from "../features/auth/auth.service";
+import { resolveSession } from "../features/auth/sessions.service";
 import { SESSION_COOKIE_NAME } from "../lib/cookies";
 import { verifyToken } from "../lib/jwt";
 import { identifyRequest, logFor } from "../lib/request-context";
@@ -56,10 +56,10 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
         res.status(401).json({ error: "Invalid or expired session", code: "errors.invalidSession" });
         return;
     }
-    // A suspended account, or one an admin signed out everywhere, loses its sessions at once.
-    const user = await sessionUser(session);
+    // A revoked session, or a suspended account, is refused even while its token has not expired.
+    const user = await resolveSession(session);
     if (!user) {
-        logFor("auth").warn({ event: "auth.session_rejected", userId: session.sub, ip: req.ip }, "session of a suspended, signed-out or deleted account used");
+        logFor("auth").warn({ event: "auth.session_rejected", userId: session.sub, sessionId: session.sid, ip: req.ip }, "revoked or expired session used");
         res.status(401).json({ error: "Invalid or expired session", code: "errors.invalidSession" });
         return;
     }

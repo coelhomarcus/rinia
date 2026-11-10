@@ -4,13 +4,13 @@ import type { Server } from "node:http";
 import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
+import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
 
 // The app reads its settings on import; give it what it needs without a local .env.
 process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { app } = await import("../src/app");
-const { signToken } = await import("../src/lib/jwt");
 const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 const { generateApiToken, hashApiToken } = await import("../src/features/api-tokens/api-tokens.service");
 const { accessForScopes } = await import("../src/features/oauth/oauth.service");
@@ -58,7 +58,7 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-const session = `${SESSION_COOKIE_NAME}=${signToken({ sub: ana.id, username: ana.username, isAdmin: false })}`;
+const session = sessionCookie(ana.id);
 const mcp = (secret: string, body: object) =>
     fetch(`${baseUrl}/api/mcp`, { method: "POST", headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json", Accept: "application/json, text/event-stream" }, body: JSON.stringify(body) });
 

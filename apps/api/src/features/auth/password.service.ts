@@ -7,7 +7,7 @@ import { EmailError, sendEmail } from "../../lib/email";
 import { HttpError } from "../../lib/http-error";
 import { hashPassword, verifyPassword } from "../../lib/password";
 import { logFor } from "../../lib/request-context";
-import { realtimeHub } from "../realtime/realtime.service";
+import { revokeSessions } from "./sessions.service";
 import { passwordChangedEmail, passwordResetEmail } from "./auth.emails";
 
 /** A link someone asked for lasts an hour; one an admin sends lasts a day, since it may wait in an inbox. */
@@ -69,10 +69,11 @@ export async function sendAdminResetLink(userId: string, baseUrl: string) {
     return { email: user.email };
 }
 
-/** Saves a new password and ends every session issued before now, then tells the person by email. */
-async function setPassword(user: { id: string; name: string; username: string; email: string; locale: string }, password: string) {
+/** Saves a new password and revokes every session but `keepSession`, then tells the person by email. */
+async function setPassword(user: { id: string; name: string; username: string; email: string; locale: string }, password: string, keepSession?: string) {
     const changedAt = new Date();
-    await db.update(users).set({ passwordHash: await hashPassword(password), sessionsRevokedAt: changedAt, updatedAt: changedAt }).where(eq(users.id, user.id));
+    await db.update(users).set({ passwordHash: await hashPassword(password), updatedAt: changedAt }).where(eq(users.id, user.id));
+    await revokeSessions(user.id, { except: keepSession });
     void sendEmail(passwordChangedEmail(user, changedAt)).catch(() => undefined);
 }
 
@@ -89,21 +90,17 @@ export async function resetPassword(token: string, password: string) {
     const user = await db.query.users.findFirst({ where: eq(users.id, used.userId), columns: RECIPIENT });
     if (!user || user.suspendedAt) throw new HttpError(400, "This link is invalid or has expired");
     await setPassword(user, password);
-    realtimeHub.closeUser(user.id);
     // Any other link still in the inbox would undo this change, so they stop working too.
     await db.delete(passwordResetTokens).where(and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt)));
     logFor("auth").info({ event: "auth.password_reset", userId: user.id }, "password reset with an emailed link");
 }
 
-/**
- * Changes the password from the profile, after checking the current one. The caller gives this browser a fresh
- * session and then has every socket reconnect, so only the other devices are signed out.
- */
-export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+/** Changes the password from the profile, after checking the current one. Every other session is revoked; this one stays. */
+export async function changePassword(userId: string, currentPassword: string, newPassword: string, currentSession?: string) {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { ...RECIPIENT, passwordHash: true } });
     if (!user) throw new HttpError(404, "User not found");
     if (!(await verifyPassword(currentPassword, user.passwordHash))) throw new HttpError(400, "The current password is incorrect");
-    await setPassword(user, newPassword);
+    await setPassword(user, newPassword, currentSession);
     await db.delete(passwordResetTokens).where(and(eq(passwordResetTokens.userId, user.id), isNull(passwordResetTokens.usedAt)));
     logFor("auth").info({ event: "auth.password_changed", userId: user.id }, "password changed from the profile");
 }

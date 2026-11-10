@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
 import { PRESENCE_TTL_MS, REALTIME_CLIENT_HEADER, REALTIME_PATH, realtimeClientMessageSchema, type RealtimeServerMessage } from "@rinia/shared";
 import WebSocket from "ws";
 import { db } from "../src/db";
+import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
 import { HttpError } from "../src/lib/http-error";
 
 // The app reads its settings on import; give it what it needs without a local .env.
@@ -11,7 +12,6 @@ process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { app } = await import("../src/app");
-const { signToken } = await import("../src/lib/jwt");
 const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 const { attachRealtime, sameOrigin, sessionToken } = await import("../src/features/realtime/realtime.socket");
 const { RealtimeHub, authorizeChannel, channelsFor, realtimeHub } = await import("../src/features/realtime/realtime.service");
@@ -197,7 +197,7 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-const cookieFor = (user: typeof ana) => `${SESSION_COOKIE_NAME}=${signToken({ sub: user.id, username: user.username, isAdmin: false })}`;
+const cookieFor = (user: typeof ana) => sessionCookie(user.id);
 
 /** Opens a socket and collects what the server sends, with a way to wait for a message. */
 function connect(headers: Record<string, string>) {
@@ -229,6 +229,7 @@ test("a socket without a session cookie is refused", async () => {
 });
 
 test("over a real socket, another member sees a saved document at once, tagged with the tab that saved it", async () => {
+    stubSessionAccounts();
     spyOn(db.query.users, "findFirst").mockImplementation(async () => ({ ...bruno, locale: "en" }) as never);
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: projectId }) as never);
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ id: "membership", role: "member" }) as never);

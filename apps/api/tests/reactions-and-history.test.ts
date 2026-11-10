@@ -5,7 +5,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { commentReactionSchema } from "@rinia/shared";
 import { db } from "../src/db";
-import { stubSessionAccounts } from "./fixtures/sessions";
+import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
 import { commentReactions, issueDescriptionRevisions } from "../src/db/schema";
 import { DESCRIPTION_REVISION_WINDOW_MS, recordDescriptionRevision, restoreDescriptionRevision } from "../src/features/issues/issues.service";
 import { HttpError } from "../src/lib/http-error";
@@ -15,7 +15,6 @@ process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { app } = await import("../src/app");
-const { signToken } = await import("../src/lib/jwt");
 const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
@@ -44,7 +43,7 @@ beforeAll(async () => {
 afterAll(() => server.close());
 
 function call(method: string, path: string, userId: string, body?: unknown) {
-    const headers: Record<string, string> = { Cookie: `${SESSION_COOKIE_NAME}=${signToken({ sub: userId, username: "someone", isAdmin: false })}` };
+    const headers: Record<string, string> = { Cookie: sessionCookie(userId) };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     return fetch(`${baseUrl}/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
 }

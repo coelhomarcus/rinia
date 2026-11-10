@@ -1,5 +1,4 @@
 import { SettingsPage } from "@/components/settings/settings-layout";
-import { ChangePasswordPanel } from "@/features/auth/components/change-password-panel";
 import { UserProfilePanel } from "@/features/auth/components/user-profile-panel";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +7,6 @@ export function ProfileSettingsPage() {
     return (
         <SettingsPage title={t("nav.profile")}>
             <UserProfilePanel />
-            <ChangePasswordPanel />
         </SettingsPage>
     );
 }

@@ -3,6 +3,7 @@ import nav from "./nav";
 import search from "./search";
 import auth from "./auth";
 import profile from "./profile";
+import security from "./security";
 import projects from "./projects";
 import issue from "./issue";
 import documents from "./documents";
@@ -32,6 +33,7 @@ export const ptBR = {
     search,
     auth,
     profile,
+    security,
     projects,
     issue,
     documents,

@@ -4,14 +4,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, mock, spyOn, test } from "b
 import { markdownToTiptap, tiptapToMarkdown } from "@rinia/shared";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
-import { stubSessionAccounts } from "./fixtures/sessions";
+import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
 
 // The app reads its settings on import; give it what it needs without a local .env.
 process.env.JWT_SECRET ??= "test-secret";
 process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { app } = await import("../src/app");
-const { signToken } = await import("../src/lib/jwt");
 const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
 const { bearerToken } = await import("../src/middleware/auth.middleware");
 const { generateApiToken, hashApiToken } = await import("../src/features/api-tokens/api-tokens.service");
@@ -66,7 +65,7 @@ beforeAll(async () => {
 });
 afterAll(() => server.close());
 
-const cookieFor = (user: typeof ana) => `${SESSION_COOKIE_NAME}=${signToken({ sub: user.id, username: user.username, isAdmin: user.isAdmin })}`;
+const cookieFor = (user: typeof ana) => sessionCookie(user.id);
 const get = (path: string, headers: Record<string, string> = {}) => fetch(`${baseUrl}${path}`, { headers });
 
 /** Calls an MCP tool over the streamable HTTP endpoint and returns its text result. */

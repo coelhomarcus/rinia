@@ -15,7 +15,7 @@ const { assignRequestId, logFor, requestContext } = await import("../src/lib/req
 const { accessLog, accessLogLevel } = await import("../src/middleware/access-log.middleware");
 const { asyncHandler } = await import("../src/middleware/async-handler");
 const { errorHandler } = await import("../src/middleware/error-handler.middleware");
-const { stubSessionAccounts } = await import("./fixtures/sessions");
+const { sessionToken, stubSessionAccounts } = await import("./fixtures/sessions");
 
 type Entry = Record<string, unknown> & { level: string; msg: string };
 let lines: string[] = [];
@@ -229,9 +229,8 @@ test("the app returns X-Request-Id, does not log health checks, and logs unknown
 });
 
 test("a request with a session cookie is logged with its user and how they signed in", async () => {
-    const { signToken } = await import("../src/lib/jwt");
-    const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
-    const token = signToken({ sub: "8b2d1f66-0000-4000-8000-000000000001", username: "ana", isAdmin: false });
+        const { SESSION_COOKIE_NAME } = await import("../src/lib/cookies");
+    const token = sessionToken("8b2d1f66-0000-4000-8000-000000000001");
     // Not an admin: refused once the account is checked, and logged as a refused permission.
     stubSessionAccounts();
     const response = await fetch(`${appBase}/api/admin/projects`, { headers: { Cookie: `${SESSION_COOKIE_NAME}=${token}` } });

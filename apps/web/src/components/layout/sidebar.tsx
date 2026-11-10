@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { Blocks, ChevronDown, ChevronLeft, Circle, FolderKanban, House, KeyRound, Layers, Plus, Search, SlidersHorizontal, SquarePen, UserRound, UsersRound, X } from "lucide-react";
+import { Blocks, ChevronDown, ChevronLeft, Circle, FolderKanban, House, KeyRound, Layers, LockKeyhole, Plus, Search, SlidersHorizontal, SquarePen, UserRound, UsersRound, X } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { AppIcons } from "@/components/foundations/icons";
 import type { AppIcon } from "@/components/foundations/icons";
@@ -218,7 +218,7 @@ function SettingsNav({ projectId, projects }: { projectId: string; projects: Pro
                 <span className="truncate">{label}</span>
             </Link>
         );
-    const personal = [link("/settings/preferences", t("nav.preferences"), SlidersHorizontal), link("/settings/profile", t("nav.profile"), UserRound)].filter(Boolean);
+    const personal = [link("/settings/preferences", t("nav.preferences"), SlidersHorizontal), link("/settings/profile", t("nav.profile"), UserRound), link("/settings/security", t("nav.security"), LockKeyhole)].filter(Boolean);
     // Connections to other tools live apart from the person's own settings.
     const integrationLinks = [link(urls.integrations(), t("nav.allIntegrations"), Blocks), link(urls.apiTokens(), t("nav.apiTokens"), KeyRound)].filter(Boolean);
     const projectLinks = (projects ?? []).filter((project) => matches(project.name));

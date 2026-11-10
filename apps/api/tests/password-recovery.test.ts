@@ -53,14 +53,15 @@ test("a used, expired or unknown link is refused before any password changes", a
 test("a working link saves a hashed password, ends every session and retires other links", async () => {
     const updates: Array<Record<string, unknown>> = [];
     spyOn(db, "update").mockImplementation((() => ({
-        set: (values: Record<string, unknown>) => (updates.push(values), { where: () => Object.assign(Promise.resolve(), { returning: async () => [{ userId: ana.id }] }) }),
+        set: (values: Record<string, unknown>) => (updates.push(values), { where: () => Object.assign(Promise.resolve(), { returning: async () => [{ userId: ana.id, id: "session-1" }] }) }),
     })) as never);
     spyOn(db.query.users, "findFirst").mockImplementation((async () => ana) as never);
     const deleted = spyOn(db, "delete").mockImplementation((() => ({ where: async () => undefined })) as never);
     await resetPassword("good-token", "a-new-password");
     const saved = updates.find((values) => "passwordHash" in values)!;
     assert.notEqual(saved.passwordHash, "a-new-password");
-    assert.ok(saved.sessionsRevokedAt instanceof Date);
+    // Every session is revoked: no session is kept, unlike a change from the profile.
+    assert.ok(updates.some((values) => values.revokedAt instanceof Date));
     assert.equal(deleted.mock.calls.length, 1);
     assert.equal(hashResetToken("good-token").length, 64);
 });

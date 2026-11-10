@@ -6,8 +6,8 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { db } from "../../db";
 import { users } from "../../db/schema";
 import { SESSION_COOKIE_NAME } from "../../lib/cookies";
-import { type JwtPayload, verifyToken } from "../../lib/jwt";
-import { sessionRevoked } from "../auth/auth.service";
+import { type SessionToken, verifyToken } from "../../lib/jwt";
+import { resolveSession } from "../auth/sessions.service";
 import type { Logger } from "../../lib/logger";
 import { logFor } from "../../lib/request-context";
 import { HttpError } from "../../lib/http-error";
@@ -69,7 +69,7 @@ export function attachRealtime(server: Server) {
         if (new URL(req.url ?? "/", "http://localhost").pathname !== REALTIME_PATH) return reject(socket, 404);
         if (!sameOrigin(req)) return reject(socket, 403);
         const token = sessionToken(req.headers.cookie);
-        let session: JwtPayload & { exp?: number };
+        let session: SessionToken;
         try {
             if (!token) throw new Error("No session");
             session = verifyToken(token);
@@ -98,7 +98,7 @@ export function attachRealtime(server: Server) {
     });
 }
 
-async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
+async function accept(ws: LiveSocket, session: SessionToken) {
     const log = logFor("realtime").child({ userId: session.sub });
     ws.alive = true;
     ws.on("pong", () => (ws.alive = true));
@@ -118,15 +118,22 @@ async function accept(ws: LiveSocket, session: JwtPayload & { exp?: number }) {
         connection = undefined;
     });
 
-    const user = await db.query.users
-        .findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true, suspendedAt: true, sessionsRevokedAt: true } })
-        .catch((error: unknown) => {
-            log.error({ event: "realtime.user_lookup_failed", err: error }, "could not load the user of a realtime socket");
-            return undefined;
-        });
-    if (!user || user.suspendedAt || sessionRevoked(session.iat, user.sessionsRevokedAt)) return ws.close(4401, "Invalid session");
+    // The same check as every REST request: a revoked or expired session, or a suspended account, gets no socket.
+    const active = await resolveSession(session).catch((error: unknown) => {
+        log.error({ event: "realtime.session_lookup_failed", err: error }, "could not check the session of a realtime socket");
+        return null;
+    });
+    const user = active
+        ? await db.query.users
+              .findFirst({ where: eq(users.id, session.sub), columns: { id: true, name: true, username: true, avatarUrl: true } })
+              .catch((error: unknown) => {
+                  log.error({ event: "realtime.user_lookup_failed", err: error }, "could not load the user of a realtime socket");
+                  return undefined;
+              })
+        : undefined;
+    if (!user) return ws.close(4401, "Invalid session");
     if (ws.readyState !== ws.OPEN) return;
-    connection = realtimeHub.connect(ws, { id: user.id, name: user.name, username: user.username, avatarUrl: user.avatarUrl });
+    connection = realtimeHub.connect(ws, { id: user.id, name: user.name, username: user.username, avatarUrl: user.avatarUrl }, session.sid);
     log.info({ event: "realtime.connected", connections: realtimeHub.connections.size }, "realtime connected");
     // The session cookie outlives nothing: once the token expires, the socket closes and the client signs in again.
     if (session.exp) {

@@ -17,6 +17,8 @@ export interface RealtimeConnection {
     user: PresenceViewer["user"];
     /** Each subscribed channel and the project it belongs to, so leaving a project drops its issues and documents too. */
     channels: Map<RealtimeChannel, string>;
+    /** The session that opened the socket, so revoking it can close the socket. */
+    sessionId?: string;
 }
 
 /** What the hub tells collaborative pages when a connection stops listening to one of their channels. */
@@ -36,20 +38,16 @@ export class RealtimeHub {
     readonly connections = new Set<RealtimeConnection>();
     collaboration?: CollaborationHooks;
 
-    connect(socket: RealtimeSocket, user: PresenceViewer["user"]): RealtimeConnection {
-        const connection: RealtimeConnection = { socket, user, channels: new Map() };
+    connect(socket: RealtimeSocket, user: PresenceViewer["user"], sessionId?: string): RealtimeConnection {
+        const connection: RealtimeConnection = { socket, user, channels: new Map(), sessionId };
         this.connections.add(connection);
         return connection;
     }
 
-    /**
-     * Closes every socket a person has open. `signOut` tells each tab its session is over, as when an admin suspends
-     * someone. `recheck` lets each tab reconnect, so a tab that still holds a valid session (the one that just changed
-     * the password) comes straight back while the others are refused.
-     */
-    closeUser(userId: string, mode: "signOut" | "recheck" = "signOut") {
-        const [code, reason] = mode === "signOut" ? [4401, "Session ended"] : [4001, "Session changed"];
-        for (const connection of [...this.connections]) if (connection.user.id === userId) connection.socket.close?.(code, reason);
+    /** Closes the sockets of revoked sessions with 4401, which tells each tab it has been signed out. */
+    closeSessions(sessionIds: ReadonlySet<string>) {
+        if (sessionIds.size === 0) return;
+        for (const connection of [...this.connections]) if (connection.sessionId && sessionIds.has(connection.sessionId)) connection.socket.close?.(4401, "Session ended");
     }
 
     disconnect(connection: RealtimeConnection) {

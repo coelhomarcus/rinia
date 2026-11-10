@@ -1,6 +1,7 @@
 import { app } from "./app";
 import { CONFIG_KEYS, env } from "./config/env";
 import { cleanupExpiredDeletes } from "./db/soft-delete-cleanup";
+import { cleanupSessions } from "./features/auth/sessions.service";
 import { cleanupOrphanFiles } from "./features/files/files.orphans";
 import { documentRooms } from "./features/documents/document-rooms";
 import { attachRealtime } from "./features/realtime/realtime.socket";
@@ -27,6 +28,10 @@ const cleanup = () => {
     void cleanupOrphanFiles().then(
         (removed) => cleanupLog.debug({ event: "cleanup.files", removed }, "unreferenced files cleaned"),
         (error: unknown) => cleanupLog.error({ event: "cleanup.files_failed", err: error }, "could not clean unreferenced files"),
+    );
+    void cleanupSessions().then(
+        (removed) => cleanupLog.debug({ event: "cleanup.sessions", removed }, "expired and revoked sessions cleaned"),
+        (error: unknown) => cleanupLog.error({ event: "cleanup.sessions_failed", err: error }, "could not clean sessions"),
     );
 };
 cleanup();

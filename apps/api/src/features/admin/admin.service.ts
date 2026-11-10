@@ -4,7 +4,7 @@ import { apiTokens, issues, projectDocuments, projectMembers, projects, users } 
 import { db } from "../../db";
 import { HttpError } from "../../lib/http-error";
 import { hashPassword } from "../../lib/password";
-import { realtimeHub } from "../realtime/realtime.service";
+import { forgetUserSessions, revokeSessions } from "../auth/sessions.service";
 
 /*
  * What site admins see of a project: who is in it and how big it is, never what anyone wrote. Names, people and counts
@@ -126,15 +126,16 @@ export async function updateAdminUser(actorId: string, userId: string, changes: 
     if (changes.isAdmin !== undefined) values.isAdmin = changes.isAdmin;
     if (changes.suspended !== undefined) values.suspendedAt = changes.suspended ? new Date() : null;
     await updateUser(userId, values);
-    if (changes.suspended) realtimeHub.closeUser(userId);
+    // Admin rights and suspension are read with the session, so the next request sees the change.
+    forgetUserSessions(userId);
+    if (changes.suspended) await revokeSessions(userId);
     return getAdminUser(userId);
 }
 
 /** Signs the person out of every browser. API tokens keep working; the person manages those. */
 export async function revokeUserSessions(actorId: string, userId: string) {
     assertNotSelf(actorId, userId);
-    await updateUser(userId, { sessionsRevokedAt: new Date() });
-    realtimeHub.closeUser(userId);
+    await revokeSessions(userId);
 }
 
 /**
@@ -144,7 +145,7 @@ export async function revokeUserSessions(actorId: string, userId: string) {
 export async function resetUserPassword(actorId: string, userId: string) {
     assertNotSelf(actorId, userId);
     const password = randomBytes(12).toString("base64url");
-    await updateUser(userId, { passwordHash: await hashPassword(password), sessionsRevokedAt: new Date() });
-    realtimeHub.closeUser(userId);
+    await updateUser(userId, { passwordHash: await hashPassword(password) });
+    await revokeSessions(userId);
     return password;
 }

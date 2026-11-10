@@ -1,11 +1,11 @@
 import { type ChangePasswordFormInput, changePasswordFormSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
 import { SettingsControl, SettingsGroup, settingsFieldClass } from "@/components/settings/settings-layout";
-import { changePassword } from "@/features/auth/api";
+import { changePassword, SESSIONS_QUERY_KEY } from "@/features/auth/api";
 import { ApiError } from "@/lib/api-client";
 import { translateValidationMessage } from "@/i18n/validation";
 import { useTranslation } from "react-i18next";
@@ -21,18 +21,23 @@ const FIELDS = [
 /** Changes the password after checking the current one. Other devices are signed out; this one stays in. */
 export function ChangePasswordPanel() {
     const { t } = useTranslation();
+    const queryClient = useQueryClient();
     const { control, handleSubmit, reset, setError, formState } = useForm<FormValues>({
         resolver: zodResolver(changePasswordFormSchema),
         defaultValues: { currentPassword: "", newPassword: "", confirm: "" },
     });
     const mutation = useMutation({
         mutationFn: ({ currentPassword, newPassword }: FormValues) => changePassword({ currentPassword, newPassword }),
-        onSuccess: () => reset(),
+        onSuccess: () => {
+            reset();
+            // Every other session was revoked with the old password.
+            void queryClient.invalidateQueries({ queryKey: SESSIONS_QUERY_KEY });
+        },
         onError: (error) => setError("root", { message: error instanceof ApiError ? error.message : t("profile.couldNotChangePassword") }),
     });
 
     return (
-        <form noValidate onSubmit={handleSubmit((values) => mutation.mutate(values))} className="mt-12">
+        <form noValidate onSubmit={handleSubmit((values) => mutation.mutate(values))} className="mb-12">
             <SettingsGroup title={t("profile.password")} description={t("profile.passwordDescription")}>
                 {FIELDS.map((field) => (
                     <Controller

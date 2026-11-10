@@ -127,3 +127,22 @@ export const cancelEmailChange = () => apiClient.delete<void>("/users/me/email-c
 
 /** Works signed in or not, since the link may be opened on another device. */
 export const confirmEmailChange = (token: string) => apiClient.post<{ email: string }>("/auth/confirm-email", { token }).then((res) => res.email);
+
+/** One browser where the person is signed in. `current` marks the one asking. */
+export interface ActiveSession {
+    id: string;
+    createdAt: string;
+    lastSeenAt: string;
+    userAgent: string | null;
+    ip: string | null;
+    current: boolean;
+}
+
+export const SESSIONS_QUERY_KEY = ["auth", "sessions"] as const;
+
+export const fetchSessions = () => apiClient.get<{ sessions: ActiveSession[] }>("/auth/sessions").then((res) => res.sessions);
+
+/** Signs that browser out; its open tabs leave at once. */
+export const revokeSession = (sessionId: string) => apiClient.delete<void>(`/auth/sessions/${sessionId}`);
+
+export const revokeOtherSessions = () => apiClient.post<{ revoked: number }>("/auth/sessions/revoke-others").then((res) => res.revoked);
