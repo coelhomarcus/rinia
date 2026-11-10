@@ -3,12 +3,13 @@ import { Dialog } from "@base-ui/react/dialog";
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
 import type { IssuePriority, TiptapDocument } from "@rinia/shared";
-import { AlertCircle, CalendarDays, ChevronRight, Maximize2, Minimize2, SignalHigh, Tag, UserRound, X } from "lucide-react";
+import { CalendarDays, ChevronRight, Maximize2, Minimize2, SignalHigh, Tag, UserRound, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Toggle } from "@/components/base/toggle/toggle";
+import { InlineNotice } from "@/components/base/feedback/alert";
 import { useToast } from "@/components/feedback/toaster";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { IssueAvatar, PriorityIcon, StateIcon } from "@/features/board/components/issue-property-icons";
@@ -288,10 +289,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
 
                         <div className="flex items-center gap-3 border-t border-subtle px-4 py-3">
                             {error && (
-                                <p role="alert" className="flex min-w-0 items-center gap-2 text-[13px] text-danger-primary">
-                                    <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-                                    <span className="truncate">{error}</span>
-                                </p>
+                                <InlineNotice tone="error">{error}</InlineNotice>
                             )}
                             <div className="ml-auto flex items-center gap-3">
                                 <Toggle size="sm" isSelected={createMore} onChange={setCreateMore} label={t("issue.createMore")} />

@@ -64,7 +64,7 @@ export const UserProfilePanel = () => {
                     )} />
                 </SettingsControl>
                 <SettingsControl title={t("profile.username")} description={t("profile.usernameHint")}>
-                    <input value={user.username} disabled aria-label={t("profile.username")} className={settingsFieldClass} />
+                    <span className="truncate text-md text-secondary">@{user.username}</span>
                 </SettingsControl>
             </SettingsGroup>
             <div className="mt-4 flex flex-col gap-3">

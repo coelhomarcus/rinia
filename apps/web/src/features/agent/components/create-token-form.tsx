@@ -84,8 +84,7 @@ export function CreateTokenForm({ onCreated, placeholder }: { onCreated: (create
                 >
                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                 </Select>
-                <p className="text-sm text-tertiary">{t("agent.expiryHint")}</p>
-                {expiry === NEVER && <Alert tone="warning">{t("agent.expiryNeverWarning")}</Alert>}
+                {expiry === NEVER ? <Alert tone="warning">{t("agent.expiryNeverWarning")}</Alert> : <p className="text-sm text-tertiary">{t("agent.expiryHint")}</p>}
             </div>
             <Checkbox isSelected={limited} onChange={setLimited} isDisabled={create.isPending} label={t("agent.limitProjects")} hint={t("agent.limitProjectsHint")} />
             {limited && (

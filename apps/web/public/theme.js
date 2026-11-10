@@ -21,7 +21,7 @@
     root.classList.toggle("dark-mode", resolved === "dark");
     // The browser and installed-app title bar take this colour; applyTheme keeps it in sync afterwards.
     var themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute("content", resolved === "dark" ? "#090909" : "#f4f4f5");
+    if (themeColor) themeColor.setAttribute("content", resolved === "dark" ? "#090909" : "#ebebeb");
     try {
         var locale = localStorage.getItem("rinia.locale.anonymous");
         if (locale === "en" || locale === "pt-BR") root.lang = locale;

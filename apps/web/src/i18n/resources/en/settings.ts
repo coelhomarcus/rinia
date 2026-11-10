@@ -24,6 +24,7 @@ const settings = {
         identifier: "Identifier", identifierHint: "Used in issue IDs", repositoryHint: "Linked from the project header",
         descriptionHint: "A short summary shown on the project page", descriptionPlaceholder: "e.g. Customer-facing web app and its API",
         dangerZone: "Danger zone", interfaceAndTheme: "Interface and theme",
+        preferencesDescription: "Language, theme and how much fits on screen, just for you.", profileDescription: "How you appear to people in your projects.",
         couldNotLoadAdminProjects: "Could not load the projects.", noOwner: "No owner", adminProjectSummary: "{{owner}} · {{members}}", documentCount_one: "{{count}} document", documentCount_other: "{{count}} documents", adminIssueCount_one: "{{count}} issue", adminIssueCount_other: "{{count}} issues", projectKey: "Key", createdBy: "Created by", createdOn: "Created on", lastChanged: "Last changed", size: "Size", issues: "Issues", documents: "Documents", adminContentNote: "Issues, documents and comments in this project are visible to its members only.", couldNotLoadAdminProject: "Could not load this project.",
         labelPresets: "Label presets", labelPresetsDescription: "Pick ready-made labels instead of creating them one by one.", labelPresetExists: "Added", couldNotAddPresets: "Could not add the labels.",
         addSelectedLabels_one: "Add {{count}} label", addSelectedLabels_other: "Add {{count}} labels", addNoLabels: "Add labels", useLabelPresets: "Use presets",

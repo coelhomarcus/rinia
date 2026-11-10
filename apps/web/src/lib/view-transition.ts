@@ -25,9 +25,21 @@ function issueIdentifier(pathname: string): string | undefined {
 }
 
 /**
+ * The issue list an address shows, whatever its filter: `/my-issues` and `/my-issues/created` are one
+ * list, and so are a project's scopes (`/project/RIN/issues/active`) and its saved views.
+ */
+function issueList(pathname: string): string | undefined {
+    if (/^\/my-issues(?:\/[^/]+)?\/?$/.test(pathname)) return "my-issues";
+    const project = /^\/project\/([^/]+)\/(?:issues(?:\/[^/]+)?|views\/[^/]+)\/?$/.exec(pathname)?.[1];
+    return project ? `project:${project.toUpperCase()}` : undefined;
+}
+
+/**
  * Pathname changes cross-fade (and morph shared names). Search and hash updates, reduced motion,
  * and browsers without the API navigate immediately. Replacing `/issue/RIN-1` with its slugged
- * canonical URL is the same page, so it does not play a second transition.
+ * canonical URL is the same page, so it does not play a second transition. Neither does switching
+ * a list's filter, scope, or saved view: the list animates its own rows, and morphing each row's
+ * identifier and title into a row of another width would stretch their snapshots.
  */
 export function shouldUseViewTransition({
     from,
@@ -42,5 +54,7 @@ export function shouldUseViewTransition({
 }): boolean {
     if (!supported || reducedMotion || from === to) return false;
     const fromIssue = issueIdentifier(from);
-    return !(fromIssue && fromIssue === issueIdentifier(to));
+    if (fromIssue && fromIssue === issueIdentifier(to)) return false;
+    const fromList = issueList(from);
+    return !(fromList && fromList === issueList(to));
 }

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 export function ProfileSettingsPage() {
     const { t } = useTranslation();
     return (
-        <SettingsPage title={t("nav.profile")}>
+        <SettingsPage title={t("nav.profile")} description={t("settings.profileDescription")}>
             <UserProfilePanel />
         </SettingsPage>
     );

@@ -8,11 +8,11 @@ import { controlScale } from "@/components/base/control-scale";
 export const styles = sortCx({
     common: {
         root: [
-            "group relative inline-flex h-max cursor-pointer items-center justify-center whitespace-nowrap transition-all duration-200 ease-out before:absolute focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1",
+            "group relative inline-flex h-max cursor-pointer items-center justify-center whitespace-nowrap transition-all duration-150 ease-out before:absolute motion-safe:active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1",
             // When button is used within `InputGroup`
             "in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
             // Disabled styles
-            "disabled:cursor-not-allowed disabled:opacity-50 in-data-input-wrapper:disabled:opacity-100",
+            "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 in-data-input-wrapper:disabled:opacity-100 in-data-input-wrapper:active:scale-100",
             // Same as `icon` but for SSR icons that cannot be passed to the client as functions.
             "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:transition-inherit-all",
         ].join(" "),
@@ -85,7 +85,7 @@ export const styles = sortCx({
         },
         "link-color": {
             root: [
-                "justify-normal rounded p-0! text-accent-primary hover:text-accent-secondary",
+                "active:scale-100 justify-normal rounded p-0! text-accent-primary hover:text-accent-secondary",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-fg-brand-secondary_alt",
                 // Icon styles
@@ -94,7 +94,7 @@ export const styles = sortCx({
         },
         "link-gray": {
             root: [
-                "justify-normal rounded p-0! text-tertiary hover:text-secondary",
+                "active:scale-100 justify-normal rounded p-0! text-tertiary hover:text-secondary",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-fg-quaternary",
                 // Icon styles
@@ -127,7 +127,7 @@ export const styles = sortCx({
         },
         "link-destructive": {
             root: [
-                "justify-normal rounded p-0! text-danger-primary outline-error hover:text-danger-secondary",
+                "active:scale-100 justify-normal rounded p-0! text-danger-primary outline-error hover:text-danger-secondary",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
                 // Icon styles

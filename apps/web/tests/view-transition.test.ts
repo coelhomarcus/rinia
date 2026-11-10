@@ -25,6 +25,18 @@ describe("issue view transitions", () => {
         expect(shouldUseViewTransition({ from: "/issue/RIN-1/ship-it", to: "/issue/RIN-2", reducedMotion: false, supported: true })).toBe(true);
     });
 
+    test("keeps a list's filter, scope, and saved view switches out of the transition", () => {
+        const go = (from: string, to: string) => shouldUseViewTransition({ from, to, reducedMotion: false, supported: true });
+        expect(go("/my-issues", "/my-issues/created")).toBe(false);
+        expect(go("/my-issues/created", "/my-issues/subscribed")).toBe(false);
+        expect(go("/project/RIN/issues", "/project/RIN/issues/active")).toBe(false);
+        expect(go("/project/RIN/issues/active", "/project/RIN/views/bugs-1a2b3c4d")).toBe(false);
+        expect(go("/project/RIN/issues", "/project/APP/issues")).toBe(true);
+        expect(go("/project/RIN/issues", "/project/RIN/views")).toBe(true);
+        expect(go("/my-issues", "/project/RIN/issues")).toBe(true);
+        expect(go("/my-issues/created", "/issue/RIN-4")).toBe(true);
+    });
+
     test("asks the router for a view transition and carries the title", () => {
         expect(issueNavigation("Ship it")).toEqual({ viewTransition: true, state: { issueTitle: "Ship it" } });
         expect(issueNavigation()).toEqual({ viewTransition: true });

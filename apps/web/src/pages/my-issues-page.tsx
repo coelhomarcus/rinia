@@ -80,7 +80,11 @@ export const MyIssuesPage = () => {
         [assignee, due, issues, labelFilter, priority, project, search, status],
     );
     const rows = usePresence(filtered, (issue) => issue.id);
-    const identifierWidth = useMemo(() => Math.max(4, ...(issues ?? []).map((issue) => issue.identifier.length)), [issues]);
+    // The rows on screen count too: while another filter loads, the previous rows stay and keep their width.
+    const identifierWidth = useMemo(
+        () => Math.max(4, ...[...(issues ?? []), ...rows.map((row) => row.item)].map((issue) => issue.identifier.length)),
+        [issues, rows],
+    );
 
     const groups = useMemo(() => {
         if (groupBy === "none")

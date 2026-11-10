@@ -27,8 +27,8 @@ export function SettingsPage({ title, description, aside, back, children }: { ti
                     <ButtonUtility icon={AppIcons.Menu} color="tertiary" tooltip={t("nav.expand")} onClick={openNavigation} />
                 </span>
                 {back && (
-                    <Link to={back.to} className="flex h-7 min-w-0 items-center gap-1 rounded-md px-2 text-[13px] text-secondary hover:bg-layer-transparent-hover hover:text-primary">
-                        <ChevronLeft className="size-4 shrink-0 text-tertiary" aria-hidden="true" />
+                    <Link to={back.to} className="group flex h-7 min-w-0 items-center gap-1 rounded-md px-2 text-[13px] text-secondary transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary">
+                        <ChevronLeft className="size-4 shrink-0 text-tertiary transition-transform duration-150 ease-out group-hover:-translate-x-0.5" aria-hidden="true" />
                         {back.icon}
                         <span className="truncate">{back.label}</span>
                     </Link>
@@ -132,7 +132,7 @@ export function SettingsItemRow({ leading, title, description, dense = false, ch
 
 /** Hover-revealed actions for a SettingsItemRow. */
 export function SettingsRowActions({ children }: { children: ReactNode }) {
-    return <div className="flex items-center gap-1 opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">{children}</div>;
+    return <div className="flex items-center gap-1 opacity-100 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">{children}</div>;
 }
 
 /** The square an icon sits on at the start of a row. */
@@ -150,21 +150,21 @@ export function SettingsRowIcon({ icon: Icon }: { icon: ComponentType<SVGProps<S
  */
 export function SettingsLinkRow({ to, icon, leading, title, description, value }: { to: string; title: ReactNode; description: ReactNode; value?: ReactNode } & ({ icon: ComponentType<SVGProps<SVGSVGElement>>; leading?: never } | { icon?: never; leading: ReactNode })) {
     return (
-        <Link to={to} className="group -mx-4 flex min-h-15 items-center gap-3 px-4 py-3 select-none first:rounded-t-lg last:rounded-b-lg hover:bg-layer-transparent-hover">
+        <Link to={to} className="group -mx-4 flex min-h-15 items-center gap-3 px-4 py-3 select-none transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg hover:bg-layer-transparent-hover">
             {icon ? <SettingsRowIcon icon={icon} /> : leading}
             <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 items-center gap-2 text-md font-medium text-primary">{title}</span>
                 <span className="block truncate text-xs text-tertiary">{description}</span>
             </span>
             {value !== undefined && <span className="shrink-0 text-[13px] text-tertiary">{value}</span>}
-            <ChevronRight className="size-4 shrink-0 text-tertiary group-hover:text-secondary" aria-hidden="true" />
+            <ChevronRight className="size-4 shrink-0 text-tertiary transition-[color,transform] duration-150 ease-out group-hover:translate-x-0.5 group-hover:text-secondary" aria-hidden="true" />
         </Link>
     );
 }
 
 /** The same height as a `lg` button, so a field and the button beside it line up. */
 const settingsFieldBase =
-    "h-8 w-full rounded-md border border-subtle bg-transparent px-3 text-[13px] text-primary outline-none placeholder:text-placeholder focus-visible:border-accent-strong disabled:text-tertiary";
+    "h-8 w-full rounded-md border border-subtle bg-transparent px-3 text-[13px] text-primary outline-none transition-colors duration-150 placeholder:text-placeholder hover:border-strong focus-visible:border-accent-strong disabled:cursor-not-allowed disabled:text-tertiary disabled:hover:border-subtle";
 
 /** Text input sized for the right side of a settings row. */
 export const settingsFieldClass = `${settingsFieldBase} sm:w-56`;

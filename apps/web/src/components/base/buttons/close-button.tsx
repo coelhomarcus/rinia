@@ -32,7 +32,7 @@ export const CloseButton = ({ label, className, size = "sm", theme = "light", on
             onClick={onPress || otherProps.onClick}
             aria-label={label || t("common.close")}
             className={cx(
-                    "flex cursor-pointer items-center justify-center rounded-md transition duration-100 ease-linear focus:outline-hidden",
+                    "flex cursor-pointer items-center justify-center rounded-md transition duration-150 ease-out focus:outline-hidden motion-safe:active:scale-90",
                     sizes[size].root,
                     themes[theme],
                     className,

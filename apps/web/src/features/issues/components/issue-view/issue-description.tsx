@@ -1,6 +1,7 @@
 import { memo, useMemo, type Ref } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/base/buttons/button";
+import { Alert, InlineNotice } from "@/components/base/feedback/alert";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { issueFilesKey } from "@/features/editor/file-api";
@@ -58,13 +59,24 @@ export const IssueDescription = memo(function IssueDescription({
                     placeholder={t("issue.describeIssue")}
                 />
             </div>
-            {description.notice && <p role="status" className="animate-enter mt-2 text-xs text-warning-primary">{description.notice}</p>}
-            {description.saveError && description.status !== "conflict" && <p role="alert" className="mt-2 text-xs text-danger-primary">{description.saveError}</p>}
-            {description.status === "conflict" && (
-                <div className="animate-enter mt-3 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-fg-warning-primary/40 bg-warning-primary/10 p-3">
-                    <Button size="xs" color="tertiary" onClick={description.keepSavedDescription}>{t("issue.useSavedDescription")}</Button>
-                    <Button size="xs" color="primary" isLoading={description.isCreatingFromDraft} onClick={() => void description.createIssueFromDraft()}>{t("issue.createIssueFromDraft")}</Button>
-                </div>
+            {description.status === "conflict" ? (
+                <Alert
+                    tone="warning"
+                    className="mt-3"
+                    actions={
+                        <>
+                            <Button size="xs" color="tertiary" onClick={description.keepSavedDescription}>{t("issue.useSavedDescription")}</Button>
+                            <Button size="xs" color="primary" isLoading={description.isCreatingFromDraft} onClick={() => void description.createIssueFromDraft()}>{t("issue.createIssueFromDraft")}</Button>
+                        </>
+                    }
+                >
+                    {description.notice}
+                </Alert>
+            ) : (
+                <>
+                    {description.notice && <InlineNotice tone={description.status === "error" ? "error" : "warning"} className="mt-2">{description.notice}</InlineNotice>}
+                    {description.saveError && <InlineNotice tone="error" className="mt-2">{description.saveError}</InlineNotice>}
+                </>
             )}
             <DescriptionHistorySheet identifier={issue.identifier} open={historyOpen} onOpenChange={onHistoryOpenChange} isRestoring={description.isRestoring} onRestore={description.restoreVersion} />
         </>

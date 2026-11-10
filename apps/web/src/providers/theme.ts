@@ -44,7 +44,7 @@ export function applyTheme(preference: ThemePreference): ResolvedTheme {
     root.classList.toggle("dark-mode", resolved === "dark");
     // Code highlighted by twinkleplop switches its theme on `.dark`.
     root.classList.toggle("dark", resolved === "dark");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#090909" : "#f4f4f5");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", resolved === "dark" ? "#090909" : "#ebebeb");
     return resolved;
 }
 

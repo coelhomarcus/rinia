@@ -246,10 +246,15 @@ input[type="search"]::-webkit-search-cancel-button {
     -webkit-appearance: none;
 }
 
+/*
+ * Light theme. Every gray here is a pure neutral, so text, icons and surfaces never mix a cool tint with a plain one.
+ * The page sits one step below its white cards and the sidebar one step below the page; borders carry the edge of a
+ * card (about 1.3:1 on white). Placeholder text and icons stay at 3:1 or more; the secondary and tertiary text pass 4.5:1.
+ */
 html:not([data-theme*="dark"]) {
-    --bg-canvas: #efefef;
-    --bg-surface-1: #f9f9f9;
-    --bg-surface-2: #f4f4f4;
+    --bg-canvas: #ebebeb;
+    --bg-surface-1: #f6f6f6;
+    --bg-surface-2: #f1f1f1;
     --bg-layer-1: #ffffff;
     --bg-layer-1-hover: #f4f4f4;
     --bg-layer-1-active: #ececec;
@@ -258,19 +263,37 @@ html:not([data-theme*="dark"]) {
     --bg-layer-2-hover: #f1f1f1;
     --bg-layer-2-active: #e9e9e9;
     --bg-layer-2-selected: #e9e9e9;
-    --bg-layer-3: #f0f0f0;
-    --bg-layer-3-hover: #e8e8e8;
-    --bg-layer-transparent-hover: rgb(0 0 0 / 4%);
-    --bg-layer-transparent-active: rgb(0 0 0 / 6%);
-    --bg-layer-transparent-selected: rgb(0 0 0 / 6%);
-    --border-subtle: #e6e6e6;
-    --border-subtle-1: #dedede;
-    --border-strong: #d6d6d6;
-    --border-strong-1: #c8c8c8;
+    --bg-layer-3: #ededed;
+    --bg-layer-3-hover: #e5e5e5;
+    --bg-layer-3-active: #dedede;
+    --bg-layer-3-selected: #dedede;
+    --bg-layer-transparent-hover: rgb(0 0 0 / 5%);
+    --bg-layer-transparent-active: rgb(0 0 0 / 8%);
+    --bg-layer-transparent-selected: rgb(0 0 0 / 8%);
+    --bg-layer-disabled: #ebebeb;
+    --bg-inverse: #141414;
+    --bg-inverse-hover: #303030;
+    --border-subtle: #e0e0e0;
+    --border-subtle-1: #d8d8d8;
+    --border-strong: #cecece;
+    --border-strong-1: #bdbdbd;
+    --border-disabled: #ededed;
     --txt-primary: #141414;
     --txt-secondary: #303030;
     --txt-tertiary: #5b5b5b;
-    --txt-placeholder: #9c9c9c;
+    --txt-placeholder: #8a8a8a;
+    --txt-disabled: #9a9a9a;
+    --txt-icon-primary: #141414;
+    --txt-icon-secondary: #303030;
+    --txt-icon-tertiary: #5b5b5b;
+    --txt-icon-placeholder: #8a8a8a;
+    --txt-icon-disabled: #c4c4c4;
+    /* Amber text reads at 4.5:1 or more on every light surface, the sidebar included. */
+    --txt-warning-primary: oklch(0.47 0.137 46.2);
+    /* Yellow and orange marks drawn without text (priority bars, the started state) keep 3:1 against the page. */
+    --priority-high: oklch(0.62 0.165 50.67);
+    --priority-medium: oklch(0.64 0.14 78);
+    --txt-icon-states-started: oklch(0.66 0.15 71);
     --txt-accent-primary: #1d4ed8;
     --txt-link-primary: #1d4ed8;
     --brand-default: #2563eb;
@@ -452,6 +475,14 @@ html[data-theme*="dark"] .chart-accent {
 .tiptap-editor.issue-reply-composer { min-height: 0; }
 .issue-reply-composer .ProseMirror { min-height: 1.75rem; padding: 0.25rem 0; }
 .issue-reply-composer .ProseMirror:focus-visible { outline: none; }
+
+/*
+ * A state's icon takes the color its project chose. On the light theme a pale color (a yellow, a light green) would
+ * vanish against the page, so its lightness is capped at the point where it still reads at about 3:1. Darker colors,
+ * and the dark theme, keep the color as chosen. Browsers without relative colors keep the first declaration.
+ */
+.state-icon { color: var(--state-color); }
+html:not([data-theme*="dark"]) .state-icon { color: oklch(from var(--state-color) min(l, 0.64) c h); }
 
 /* Route changes cross-fade. An issue's identifier and title share a name, so those morph instead. */
 ::view-transition-old(root),

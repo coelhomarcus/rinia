@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { AlertCircle, Layers, Users } from "lucide-react";
+import { Layers, Users } from "lucide-react";
+import { InlineNotice } from "@/components/base/feedback/alert";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { CloseButton } from "@/components/base/buttons/close-button";
@@ -138,10 +139,7 @@ function ViewDetailsForm({
                 </label>
             )}
             {error && (
-                <p role="alert" className="flex items-center gap-2 text-sm text-danger-primary">
-                    <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
-                    {error}
-                </p>
+                <InlineNotice tone="error">{error}</InlineNotice>
             )}
             <div className="flex justify-end gap-2">
                 <Button type="button" color="secondary" isDisabled={isPending} onClick={onCancel}>

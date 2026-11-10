@@ -27,11 +27,11 @@ export type Props = ButtonProps | LinkProps;
 export const ButtonUtility = ({ tooltip, className, isDisabled, icon: Icon, size = "sm", color = "secondary", tooltipPlacement = "top", ...otherProps }: Props) => {
     const href = "href" in otherProps ? otherProps.href : undefined;
     const content = href ? (
-        <a {...(otherProps as LinkProps)} href={isDisabled ? undefined : href} aria-disabled={isDisabled || undefined} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1", controlScale.iconButton[size], isDisabled && "pointer-events-none opacity-50", styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
+        <a {...(otherProps as LinkProps)} href={isDisabled ? undefined : href} aria-disabled={isDisabled || undefined} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-150 ease-out motion-safe:active:scale-90 focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1", controlScale.iconButton[size], isDisabled && "pointer-events-none opacity-50", styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
             {isReactComponent(Icon) && <Icon data-icon />}{isValidElement(Icon) && Icon}
         </a>
     ) : (
-        <BaseButton {...(otherProps as ButtonProps)} disabled={isDisabled} aria-label={tooltip} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50", controlScale.iconButton[size], styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
+        <BaseButton {...(otherProps as ButtonProps)} disabled={isDisabled} aria-label={tooltip} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-150 ease-out motion-safe:active:scale-90 focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100", controlScale.iconButton[size], styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
             {isReactComponent(Icon) && <Icon data-icon />}{isValidElement(Icon) && Icon}
         </BaseButton>
     );

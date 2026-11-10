@@ -1,5 +1,5 @@
 import type { Density } from "@rinia/shared";
-import { Rows3 } from "lucide-react";
+import { RefreshCw, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { Select } from "@/components/base/select/select";
@@ -25,8 +25,8 @@ export function DensitySelector() {
                 {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
             </Select>
             {syncFailed && (
-                <Button color="tertiary" size="sm" onClick={retrySync}>
-                    {t("profile.densityNotSynced")}
+                <Button color="tertiary" size="sm" iconLeading={RefreshCw} onClick={retrySync}>
+                    {t("common.syncNow")}
                 </Button>
             )}
         </div>

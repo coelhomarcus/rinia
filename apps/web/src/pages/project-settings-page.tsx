@@ -31,6 +31,7 @@ export function ProjectSettingsPage() {
     return (
         <SettingsPage
             title={section === "general" ? t("settings.general") : undefined}
+            description={section === "general" ? t("settings.manageDetails") : undefined}
             back={{
                 to: urls.projectSettings(projectKey),
                 label: project?.name ?? t("projects.project"),
