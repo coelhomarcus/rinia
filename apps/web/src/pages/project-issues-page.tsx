@@ -1,47 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { AnimatePresence, LayoutGroup } from "motion/react";
-import type { Issue } from "@/features/issues/api";
-import type { IssueOrder, SavedViewFilters } from "@rinia/shared";
 import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
+import type { IssueOrder, SavedViewFilters } from "@rinia/shared";
 import { Layers, Plus, Users, X } from "lucide-react";
+import { AnimatePresence, LayoutGroup } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { urls } from "@/lib/urls";
-import { listStep } from "@/features/commands/shortcuts";
-import { cx } from "@/utils/cx";
-import { useRouteProject } from "@/features/projects/route-project";
 import { Button } from "@/components/base/buttons/button";
+import { Skeleton } from "@/components/base/feedback/skeleton";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
-import { Skeleton } from "@/components/base/feedback/skeleton";
+import { columnBucket, defaultIssueColumn } from "@/features/board/column-bucket";
 import { Board } from "@/features/board/components/board";
 import { HiddenColumnsMenu, useHiddenColumns } from "@/features/board/components/hidden-columns";
 import { StateIcon } from "@/features/board/components/issue-property-icons";
 import { useColumns } from "@/features/board/hooks/use-board";
-import { columnBucket, defaultIssueColumn } from "@/features/board/column-bucket";
-import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
+import { useCategories } from "@/features/categories/hooks/use-categories";
+import { listStep } from "@/features/commands/shortcuts";
+import type { Issue } from "@/features/issues/api";
+import { BulkActionBar } from "@/features/issues/components/bulk-action-bar";
 import { IssueListRow } from "@/features/issues/components/issue-list-row";
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
-import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
-import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
+import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
 import { IssueFilterRow, IssueToolbar, pillTab } from "@/features/issues/components/issue-toolbar";
+import { resolveLabels } from "@/features/issues/components/labels-picker";
+import { useIssueView } from "@/features/issues/hooks/use-issue-view";
+import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
+import { type ListGroupBy, listGroupKey, useListReorder } from "@/features/issues/hooks/use-list-reorder";
+import { touchLiftClass } from "@/features/issues/lib/drag-sensors";
+import { matchesDueFilter } from "@/features/issues/lib/due-date";
+import { matchesLabels, readLabels } from "@/features/issues/lib/issue-filters";
+import { priorityLabelKey } from "@/features/issues/lib/priority";
+import { IssueSelectionProvider, useIssueSelection, useRegisterVisibleIssues } from "@/features/issues/selection";
+import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
+import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
+import { useRouteProject } from "@/features/projects/route-project";
 import type { SavedView } from "@/features/views/api";
 import { COLLAPSE, Label, useViewActions } from "@/features/views/components/view-controls";
 import { useViews } from "@/features/views/hooks/use-views";
 import { filtersFromParams, paramsFromFilters } from "@/features/views/lib/view-filters";
-import { BulkActionBar } from "@/features/issues/components/bulk-action-bar";
-import { IssueSelectionProvider, useIssueSelection, useRegisterVisibleIssues } from "@/features/issues/selection";
-import { useIssueView } from "@/features/issues/hooks/use-issue-view";
-import { listGroupKey, useListReorder, type ListGroupBy } from "@/features/issues/hooks/use-list-reorder";
-import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
-import { useCategories } from "@/features/categories/hooks/use-categories";
-import { matchesDueFilter } from "@/features/issues/lib/due-date";
-import { matchesLabels, readLabels } from "@/features/issues/lib/issue-filters";
-import { resolveLabels } from "@/features/issues/components/labels-picker";
-import { priorityLabelKey } from "@/features/issues/lib/priority";
-import { useTranslation } from "react-i18next";
 import { translateStatusName } from "@/i18n/status-label";
+import { urls } from "@/lib/urls";
+import { cx } from "@/utils/cx";
 
 type OrderBy = IssueOrder;
 type GroupBy = ListGroupBy;
@@ -131,7 +132,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     );
     // How many issues the filters hide from this scope, for the note under the list.
     const hiddenByFilters = useMemo(
-        () => (issues ?? []).filter((issue) => scope === "all" || columnBucket(columnById.get(issue.columnId)?.name ?? "") === scope).length - filteredIssues.length,
+        () =>
+            (issues ?? []).filter((issue) => scope === "all" || columnBucket(columnById.get(issue.columnId)?.name ?? "") === scope).length -
+            filteredIssues.length,
         [columnById, filteredIssues.length, issues, scope],
     );
     // In manual order the list sorts by position itself, so a moved issue lands in place before the server answers.
@@ -166,16 +169,16 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         });
         return ordered.map(([key, groupedIssues]) => ({
             key,
-            label:
-                groupBy === "status"
-                    ? columnById.get(key)?.name ?? t("issue.unknownStatus")
-                    : memberById.get(key)?.name ?? t("issue.unassigned"),
+            label: groupBy === "status" ? (columnById.get(key)?.name ?? t("issue.unknownStatus")) : (memberById.get(key)?.name ?? t("issue.unassigned")),
             issues: groupedIssues,
         }));
     }, [columnById, columns, listIssues, groupBy, memberById, t]);
     const orderedIssues = useMemo(() => groups.flatMap((group) => group.issues), [groups]);
     // Collapsed groups hide their issues, so they are not selected by Cmd/Ctrl+A or included in ranges.
-    const visibleIds = useMemo(() => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.issues.map((issue) => issue.id))), [groups, collapsedGroups]);
+    const visibleIds = useMemo(
+        () => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.issues.map((issue) => issue.id))),
+        [groups, collapsedGroups],
+    );
     useRegisterVisibleIssues(view === "list" ? visibleIds : null);
     const selectedIssues = useMemo(() => (issues ?? []).filter((issue) => selection.selected.has(issue.id)), [issues, selection.selected]);
 
@@ -195,7 +198,12 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             const direction = listStep(event);
             if (direction) {
                 event.preventDefault();
-                const nextIndex = currentIndex < 0 ? (direction === 1 ? 0 : orderedIssues.length - 1) : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
+                const nextIndex =
+                    currentIndex < 0
+                        ? direction === 1
+                            ? 0
+                            : orderedIssues.length - 1
+                        : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
                 const nextIssue = orderedIssues[nextIndex];
                 setSelectedIssueId(nextIssue.id);
                 document.querySelector<HTMLElement>(`[data-issue-id="${nextIssue.id}"]`)?.scrollIntoView({ block: "nearest" });
@@ -207,7 +215,10 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             if (event.key === "Escape") setSelectedIssueId(null);
 
             // S, P and A open the selected row's menu, as on the issue screen. Estimates and labels are not shown on rows.
-            const property = !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.isComposing && currentIndex >= 0 ? ROW_MENU_KEYS[event.key.toLowerCase()] : undefined;
+            const property =
+                !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.isComposing && currentIndex >= 0
+                    ? ROW_MENU_KEYS[event.key.toLowerCase()]
+                    : undefined;
             if (property && !target?.closest("[role='menu'], [role='dialog'], [role='listbox']")) {
                 const trigger = document.querySelector<HTMLElement>(`[data-issue-id="${orderedIssues[currentIndex].id}"] [data-property="${property}"]`);
                 if (trigger) {
@@ -232,7 +243,6 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         );
     }
 
-
     /** Says what is empty: the filters and search that match nothing, or the scope and which states it covers. */
     function listEmptyState() {
         const list = new Intl.ListFormat(i18n.language, { type: "conjunction" });
@@ -241,7 +251,11 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             return {
                 title: t("issue.noIssues"),
                 description: t("issue.createFirstIssue"),
-                action: <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(defaultIssueColumn(columns)?.id ?? null)}>{t("issue.newIssue")}</Button>,
+                action: (
+                    <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(defaultIssueColumn(columns)?.id ?? null)}>
+                        {t("issue.newIssue")}
+                    </Button>
+                ),
             };
         }
 
@@ -249,37 +263,55 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         const assigneeName = assignee ? memberById.get(assignee)?.name : undefined;
         const labelNames = resolveLabels(labelFilter, categoryById).map((item) => item.name);
         const labelName = labelNames.length ? new Intl.ListFormat(i18n.language, { type: "disjunction" }).format(labelNames) : undefined;
-        const conditions = ([
-            priority && t("issue.conditionPriority", { value: t(priorityLabelKey(priority)) }),
-            statusColumn && t("issue.conditionStatus", { value: statusName(statusColumn) }),
-            assigneeName && t("issue.conditionAssignee", { value: assigneeName }),
-            labelName && t("issue.conditionLabel", { value: labelName }),
-            due === "overdue" && t("issue.conditionDueOverdue"),
-            due === "thisWeek" && t("issue.conditionDueThisWeek"),
-            search && t("issue.conditionSearch", { value: search }),
-        ] as Array<string | false | undefined>).filter((condition): condition is string => !!condition);
+        const conditions = (
+            [
+                priority && t("issue.conditionPriority", { value: t(priorityLabelKey(priority)) }),
+                statusColumn && t("issue.conditionStatus", { value: statusName(statusColumn) }),
+                assigneeName && t("issue.conditionAssignee", { value: assigneeName }),
+                labelName && t("issue.conditionLabel", { value: labelName }),
+                due === "overdue" && t("issue.conditionDueOverdue"),
+                due === "thisWeek" && t("issue.conditionDueThisWeek"),
+                search && t("issue.conditionSearch", { value: search }),
+            ] as Array<string | false | undefined>
+        ).filter((condition): condition is string => !!condition);
         if (conditions.length > 0) {
             const scopeLabel = scope === "backlog" ? t("issue.backlog") : t("issue.active");
             return {
                 title: t("issue.noMatchingIssues"),
-                description: scope === "all" ? t("issue.emptyFilteredAll", { conditions: list.format(conditions) }) : t("issue.emptyFiltered", { scope: scopeLabel, conditions: list.format(conditions) }),
-                action: <Button size="sm" color="secondary" onClick={clearFilters}>{t("issue.clearFilters")}</Button>,
+                description:
+                    scope === "all"
+                        ? t("issue.emptyFilteredAll", { conditions: list.format(conditions) })
+                        : t("issue.emptyFiltered", { scope: scopeLabel, conditions: list.format(conditions) }),
+                action: (
+                    <Button size="sm" color="secondary" onClick={clearFilters}>
+                        {t("issue.clearFilters")}
+                    </Button>
+                ),
             };
         }
 
-        const statesWhere = (match: (bucket: string) => boolean) => list.format((columns ?? []).filter((column) => match(columnBucket(column.name))).map(statusName));
+        const statesWhere = (match: (bucket: string) => boolean) =>
+            list.format((columns ?? []).filter((column) => match(columnBucket(column.name))).map(statusName));
         if (scope === "backlog") {
             const backlogColumn = columns?.find((column) => columnBucket(column.name) === "backlog");
             return {
                 title: t("issue.emptyBacklogTitle"),
                 description: t("issue.emptyBacklog", { states: statesWhere((bucket) => bucket === "backlog") }),
-                action: <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(backlogColumn?.id ?? null)}>{t("issue.newIssue")}</Button>,
+                action: (
+                    <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(backlogColumn?.id ?? null)}>
+                        {t("issue.newIssue")}
+                    </Button>
+                ),
             };
         }
         return {
             title: t("issue.emptyActiveTitle"),
             description: t("issue.emptyActive", { states: statesWhere((bucket) => bucket !== "active") }),
-            action: <Button size="sm" color="secondary" onClick={() => setScope("all")}>{t("issue.showAllIssues")}</Button>,
+            action: (
+                <Button size="sm" color="secondary" onClick={() => setScope("all")}>
+                    {t("issue.showAllIssues")}
+                </Button>
+            ),
         };
     }
 
@@ -293,7 +325,6 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         navigate(urls.issue(identifier));
     }
 
-
     function setScope(next: Scope) {
         // A saved view keeps its own scope; the scope pills lead back to the plain issue list.
         if (savedView) {
@@ -304,29 +335,24 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         navigate(`${urls.issues(projectKey, next)}${query ? `?${query}` : ""}`, { replace: true });
     }
 
-
     return (
         <div className="relative flex h-full min-h-0 flex-col bg-surface-1">
             <ProjectWorkspaceHeader
                 projectId={projectId!}
                 activeView={savedView ? "views" : "issues"}
                 favorite={savedView ? { kind: "view", projectId: projectId!, viewId: savedView.id } : undefined}
-                crumb={savedView && (
-                    <>
-                        <span className="truncate">{savedView.name}</span>
-                        {savedView.shared && <Users aria-label={t("views.sharedWithProject")} role="img" className="size-3.5 shrink-0 text-tertiary" />}
-                    </>
-                )}
+                crumb={
+                    savedView && (
+                        <>
+                            <span className="truncate">{savedView.name}</span>
+                            {savedView.shared && <Users aria-label={t("views.sharedWithProject")} role="img" className="size-3.5 shrink-0 text-tertiary" />}
+                        </>
+                    )
+                }
                 actions={
                     <>
                         {viewActions.menu}
-                        <Button
-                            size="md"
-                            color="secondary"
-                            className={cx(COLLAPSE, "rounded-full")}
-                            iconLeading={Plus}
-                            onClick={() => startCreating(null)}
-                        >
+                        <Button size="md" color="secondary" className={cx(COLLAPSE, "rounded-full")} iconLeading={Plus} onClick={() => startCreating(null)}>
                             <Label>{t("issue.newIssue")}</Label>
                         </Button>
                     </>
@@ -334,20 +360,38 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             />
             {/* Pills on the left (scopes, then saved views), round icon controls on the right; every control is 28px tall. */}
             {/* The bar and the filter row share the content's background and need no border; on the board that is the board's own. */}
-            <div className={cx("flex h-11 shrink-0 items-center gap-1 px-3 transition-colors max-sm:overflow-x-auto", view === "board" ? "bg-surface-2" : "bg-surface-1")}>
+            <div
+                className={cx(
+                    "flex h-11 shrink-0 items-center gap-1 px-3 transition-colors max-sm:overflow-x-auto",
+                    view === "board" ? "bg-surface-2" : "bg-surface-1",
+                )}
+            >
                 {view && (
                     <div className="animate-enter flex min-w-0 items-center gap-1 max-sm:shrink-0">
-                        {([
+                        {(
+                            [
                                 ["all", t("issue.allIssues")],
                                 ["active", t("issue.active")],
                                 ...(showBacklog ? [["backlog", t("issue.backlog")] as const] : []),
-                            ] as const).map(([value, label]) => (
-                                <button key={value} type="button" aria-pressed={!savedView && scope === value} className={pillTab(!savedView && scope === value)} onClick={() => setScope(value)}>
-                                    {label}
-                                </button>
-                            ))}
+                            ] as const
+                        ).map(([value, label]) => (
+                            <button
+                                key={value}
+                                type="button"
+                                aria-pressed={!savedView && scope === value}
+                                className={pillTab(!savedView && scope === value)}
+                                onClick={() => setScope(value)}
+                            >
+                                {label}
+                            </button>
+                        ))}
                         {savedViews?.map((item) => (
-                            <Link key={item.id} to={`${urls.view(projectKey, item)}?${paramsFromFilters(item.filters)}`} aria-current={savedView?.id === item.id ? "page" : undefined} className={pillTab(savedView?.id === item.id)}>
+                            <Link
+                                key={item.id}
+                                to={`${urls.view(projectKey, item)}?${paramsFromFilters(item.filters)}`}
+                                aria-current={savedView?.id === item.id ? "page" : undefined}
+                                className={pillTab(savedView?.id === item.id)}
+                            >
                                 <Layers className="size-3.5 shrink-0" />
                                 {item.name}
                             </Link>
@@ -380,7 +424,10 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 <IssueQuickCreateModal
                     projectId={projectId!}
                     columnId={creatingColumnId ?? defaultIssueColumn(columns)!.id}
-                    onClose={() => { setIsCreating(false); setCreatingColumnId(null); }}
+                    onClose={() => {
+                        setIsCreating(false);
+                        setCreatingColumnId(null);
+                    }}
                     onCreated={openIssue}
                 />
             )}
@@ -391,118 +438,163 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 </div>
             )}
             {view === "list" && (
-            <main key="list" className="animate-enter min-h-0 w-full flex-1 overflow-y-auto">
-                <div className="flex min-h-full flex-col">
-                    {isLoading && <IssueListSkeleton />}
-                    {isError && <ErrorMessage message={t("issue.couldNotLoadIssues")} />}
-                    {!isLoading && !isError && (
-                        <LayoutGroup>
-                        <IssueMotionRoster ids={visibleIds}>
-                        <DndContext {...reorder.dndProps}>
-                            {groups.map((group) => {
-                                const column = columnById.get(group.key);
-                                return (
-                                <section key={group.key} aria-label={group.label ?? t("issue.allIssues")}>
-                                    {group.label && (
-                                        <h2 className="bg-layer-transparent-hover">
-                                            <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
+                <main key="list" className="animate-enter min-h-0 w-full flex-1 overflow-y-auto">
+                    <div className="flex min-h-full flex-col">
+                        {isLoading && <IssueListSkeleton />}
+                        {isError && <ErrorMessage message={t("issue.couldNotLoadIssues")} />}
+                        {!isLoading && !isError && (
+                            <LayoutGroup>
+                                <IssueMotionRoster ids={visibleIds}>
+                                    <DndContext {...reorder.dndProps}>
+                                        {groups.map((group) => {
+                                            const column = columnById.get(group.key);
+                                            return (
+                                                <section key={group.key} aria-label={group.label ?? t("issue.allIssues")}>
+                                                    {group.label && (
+                                                        <h2 className="bg-layer-transparent-hover">
+                                                            <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
+                                                                <button
+                                                                    type="button"
+                                                                    aria-expanded={!collapsedGroups.has(group.key)}
+                                                                    onClick={() =>
+                                                                        setCollapsedGroups((current) => {
+                                                                            const next = new Set(current);
+                                                                            if (next.has(group.key)) next.delete(group.key);
+                                                                            else next.add(group.key);
+                                                                            return next;
+                                                                        })
+                                                                    }
+                                                                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                                                >
+                                                                    <ChevronDownOutline
+                                                                        className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(group.key) ? "-rotate-90" : ""}`}
+                                                                        aria-hidden="true"
+                                                                    />
+                                                                    {groupBy === "status" && (
+                                                                        <StateIcon name={column?.name ?? group.label} color={column?.color} />
+                                                                    )}
+                                                                    <span>
+                                                                        {group.label === "Unknown status"
+                                                                            ? t("issue.unknownStatus")
+                                                                            : translateStatusName(group.label, t)}
+                                                                    </span>
+                                                                    <span className="text-tertiary">{group.issues.length}</span>
+                                                                </button>
+                                                                {groupBy === "status" && (
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label={t("issue.newIssue")}
+                                                                        className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover hover:text-primary"
+                                                                        onClick={() => startCreating(group.key)}
+                                                                    >
+                                                                        <Plus className="size-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </h2>
+                                                    )}
+                                                    {!collapsedGroups.has(group.key) && (
+                                                        <SortableContext items={group.issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
+                                                            <AnimatePresence initial={false} mode="popLayout">
+                                                                {group.issues.map((issue) => (
+                                                                    <IssueListRow
+                                                                        key={issue.id}
+                                                                        issue={issue}
+                                                                        projectId={projectId!}
+                                                                        identifierWidth={identifierWidth}
+                                                                        sortable={manualOrder}
+                                                                        suspendLayout={reorder.suspendLayout}
+                                                                        animatePresence
+                                                                        column={columnById.get(issue.columnId)}
+                                                                        columns={columns ?? []}
+                                                                        member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
+                                                                        members={members ?? []}
+                                                                        categories={resolveLabels(issue.categoryIds, categoryById)}
+                                                                        labels={categories ?? []}
+                                                                        selected={selectedIssueId === issue.id}
+                                                                        onSelect={() => setSelectedIssueId(issue.id)}
+                                                                        onUpdate={(input) => updateIssue.mutate({ identifier: issue.identifier, input })}
+                                                                    />
+                                                                ))}
+                                                            </AnimatePresence>
+                                                        </SortableContext>
+                                                    )}
+                                                </section>
+                                            );
+                                        })}
+                                        {filteredIssues.length === 0 && <EmptyState framed={false} className="flex-1 py-16" {...listEmptyState()} />}
+                                        {filteredIssues.length > 0 && hiddenByFilters > 0 && (
+                                            <div className="animate-enter flex items-center justify-center gap-3 py-4 text-[13px]">
+                                                <span>
+                                                    <span className="text-primary">
+                                                        {hiddenByFilters === 1
+                                                            ? t("issue.hiddenByFiltersOne")
+                                                            : t("issue.hiddenByFiltersMany", { count: hiddenByFilters })}
+                                                    </span>{" "}
+                                                    <span className="text-tertiary">{t("issue.hiddenByFilters")}</span>
+                                                </span>
                                                 <button
                                                     type="button"
-                                                    aria-expanded={!collapsedGroups.has(group.key)}
-                                                    onClick={() => setCollapsedGroups((current) => {
-                                                        const next = new Set(current);
-                                                        if (next.has(group.key)) next.delete(group.key);
-                                                        else next.add(group.key);
-                                                        return next;
-                                                    })}
-                                                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                                    onClick={clearFilters}
+                                                    className="flex items-center gap-1 text-secondary transition-colors hover:text-primary"
                                                 >
-                                                    <ChevronDownOutline className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(group.key) ? "-rotate-90" : ""}`} aria-hidden="true" />
-                                                    {groupBy === "status" && <StateIcon name={column?.name ?? group.label} color={column?.color} />}
-                                                    <span>{group.label === "Unknown status" ? t("issue.unknownStatus") : translateStatusName(group.label, t)}</span>
-                                                    <span className="text-tertiary">{group.issues.length}</span>
+                                                    {t("issue.clearFilters")}
+                                                    <X className="size-3.5" />
                                                 </button>
-                                                {groupBy === "status" && (
-                                                    <button type="button" aria-label={t("issue.newIssue")} className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover hover:text-primary" onClick={() => startCreating(group.key)}>
-                                                        <Plus className="size-3.5" />
-                                                    </button>
-                                                )}
                                             </div>
-                                        </h2>
-                                    )}
-                                    {!collapsedGroups.has(group.key) && (
-                                    <SortableContext items={group.issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
-                                    <AnimatePresence initial={false} mode="popLayout">
-                                    {group.issues.map((issue) => (
-                                        <IssueListRow
-                                            key={issue.id}
-                                            issue={issue}
-                                            projectId={projectId!}
-                                            identifierWidth={identifierWidth}
-                                            sortable={manualOrder}
-                                            suspendLayout={reorder.suspendLayout}
-                                            animatePresence
-                                            column={columnById.get(issue.columnId)}
-                                            columns={columns ?? []}
-                                            member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
-                                            members={members ?? []}
-                                            categories={resolveLabels(issue.categoryIds, categoryById)}
-                                            labels={categories ?? []}
-                                            selected={selectedIssueId === issue.id}
-                                            onSelect={() => setSelectedIssueId(issue.id)}
-                                            onUpdate={(input) => updateIssue.mutate({ identifier: issue.identifier, input })}
-                                        />
-                                    ))}
-                                    </AnimatePresence>
-                                    </SortableContext>
-                                    )}
-                                </section>
-                                );
-                            })}
-                            {filteredIssues.length === 0 && (
-                                <EmptyState framed={false} className="flex-1 py-16" {...listEmptyState()} />
-                            )}
-                            {filteredIssues.length > 0 && hiddenByFilters > 0 && (
-                                <div className="animate-enter flex items-center justify-center gap-3 py-4 text-[13px]">
-                                    <span>
-                                        <span className="text-primary">{hiddenByFilters === 1 ? t("issue.hiddenByFiltersOne") : t("issue.hiddenByFiltersMany", { count: hiddenByFilters })}</span>{" "}
-                                        <span className="text-tertiary">{t("issue.hiddenByFilters")}</span>
-                                    </span>
-                                    <button type="button" onClick={clearFilters} className="flex items-center gap-1 text-secondary transition-colors hover:text-primary">
-                                        {t("issue.clearFilters")}
-                                        <X className="size-3.5" />
-                                    </button>
-                                </div>
-                            )}
-                            <DragOverlay>
-                                {reorder.activeIssue && (
-                                    <div className="flex h-9 items-center gap-2 rounded-md border border-accent-strong bg-surface-1 px-2 text-[13px] shadow-overlay-200">
-                                        <span className="size-5 shrink-0" />
-                                        <span className="shrink-0 font-mono text-xs text-tertiary" style={{ width: `${identifierWidth}ch` }}>{reorder.activeIssue.identifier}</span>
-                                        <span className="min-w-0 flex-1 truncate text-secondary">{reorder.activeIssue.title}</span>
-                                    </div>
-                                )}
-                            </DragOverlay>
-                        </DndContext>
-                        </IssueMotionRoster>
-                        </LayoutGroup>
-                    )}
-                </div>
-            </main>
+                                        )}
+                                        <DragOverlay>
+                                            {reorder.activeIssue && (
+                                                <div
+                                                    className={cx(
+                                                        "flex h-9 items-center gap-2 rounded-md border border-accent-strong bg-surface-1 px-2 text-[13px] shadow-overlay-200",
+                                                        reorder.touchLift && touchLiftClass,
+                                                    )}
+                                                >
+                                                    <span className="size-5 shrink-0" />
+                                                    <span className="shrink-0 font-mono text-xs text-tertiary" style={{ width: `${identifierWidth}ch` }}>
+                                                        {reorder.activeIssue.identifier}
+                                                    </span>
+                                                    <span className="min-w-0 flex-1 truncate text-secondary">{reorder.activeIssue.title}</span>
+                                                </div>
+                                            )}
+                                        </DragOverlay>
+                                    </DndContext>
+                                </IssueMotionRoster>
+                            </LayoutGroup>
+                        )}
+                    </div>
+                </main>
             )}
-            <BulkActionBar projectId={projectId!} issues={selectedIssues} columns={columns ?? []} members={members ?? []} labels={categories ?? []} onClear={selection.clear} />
+            <BulkActionBar
+                projectId={projectId!}
+                issues={selectedIssues}
+                columns={columns ?? []}
+                members={members ?? []}
+                labels={categories ?? []}
+                onClear={selection.clear}
+            />
         </div>
     );
 };
 
 function IssueListSkeleton() {
     const { t } = useTranslation();
-    return <div className="overflow-hidden" aria-label={t("common.loading")} role="status">
-        <div className="hidden h-9 border-b border-subtle bg-surface-2 sm:block" />
-        <div className="divide-y divide-subtle">{["one", "two", "three", "four", "five"].map((key) => <div key={key} className="flex h-11 items-center gap-4 px-4">
-            <Skeleton className="h-3 w-24 shrink-0" /><Skeleton className="h-3 min-w-0 flex-1" /><Skeleton className="hidden h-3 w-24 sm:block" /><Skeleton className="hidden size-2 rounded-full sm:block" />
-        </div>)}</div>
-    </div>;
+    return (
+        <div className="overflow-hidden" aria-label={t("common.loading")} role="status">
+            <div className="hidden h-9 border-b border-subtle bg-surface-2 sm:block" />
+            <div className="divide-y divide-subtle">
+                {["one", "two", "three", "four", "five"].map((key) => (
+                    <div key={key} className="flex h-11 items-center gap-4 px-4">
+                        <Skeleton className="h-3 w-24 shrink-0" />
+                        <Skeleton className="h-3 min-w-0 flex-1" />
+                        <Skeleton className="hidden h-3 w-24 sm:block" />
+                        <Skeleton className="hidden size-2 rounded-full sm:block" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
 
 function readOrder(value: string | null): OrderBy {
@@ -523,4 +615,3 @@ function readScope(value: string | null): Scope {
 function readSavedScope(value: string | null): Scope {
     return value === "backlog" || value === "all" ? value : "active";
 }
-

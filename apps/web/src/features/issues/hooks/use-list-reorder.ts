@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { positionAtIndex, type UpdateIssueInput } from "@rinia/shared";
+import { type DragEndEvent, type DragOverEvent, type DragStartEvent, closestCenter } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { type UpdateIssueInput, positionAtIndex } from "@rinia/shared";
 import type { Issue } from "../api";
+import { signalLongPress, useIssueDragSensors } from "../lib/drag-sensors";
 
 export type ListGroupBy = "none" | "status" | "assignee";
 
@@ -25,16 +26,23 @@ function groupChange(groupBy: ListGroupBy, key: string): Partial<Issue> & Update
  * moves into whichever group it is over, so that group opens a gap for it; on drop it gets a position between
  * its new neighbours (and the group's status or assignee) and `onMove` saves it. `done` ends the preview.
  */
-export function useListReorder({ issues, groupBy, onMove }: { issues: Issue[]; groupBy: ListGroupBy; onMove: (issue: Issue, input: UpdateIssueInput, done: () => void) => void }) {
+export function useListReorder({
+    issues,
+    groupBy,
+    onMove,
+}: {
+    issues: Issue[];
+    groupBy: ListGroupBy;
+    onMove: (issue: Issue, input: UpdateIssueInput, done: () => void) => void;
+}) {
     const [dragIssues, setDragIssues] = useState<Issue[] | null>(null);
     const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
+    const [touchLift, setTouchLift] = useState(false);
     const items = dragIssues ?? issues;
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    );
+    const sensors = useIssueDragSensors();
 
     function onDragStart(event: DragStartEvent) {
+        setTouchLift(signalLongPress(event.activatorEvent));
         setActiveIssue(issues.find((issue) => issue.id === event.active.id) ?? null);
         setDragIssues(issues);
     }
@@ -56,6 +64,7 @@ export function useListReorder({ issues, groupBy, onMove }: { issues: Issue[]; g
 
     function end() {
         setActiveIssue(null);
+        setTouchLift(false);
         setDragIssues(null);
     }
 
@@ -71,25 +80,33 @@ export function useListReorder({ issues, groupBy, onMove }: { issues: Issue[]; g
         const to = group.findIndex((issue) => issue.id === over.id);
         const ordered = arrayMove(group, from, to === -1 ? from : to);
         const index = ordered.findIndex((issue) => issue.id === dragged.id);
-        const position = positionAtIndex(ordered.filter((issue) => issue.id !== dragged.id), index);
+        const position = positionAtIndex(
+            ordered.filter((issue) => issue.id !== dragged.id),
+            index,
+        );
 
         const movedGroup = listGroupKey(original, groupBy) !== key;
         if (!movedGroup && position === original.position) return end();
 
         setActiveIssue(null);
+        setTouchLift(false);
         // Keep the preview, in its new order, until the save settles, so the row does not jump back for a frame.
         let slot = 0;
-        setDragIssues(list.map((issue) => {
-            if (listGroupKey(issue, groupBy) !== key) return issue;
-            const next = ordered[slot++];
-            return next.id === dragged.id ? { ...next, position } : next;
-        }));
+        setDragIssues(
+            list.map((issue) => {
+                if (listGroupKey(issue, groupBy) !== key) return issue;
+                const next = ordered[slot++];
+                return next.id === dragged.id ? { ...next, position } : next;
+            }),
+        );
         onMove(original, { position, ...(movedGroup ? groupChange(groupBy, key) : {}) }, () => setDragIssues(null));
     }
 
     return {
         items,
         activeIssue,
+        /** True when a long-press picked the row up, so the overlay can lift. Mouse drags stay as they were. */
+        touchLift,
         /** True from pickup until the saved order replaces the preview, so the layout glide stays out of dnd-kit's way. */
         suspendLayout: dragIssues !== null,
         dndProps: { sensors, collisionDetection: closestCenter, onDragStart, onDragOver, onDragEnd, onDragCancel: end },

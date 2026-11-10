@@ -6,40 +6,38 @@ import {
     type DragOverEvent,
     DragOverlay,
     type DragStartEvent,
-    KeyboardSensor,
     MeasuringStrategy,
-    PointerSensor,
     pointerWithin,
     rectIntersection,
-    useSensor,
-    useSensors,
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { arrayMove } from "@dnd-kit/sortable";
+import { type UpdateIssueInput, positionAtIndex } from "@rinia/shared";
 import { LayoutGroup } from "motion/react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { positionAtIndex, type UpdateIssueInput } from "@rinia/shared";
-import { useRouteProject } from "@/features/projects/route-project";
-import { urls } from "@/lib/urls";
-import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
-import { ErrorMessage } from "@/components/feedback/error-message";
 import { Alert } from "@/components/base/feedback/alert";
 import { Skeleton } from "@/components/base/feedback/skeleton";
+import { ErrorMessage } from "@/components/feedback/error-message";
+import { useToast } from "@/components/feedback/toaster";
 import { useCategories } from "@/features/categories/hooks/use-categories";
+import { isTypingTarget } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
-import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
+import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
+import { resolveLabels } from "@/features/issues/components/labels-picker";
+import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
+import { signalLongPress, touchLiftClass, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
+import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
+import { useRegisterVisibleIssues } from "@/features/issues/selection";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
+import { useRouteProject } from "@/features/projects/route-project";
 import { ApiError } from "@/lib/api-client";
+import { urls } from "@/lib/urls";
+import { cx } from "@/utils/cx";
+import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
 import { Column } from "./column";
-import { columnBucket } from "../column-bucket";
-import { resolveLabels } from "@/features/issues/components/labels-picker";
-import { useRegisterVisibleIssues } from "@/features/issues/selection";
-import { isTypingTarget } from "@/features/commands/shortcuts";
 import { IssueCardContent } from "./issue-card";
-import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
-import { useTranslation } from "react-i18next";
-import { useToast } from "@/components/feedback/toaster";
 
 /**
  * On a board, what matters is literally beneath the cursor (`pointerWithin`) — much more
@@ -57,7 +55,14 @@ const NO_ISSUES: Issue[] = [];
 /** One empty list for every lookup still loading, so memoized columns see the same array. */
 const NONE: never[] = [];
 
-export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all", hidden, hideColumn, showColumn }: {
+export const Board = ({
+    projectId,
+    filters = new URLSearchParams(),
+    scope = "all",
+    hidden,
+    hideColumn,
+    showColumn,
+}: {
     projectId: string;
     filters?: URLSearchParams;
     /** Like the list's scopes: Active and Backlog show only the columns of those states, All shows every column. */
@@ -78,7 +83,10 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
         () => (columns ?? []).filter((column) => !hidden.has(column.id) && (scope === "all" || columnBucket(column.name) === scope)),
         [columns, hidden, scope],
     );
-    const closedColumnIds = useMemo(() => new Set((columns ?? []).filter((column) => columnBucket(column.name) === "closed").map((column) => column.id)), [columns]);
+    const closedColumnIds = useMemo(
+        () => new Set((columns ?? []).filter((column) => columnBucket(column.name) === "closed").map((column) => column.id)),
+        [columns],
+    );
     const filtered = useMemo(() => filterIssues(issues ?? [], filters, (issue) => closedColumnIds.has(issue.columnId)), [closedColumnIds, issues, filters]);
     const { data: categories } = useCategories(projectId);
     const { data: members } = useProjectMembers(projectId);
@@ -86,14 +94,12 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
 
     const [createColumnId, setCreateColumnId] = useState<string | null>(null);
     const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
+    const [touchLift, setTouchLift] = useState(false);
     const [activeIssueWidth, setActiveIssueWidth] = useState<number>();
     const [dragIssues, setDragIssues] = useState<Issue[] | null>(null);
     const [moveError, setMoveError] = useState<string | null>(null);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-    );
+    const sensors = useIssueDragSensors();
 
     // J and K move the focus through the cards, column by column; Enter opens the focused card and X selects it.
     const boardRef = useRef<HTMLDivElement>(null);
@@ -131,7 +137,10 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
      */
     const board = useMemo(() => dragIssues ?? [...filtered].sort((a, b) => a.position - b.position || a.number - b.number), [dragIssues, filtered]);
 
-    const visibleIds = useMemo(() => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)), [board, shownColumns]);
+    const visibleIds = useMemo(
+        () => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)),
+        [board, shownColumns],
+    );
     useRegisterVisibleIssues(visibleIds);
 
     // The column callbacks read the latest props through a ref, so they stay stable and memoized columns can skip renders.
@@ -169,6 +178,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
     }
 
     function handleDragStart(event: DragStartEvent) {
+        setTouchLift(signalLongPress(event.activatorEvent));
         setMoveError(null);
         const activeId = String(event.active.id);
         setActiveIssue(board.find((issue) => issue.id === activeId) ?? null);
@@ -213,6 +223,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
         const list = dragIssues ?? board;
 
         setActiveIssue(null);
+        setTouchLift(false);
 
         if (!over) {
             setDragIssues(null);
@@ -264,11 +275,13 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
         // moves cards visually (SortableContext transforms), so `list` still holds the old order; keeping
         // that would snap the card back to where it started until the server answered, and only then move it.
         let slot = 0;
-        setDragIssues(list.map((issue) => {
-            if (issue.columnId !== targetColumnId) return issue;
-            const next = ordered[slot++];
-            return next.id === activeId ? { ...next, columnId: targetColumnId, position } : next;
-        }));
+        setDragIssues(
+            list.map((issue) => {
+                if (issue.columnId !== targetColumnId) return issue;
+                const next = ordered[slot++];
+                return next.id === activeId ? { ...next, columnId: targetColumnId, position } : next;
+            }),
+        );
 
         updateIssue.mutate(
             { identifier: activeIssue.identifier, input: { columnId: targetColumnId, position } },
@@ -281,6 +294,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
 
     function handleDragCancel() {
         setActiveIssue(null);
+        setTouchLift(false);
         setDragIssues(null);
     }
 
@@ -297,7 +311,11 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
 
     return (
         <>
-            {moveError && <Alert tone="error" className="mb-3">{moveError}</Alert>}
+            {moveError && (
+                <Alert tone="error" className="mb-3">
+                    {moveError}
+                </Alert>
+            )}
             <DndContext
                 sensors={sensors}
                 collisionDetection={collisionDetection}
@@ -308,38 +326,41 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                 onDragCancel={handleDragCancel}
             >
                 <LayoutGroup>
-                <IssueMotionRoster ids={visibleIds}>
-                <div ref={boardRef} className="flex h-full min-w-0 gap-3">
-                <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
-                    {shownColumns.map((column) => (
-                        <Column
-                            key={column.id}
-                            column={column}
-                            statuses={columns ?? NONE}
-                            issues={issuesByColumn.get(column.id) ?? NO_ISSUES}
-                            projectId={projectId}
-                            categoriesById={categoriesById}
-                            membersById={membersById}
-                            people={members ?? NONE}
-                            labels={categories ?? NONE}
-                            suspendLayout={dragIssues !== null}
-                            onUpdateIssue={onUpdateIssue}
-                            onOpenIssue={onOpenIssue}
-                            onCreateIssue={setCreateColumnId}
-                            onHide={hideColumnWithUndo}
-                            onManageStates={manageStates}
-                        />
-                    ))}
-                </div>
-                </div>
-                </IssueMotionRoster>
+                    <IssueMotionRoster ids={visibleIds}>
+                        <div ref={boardRef} className="flex h-full min-w-0 gap-3">
+                            <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
+                                {shownColumns.map((column) => (
+                                    <Column
+                                        key={column.id}
+                                        column={column}
+                                        statuses={columns ?? NONE}
+                                        issues={issuesByColumn.get(column.id) ?? NO_ISSUES}
+                                        projectId={projectId}
+                                        categoriesById={categoriesById}
+                                        membersById={membersById}
+                                        people={members ?? NONE}
+                                        labels={categories ?? NONE}
+                                        suspendLayout={dragIssues !== null}
+                                        onUpdateIssue={onUpdateIssue}
+                                        onOpenIssue={onOpenIssue}
+                                        onCreateIssue={setCreateColumnId}
+                                        onHide={hideColumnWithUndo}
+                                        onManageStates={manageStates}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </IssueMotionRoster>
                 </LayoutGroup>
 
                 <DragOverlay>
                     {activeIssue && (
                         <div
                             style={{ width: activeIssueWidth }}
-                            className="block rotate-1 cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-2.5 shadow-overlay-200"
+                            className={cx(
+                                "block rotate-1 cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-2.5 shadow-overlay-200",
+                                touchLift && touchLiftClass,
+                            )}
                         >
                             <IssueCardContent
                                 issue={activeIssue}
@@ -360,10 +381,21 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
 
 function BoardSkeleton() {
     const { t } = useTranslation();
-    return <div className="flex h-full min-w-max items-start gap-3" aria-label={t("common.loading")} role="status">
-        {["one", "two", "three"].map((key) => <div key={key} className="flex h-full w-80 shrink-0 flex-col overflow-hidden rounded-lg bg-surface-1">
-            <div className="flex h-10 items-center justify-between px-2.5"><Skeleton className="h-3 w-28" /><Skeleton className="size-4 rounded-full" /></div>
-            <div className="space-y-2 px-2"><Skeleton className="h-24 w-full rounded-md" /><Skeleton className="h-20 w-full rounded-md" /><Skeleton className="h-28 w-full rounded-md" /></div>
-        </div>)}
-    </div>;
+    return (
+        <div className="flex h-full min-w-max items-start gap-3" aria-label={t("common.loading")} role="status">
+            {["one", "two", "three"].map((key) => (
+                <div key={key} className="flex h-full w-80 shrink-0 flex-col overflow-hidden rounded-lg bg-surface-1">
+                    <div className="flex h-10 items-center justify-between px-2.5">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="size-4 rounded-full" />
+                    </div>
+                    <div className="space-y-2 px-2">
+                        <Skeleton className="h-24 w-full rounded-md" />
+                        <Skeleton className="h-20 w-full rounded-md" />
+                        <Skeleton className="h-28 w-full rounded-md" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
 }

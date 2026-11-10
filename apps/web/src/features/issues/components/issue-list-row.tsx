@@ -1,18 +1,19 @@
+import { type MouseEvent, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
-import { Link } from "react-router";
-import { urls } from "@/lib/urls";
 import type { UpdateIssueInput } from "@rinia/shared";
-import type { Issue } from "@/features/issues/api";
-import { columnBucket } from "@/features/board/column-bucket";
-import { DueDateMenu } from "@/features/issues/components/due-date-picker";
-import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from "@/features/issues/components/issue-property-menus";
-import { cx } from "@/utils/cx";
-import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
-import { useEffect, type MouseEvent } from "react";
-import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
+import { GripVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { columnBucket } from "@/features/board/column-bucket";
+import type { Issue } from "@/features/issues/api";
+import { DueDateMenu } from "@/features/issues/components/due-date-picker";
+import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
+import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from "@/features/issues/components/issue-property-menus";
+import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
+import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
+import { urls } from "@/lib/urls";
+import { cx } from "@/utils/cx";
 
 export function IssueListRow({
     issue,
@@ -80,7 +81,12 @@ export function IssueListRow({
             people={members}
             placement="row"
             style={{ transform: CSS.Translate.toString(transform), transition }}
-            className={cx("group/issue relative flex h-9 w-full items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover", selected && "bg-layer-1-selected", checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80", isDragging && "z-10 opacity-40")}
+            className={cx(
+                "group/issue relative flex h-9 w-full items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover",
+                selected && "bg-layer-1-selected",
+                checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80",
+                isDragging && "z-10 opacity-40",
+            )}
             onMouseEnter={() => selection?.setFocused(issue.id)}
             data-issue-id={issue.id}
             data-issue-context="true"
@@ -96,7 +102,10 @@ export function IssueListRow({
                     {...attributes}
                     {...listeners}
                     aria-label={t("issue.dragToReorder")}
-                    className="flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-placeholder opacity-0 group-hover/issue:opacity-100 hover:bg-layer-1-hover focus-visible:opacity-100 active:cursor-grabbing"
+                    className={cx(
+                        "flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-placeholder opacity-0 group-hover/issue:opacity-100 hover:bg-layer-1-hover focus-visible:opacity-100 active:cursor-grabbing",
+                        dragSurfaceClass,
+                    )}
                 >
                     <GripVertical className={propertyIcon} />
                 </button>
@@ -113,16 +122,20 @@ export function IssueListRow({
                 {issue.identifier}
             </Link>
             <StatusMenu value={column} statuses={columns} onChange={(columnId) => onUpdate({ columnId })} />
-            <Link
-                to={urls.issue(issue.identifier, issue.title)}
-                onClick={rangeClick}
-                className="min-w-0 flex-1 truncate text-secondary"
-            >
+            <Link to={urls.issue(issue.identifier, issue.title)} onClick={rangeClick} className="min-w-0 flex-1 truncate text-secondary">
                 {issue.title}
             </Link>
-            {categories.length > 0 && <LabelMenu value={categories} labels={labels} onChange={(categoryIds) => onUpdate({ categoryIds })} className="max-w-[40%]" />}
-            {issue.dueDate && <DueDateMenu value={issue.dueDate} closed={columnBucket(column?.name ?? "") === "closed"} onChange={(dueDate) => onUpdate({ dueDate })} />}
-            <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} className="opacity-0 group-hover/issue:opacity-100 focus-visible:opacity-100" />
+            {categories.length > 0 && (
+                <LabelMenu value={categories} labels={labels} onChange={(categoryIds) => onUpdate({ categoryIds })} className="max-w-[40%]" />
+            )}
+            {issue.dueDate && (
+                <DueDateMenu value={issue.dueDate} closed={columnBucket(column?.name ?? "") === "closed"} onChange={(dueDate) => onUpdate({ dueDate })} />
+            )}
+            <PriorityMenu
+                value={issue.priority}
+                onChange={(priority) => onUpdate({ priority })}
+                className="opacity-0 group-hover/issue:opacity-100 focus-visible:opacity-100"
+            />
             <AssigneeMenu value={member} people={members} onChange={(assigneeId) => onUpdate({ assigneeId })} />
             <span className="w-14 shrink-0 text-right text-xs text-tertiary">{date}</span>
         </IssueMotionFrame>

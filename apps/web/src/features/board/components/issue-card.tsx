@@ -1,15 +1,16 @@
 import { memo, useCallback, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useLocation } from "react-router";
 import type { UpdateIssueInput } from "@rinia/shared";
+import { useLocation } from "react-router";
 import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { Issue, IssuePerson } from "@/features/issues/api";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
-import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
-import { cx } from "@/utils/cx";
 import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
+import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
+import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
 import { useIssueSelection } from "@/features/issues/selection";
+import { cx } from "@/utils/cx";
 
 type Status = { id: string; name: string; color: string | null };
 
@@ -37,7 +38,9 @@ function firstIssueImage(document: Issue["descriptionJson"]): string | null {
                 try {
                     const url = new URL(node.attrs.src);
                     if (url.protocol === "http:" || url.protocol === "https:") return url.href;
-                } catch { /* Ignore malformed legacy image nodes. */ }
+                } catch {
+                    /* Ignore malformed legacy image nodes. */
+                }
             }
             if (Array.isArray(node.content)) {
                 const nested = visit(node.content);
@@ -52,7 +55,16 @@ function firstIssueImage(document: Issue["descriptionJson"]): string | null {
 function IssuePreviewImage({ src }: { src: string }) {
     const [failed, setFailed] = useState(false);
     if (failed) return null;
-    return <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="mb-2 block h-24 w-full rounded object-cover" />;
+    return (
+        <img
+            src={src}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setFailed(true)}
+            className="mb-2 block h-24 w-full rounded object-cover"
+        />
+    );
 }
 
 // Unset estimate and label icons only show while the card is hovered or focused, or their menu is open.
@@ -63,29 +75,71 @@ const revealOnHover = "opacity-0 group-hover/card:opacity-100 group-focus-within
  * with the assignee on its right, the status icon before the title (its menu moves the card to another column),
  * then the other properties. Each property is a 16px icon that opens a menu to change it.
  */
-export const IssueCardContent = ({ issue, status, statuses = [], categories = [], assignee, people = [], labels = [], onUpdate = () => {}, closed = false }: IssueCardContentProps) => {
+export const IssueCardContent = ({
+    issue,
+    status,
+    statuses = [],
+    categories = [],
+    assignee,
+    people = [],
+    labels = [],
+    onUpdate = () => {},
+    closed = false,
+}: IssueCardContentProps) => {
     const imagePreview = firstIssueImage(issue.descriptionJson);
-    const estimate = <EstimateMenu key="estimate" value={issue.estimate} onChange={(next) => onUpdate({ estimate: next })} className={issue.estimate == null ? revealOnHover : undefined} />;
+    const estimate = (
+        <EstimateMenu
+            key="estimate"
+            value={issue.estimate}
+            onChange={(next) => onUpdate({ estimate: next })}
+            className={issue.estimate == null ? revealOnHover : undefined}
+        />
+    );
     const labeled = categories.length > 0;
-    const label = <LabelMenu key="label" value={categories} labels={labels} onChange={(categoryIds) => onUpdate({ categoryIds })} className={labeled ? "min-w-0" : revealOnHover} />;
-    const due = <DueDateMenu key="due" value={issue.dueDate} closed={closed} onChange={(dueDate) => onUpdate({ dueDate })} className={issue.dueDate ? undefined : revealOnHover} />;
+    const label = (
+        <LabelMenu
+            key="label"
+            value={categories}
+            labels={labels}
+            onChange={(categoryIds) => onUpdate({ categoryIds })}
+            className={labeled ? "min-w-0" : revealOnHover}
+        />
+    );
+    const due = (
+        <DueDateMenu
+            key="due"
+            value={issue.dueDate}
+            closed={closed}
+            onChange={(dueDate) => onUpdate({ dueDate })}
+            className={issue.dueDate ? undefined : revealOnHover}
+        />
+    );
     // Set properties come first so the hidden, unset ones never leave a gap between visible icons.
-    const optional = [issue.dueDate && due, issue.estimate != null && estimate, labeled && label, !issue.dueDate && due, issue.estimate == null && estimate, !labeled && label];
-    return <>
-        {imagePreview && <IssuePreviewImage key={imagePreview} src={imagePreview} />}
-        <div className="flex h-5 items-center justify-between gap-2">
-            <span className="text-[11px] font-medium tracking-wide text-tertiary">{issue.identifier}</span>
-            <AssigneeMenu value={assignee} people={people} onChange={(assigneeId) => onUpdate({ assigneeId })} />
-        </div>
-        <div className="mt-1 flex items-start gap-1">
-            <StatusMenu value={status} statuses={statuses} onChange={(columnId) => onUpdate({ columnId })} className="text-tertiary" />
-            <p className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary">{issue.title}</p>
-        </div>
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
-            <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} />
-            {optional}
-        </div>
-    </>;
+    const optional = [
+        issue.dueDate && due,
+        issue.estimate != null && estimate,
+        labeled && label,
+        !issue.dueDate && due,
+        issue.estimate == null && estimate,
+        !labeled && label,
+    ];
+    return (
+        <>
+            {imagePreview && <IssuePreviewImage key={imagePreview} src={imagePreview} />}
+            <div className="flex h-5 items-center justify-between gap-2">
+                <span className="text-[11px] font-medium tracking-wide text-tertiary">{issue.identifier}</span>
+                <AssigneeMenu value={assignee} people={people} onChange={(assigneeId) => onUpdate({ assigneeId })} />
+            </div>
+            <div className="mt-1 flex items-start gap-1">
+                <StatusMenu value={status} statuses={statuses} onChange={(columnId) => onUpdate({ columnId })} className="text-tertiary" />
+                <p className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary">{issue.title}</p>
+            </div>
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
+                <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} />
+                {optional}
+            </div>
+        </>
+    );
 };
 
 interface IssueCardProps extends Omit<IssueCardContentProps, "onUpdate"> {
@@ -118,7 +172,20 @@ const CardContent = memo(
         sameLabels(prev.categories, next.categories),
 );
 
-export const IssueCard = ({ issue, status, statuses, categories, assignee, people, labels, onUpdateIssue, closed, projectId, onClick, suspendLayout = false }: IssueCardProps) => {
+export const IssueCard = ({
+    issue,
+    status,
+    statuses,
+    categories,
+    assignee,
+    people,
+    labels,
+    onUpdateIssue,
+    closed,
+    projectId,
+    onClick,
+    suspendLayout = false,
+}: IssueCardProps) => {
     const onUpdate = useCallback((input: UpdateIssueInput) => onUpdateIssue(issue.identifier, input), [issue.identifier, onUpdateIssue]);
     const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id });
 
@@ -155,8 +222,7 @@ export const IssueCard = ({ issue, status, statuses, categories, assignee, peopl
                     if (selection && event.shiftKey) {
                         event.preventDefault();
                         selection.toggle(issue.id, { range: true });
-                    }
-                    else onClick();
+                    } else onClick();
                 }}
                 onFocus={() => selection?.setFocused(issue.id)}
                 onKeyDown={(event) => {
@@ -166,12 +232,23 @@ export const IssueCard = ({ issue, status, statuses, categories, assignee, peopl
                     } else listeners?.onKeyDown?.(event);
                 }}
                 className={cx(
-                    "block w-full cursor-pointer touch-none select-none rounded-md border border-subtle bg-surface-1 px-3 py-2.5 pr-9 text-left outline-none transition-colors duration-200 ease-out hover:border-strong focus-visible:ring-2 focus-visible:ring-accent-strong md:pr-3",
+                    "block w-full cursor-pointer rounded-md border border-subtle bg-surface-1 px-3 py-2.5 pr-9 text-left transition-colors duration-200 ease-out outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-accent-strong md:pr-3",
+                    dragSurfaceClass,
                     selected && "border-accent-strong",
                     checked && "border-accent-strong bg-accent-subtle/40",
                 )}
             >
-                <CardContent issue={issue} status={status} statuses={statuses} categories={categories} assignee={assignee} people={people} labels={labels} onUpdate={onUpdate} closed={closed} />
+                <CardContent
+                    issue={issue}
+                    status={status}
+                    statuses={statuses}
+                    categories={categories}
+                    assignee={assignee}
+                    people={people}
+                    labels={labels}
+                    onUpdate={onUpdate}
+                    closed={closed}
+                />
             </div>
             <ContextMenuButton
                 entity={{ type: "issue", projectId, identifier: issue.identifier, title: issue.title }}
