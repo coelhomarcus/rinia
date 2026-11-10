@@ -149,7 +149,7 @@ export const IssueCardContent = ({
                     {issue.title}
                 </p>
             </div>
-            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
+            <div data-card-meta="" className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
                 <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} />
                 {optional}
             </div>
@@ -248,7 +248,7 @@ export const IssueCard = ({
                     } else listeners?.onKeyDown?.(event);
                 }}
                 className={cx(
-                    "block w-full cursor-pointer rounded-md border border-subtle bg-surface-1 px-3 py-2.5 pr-9 text-left transition-colors duration-200 ease-out outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-accent-strong md:pr-3",
+                    "block min-h-[var(--card-min-height)] w-full cursor-pointer rounded-md border border-subtle bg-surface-1 px-3 py-[var(--card-pad-y)] pr-9 text-left transition-colors duration-200 ease-out outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-accent-strong md:pr-3",
                     dragSurfaceClass,
                     isDragging && dragSlotClass,
                     selected && "border-accent-strong",

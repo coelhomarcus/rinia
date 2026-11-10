@@ -9,7 +9,7 @@ import { cx } from "@/utils/cx";
  * name, as Linear's workflow does: dotted backlog, empty to do, half and three-quarter pies for in progress and
  * in review, a check for done and a cross for canceled.
  */
-export function StateIcon({ name, color, className = "size-3.5" }: { name: string; color?: string | null; className?: string }) {
+export function StateIcon({ name, color, className = "size-[var(--icon-size)]" }: { name: string; color?: string | null; className?: string }) {
     const state = name.toLowerCase();
     const maskId = useId();
     const backlog = state.includes("backlog") || state.includes("fila");
@@ -43,7 +43,7 @@ const PRIORITY_BARS = [
     { x: 11.5, y: 2, height: 12.5 },
 ];
 
-export function PriorityIcon({ priority, className = "size-3.5" }: { priority: string; className?: string }) {
+export function PriorityIcon({ priority, className = "size-[var(--icon-size)]" }: { priority: string; className?: string }) {
     if (priority === "none") {
         return (
             <svg viewBox="0 0 16 16" className={cx(className, "shrink-0 text-tertiary")} aria-hidden="true">
@@ -74,7 +74,7 @@ export function PriorityIcon({ priority, className = "size-3.5" }: { priority: s
 
 export function IssueAvatar({ name, avatarUrl, className }: { name: string; avatarUrl?: string | null; className?: string }) {
     return <Tooltip title={name}>
-        <span aria-label={avatarUrl ? undefined : name} className={cx("inline-flex size-[18px] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
+        <span aria-label={avatarUrl ? undefined : name} className={cx("inline-flex size-[var(--avatar-size)] shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] text-white outline-1 -outline-offset-1 outline-border-primary", className)} style={{ backgroundColor: "#92346f" }}>
             {avatarUrl ? <img src={avatarUrl} alt={name} className="size-full object-cover" /> : name.charAt(0).toUpperCase()}
         </span>
     </Tooltip>;

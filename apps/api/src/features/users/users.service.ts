@@ -1,4 +1,4 @@
-import { storedAvatarOwner, type Locale, type UpdateProfileInput } from "@rinia/shared";
+import { storedAvatarOwner, type Density, type Locale, type UpdateProfileInput } from "@rinia/shared";
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { users } from "../../db/schema";
@@ -25,6 +25,12 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
 
 export async function updateUserLocale(userId: string, locale: Locale) {
     const [user] = await db.update(users).set({ locale, updatedAt: new Date() }).where(eq(users.id, userId)).returning();
+    if (!user) throw new HttpError(404, "User not found");
+    return toPublicUser(user);
+}
+
+export async function updateUserDensity(userId: string, density: Density) {
+    const [user] = await db.update(users).set({ density, updatedAt: new Date() }).where(eq(users.id, userId)).returning();
     if (!user) throw new HttpError(404, "User not found");
     return toPublicUser(user);
 }

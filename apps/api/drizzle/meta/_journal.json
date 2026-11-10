@@ -281,6 +281,13 @@
       "when": 1794281169238,
       "tag": "0039_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794295919652,
+      "tag": "0040_user_density",
+      "breakpoints": true
     }
   ]
 }

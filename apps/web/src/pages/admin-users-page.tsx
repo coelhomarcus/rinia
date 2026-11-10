@@ -47,7 +47,7 @@ export function AdminUsersPage() {
                                 aria-pressed={filter === key}
                                 onClick={() => setFilter(key)}
                                 className={cx(
-                                    "flex h-6 items-center gap-1.5 rounded px-2 text-[12px] font-medium whitespace-nowrap transition-colors",
+                                    "flex h-6 items-center gap-2 rounded px-2 text-[12px] font-medium whitespace-nowrap transition-colors",
                                     filter === key ? "bg-layer-2 text-primary" : "text-tertiary hover:text-secondary",
                                 )}
                             >

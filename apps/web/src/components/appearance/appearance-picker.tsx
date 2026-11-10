@@ -78,7 +78,7 @@ export function AppearancePicker({ value, onChange, onComplete, projectId, onCro
                     ["emoji", Smile, t("appearance.emoji")],
                     ["image", ImagePlus, t("appearance.image")],
                 ].map(([id, Icon, label]) => (
-                    <button key={id as string} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id as Tab)} className={`flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium ${tab === id ? "bg-layer-1 text-primary" : "text-tertiary hover:bg-layer-1-hover hover:text-secondary"}`}>
+                    <button key={id as string} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id as Tab)} className={`flex h-7 items-center gap-2 rounded-md px-2 text-xs font-medium ${tab === id ? "bg-layer-1 text-primary" : "text-tertiary hover:bg-layer-1-hover hover:text-secondary"}`}>
                         <Icon className="size-3.5" /> {label as string}
                     </button>
                 ))}

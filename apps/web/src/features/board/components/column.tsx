@@ -18,6 +18,7 @@ import { translateStatusName } from "@/i18n/status-label";
 import { ApiError } from "@/lib/api-client";
 import { cx } from "@/utils/cx";
 import type { BoardColumn } from "../api";
+import { useDensity } from "@/providers/density";
 import { columnBucket } from "../column-bucket";
 import { useDeleteColumn, useUpdateColumn } from "../hooks/use-board";
 import { IssueCard } from "./issue-card";
@@ -89,6 +90,7 @@ export const Column = memo(function Column({
     focusIssueId,
 }: ColumnProps) {
     const { t } = useTranslation();
+    const { density } = useDensity();
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const { setNodeRef, isOver } = useDroppable({ id: column.id });
     const setDropRef = (node: HTMLDivElement | null) => {
@@ -126,6 +128,9 @@ export const Column = memo(function Column({
         // The virtualizer instance is stable; the list is read from the ref so a refresh does not steal focus.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [focusIssueId]);
+    useEffect(() => {
+        virtualizer.measure();
+    }, [density, virtualizer]);
 
     const updateColumn = useUpdateColumn(projectId);
     const deleteColumn = useDeleteColumn(projectId);
@@ -178,7 +183,7 @@ export const Column = memo(function Column({
                 (lit || isOver) && "bg-accent-subtle/50",
             )}
         >
-            <div className="sticky top-0 z-[2] flex h-10 shrink-0 items-center gap-1.5 bg-surface-1 px-2.5">
+            <div className="sticky top-0 z-[2] flex h-10 shrink-0 items-center gap-[var(--row-gap)] bg-surface-1 px-2.5">
                 {isEditingName ? (
                     <Input
                         size="sm"
@@ -200,7 +205,7 @@ export const Column = memo(function Column({
                     <button
                         type="button"
                         onClick={startEditing}
-                        className="flex min-w-0 items-center gap-1.5 rounded px-0.5 text-left text-[13px] font-medium text-primary hover:bg-layer-1-hover"
+                        className="flex min-w-0 items-center gap-[var(--row-gap)] rounded px-0.5 text-left text-[13px] font-medium text-primary hover:bg-layer-1-hover"
                     >
                         <StateIcon name={column.name} color={column.color} className="size-4" />
                         <span className="truncate">{label}</span>

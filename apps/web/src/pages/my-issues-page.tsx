@@ -222,7 +222,7 @@ export const MyIssuesPage = () => {
                                                     else next.add(group.key);
                                                     return next;
                                                 })}
-                                                className="flex h-9 w-full items-center gap-2 px-3 text-left text-[13px] text-secondary"
+                                                className="flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] px-3 text-left text-[13px] text-secondary"
                                             >
                                                 <ChevronDownOutline className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} aria-hidden="true" />
                                                 {group.column && <StateIcon name={group.column.name} color={group.column.color} />}

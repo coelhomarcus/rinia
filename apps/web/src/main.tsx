@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/query-client";
 import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { LanguageProvider } from "@/i18n/language-provider";
+import { DensityProvider } from "@/providers/density";
 import { AppRoutes } from "@/routes";
 import { ServiceWorkerUpdates } from "@/features/pwa/service-worker-updates";
 // Imported first thing so the browser's one-time install offer is not missed.
@@ -28,6 +29,7 @@ createRoot(document.getElementById("root")!).render(
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
                         <LanguageProvider>
+                        <DensityProvider>
                             <ViewTransitionRouter>
                                 <RouteProvider>
                                     <ToastProvider>
@@ -38,6 +40,7 @@ createRoot(document.getElementById("root")!).render(
                                     </ToastProvider>
                                 </RouteProvider>
                             </ViewTransitionRouter>
+                        </DensityProvider>
                         </LanguageProvider>
                     </AuthProvider>
                 </QueryClientProvider>

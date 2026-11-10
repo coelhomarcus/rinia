@@ -112,7 +112,7 @@ export const ProjectOverviewPage = () => {
                         <aside className="flex flex-col gap-8">
                             <section aria-labelledby="project-members">
                                 <h2 id="project-members" className="text-[13px] text-tertiary">{t("settings.members")}</h2>
-                                <div className="mt-2.5 flex items-center gap-1.5">
+                                <div className="mt-2.5 flex items-center gap-2">
                                     <Link
                                         to={urls.members(projectKey)}
                                         aria-label={t("projects.viewMembers")}

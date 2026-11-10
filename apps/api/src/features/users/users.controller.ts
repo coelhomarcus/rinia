@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { access } from "node:fs/promises";
-import { changePasswordSchema, requestEmailChangeSchema, updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
+import { changePasswordSchema, requestEmailChangeSchema, updateDensitySchema, updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
 import { z } from "zod";
 import { appBaseUrl } from "../../lib/app-url";
 import { HttpError } from "../../lib/http-error";
@@ -11,7 +11,7 @@ import { contentDisposition, readMultipart } from "../files/files.http";
 import { avatarFilePath } from "../files/files.storage";
 import { clearAvatar, saveAvatar } from "./avatar.service";
 import { updateProfile } from "./users.service";
-import { updateUserLocale } from "./users.service";
+import { updateUserDensity, updateUserLocale } from "./users.service";
 
 export const updateMe = asyncHandler(async (req, res) => {
     const input = updateProfileSchema.parse(req.body);
@@ -54,6 +54,12 @@ export const downloadAvatar = asyncHandler<{ userId: string }>(async (req, res) 
 export const updateLocale = asyncHandler(async (req, res) => {
     const { locale } = updateLocaleSchema.parse(req.body);
     const user = await updateUserLocale(req.user!.sub, locale);
+    res.json({ user });
+});
+
+export const updateDensity = asyncHandler(async (req, res) => {
+    const { density } = updateDensitySchema.parse(req.body);
+    const user = await updateUserDensity(req.user!.sub, density);
     res.json({ user });
 });
 

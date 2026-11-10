@@ -391,7 +391,7 @@ export const Board = ({
                             tilt={tilt}
                             reducedMotion={reducedMotion}
                             style={{ width: activeIssueWidth }}
-                            className="block cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-2.5"
+                            className="block min-h-[var(--card-min-height)] cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-[var(--card-pad-y)]"
                         >
                             <IssueCardContent
                                 issue={activeIssue}

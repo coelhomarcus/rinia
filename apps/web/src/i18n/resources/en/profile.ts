@@ -8,6 +8,8 @@ const profile = {
         profileSaved: "Profile saved.", couldNotSave: "Could not save the profile.", couldNotUpdatePhoto: "Could not update the photo.",
         languageDescription: "Choose the language used across Rinia.",
         theme: "Theme", themeDescription: "Choose the appearance used across Rinia.",
+        density: "Density", densityDescription: "How much fits in lists, on the board, and in the sidebar.",
+        densityComfortable: "Comfortable", densityCompact: "Compact", densityNotSynced: "Density was not saved. It still applies on this device.",
         themeSystem: "System", themeLight: "Light", themeDark: "Dark", themeLightContrast: "Light high contrast", themeDarkContrast: "Dark high contrast",
     } as const;
 

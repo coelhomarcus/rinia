@@ -8,6 +8,8 @@ export const users = pgTable("users", {
     passwordHash: text("password_hash").notNull(),
     avatarUrl: text("avatar_url"),
     locale: text("locale").notNull().default("pt-BR"),
+    /** How dense lists and the board are. Comfortable is the default. */
+    density: text("density").notNull().default("comfortable"),
     isAdmin: boolean("is_admin").notNull().default(false),
     /** Set while a site admin has suspended the account: it cannot sign in, and its sessions and API tokens stop working. */
     suspendedAt: timestamp("suspended_at", { withTimezone: true }),

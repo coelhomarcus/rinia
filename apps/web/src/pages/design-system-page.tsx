@@ -73,8 +73,8 @@ export default function DesignSystemPage() {
                     <h2 className="text-sm font-medium">{t("designSystem.boardCard")}</h2>
                     <div className="w-80 rounded-lg bg-surface-2 p-2">
                         <div className="rounded-lg bg-surface-1 px-2 pb-2">
-                        <header className="flex h-10 items-center gap-1.5 px-0.5">
-                            <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium">
+                        <header className="flex h-10 items-center gap-2 px-0.5">
+                            <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
                                 <span className="bg-blue-600 size-3.5 rounded-full" />
                                 {t("designSystem.inProgress")}
                             </span>
@@ -83,13 +83,13 @@ export default function DesignSystemPage() {
                                 <ButtonUtility icon={ArrowNarrowRightOutline} tooltip={t("designSystem.columnActions")} size="xs" />
                             </span>
                         </header>
-                        <article className="rounded-md border border-subtle bg-surface-1 px-3 py-2.5">
+                        <article className="rounded-md border border-subtle bg-surface-1 px-3 py-3">
                             <span className="text-[11px] font-medium tracking-wide text-tertiary">PLAT-12</span>
                             <h3 className="mt-1 text-[13px] leading-5 font-medium">{t("designSystem.buildWorkspace")}</h3>
-                            <div className="mt-2 flex items-center gap-1.5">
+                            <div className="mt-2 flex items-center gap-2">
                                 <span className="inline-flex h-[22px] items-center gap-1 rounded-md border border-subtle px-1.5 text-[11px] text-secondary">{t("designSystem.inProgress")}</span>
                             </div>
-                            <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-secondary">
+                            <span className="mt-2 inline-flex items-center gap-2 text-[11px] text-secondary">
                                 <span className="size-2 rounded-[2px] bg-accent-primary" />
                                 {t("designSystem.design")}
                             </span>

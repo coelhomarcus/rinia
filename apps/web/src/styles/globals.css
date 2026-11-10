@@ -25,6 +25,45 @@
     --brand-1100: oklch(0.379 0.146 265.5);
     --brand-1200: oklch(0.282 0.091 267.9);
     --brand-default: oklch(0.546 0.245 262.9);
+    /* Comfortable density. Compact tightens these; a coarse pointer keeps rows at 44px. */
+    --row-height: 2.25rem;
+    --sidebar-height: 1.75rem;
+    --card-pad-y: 0.625rem;
+    --card-min-height: 0px;
+    --row-gap: 0.5rem;
+    --avatar-size: 1.125rem;
+    --icon-size: 0.875rem;
+}
+
+html[data-density="compact"] {
+    --row-height: 2rem;
+    --sidebar-height: 1.5rem;
+    --card-pad-y: 0.375rem;
+    --row-gap: 0.25rem;
+    --avatar-size: 1rem;
+    --icon-size: 0.75rem;
+}
+
+@media (pointer: coarse) {
+    html {
+        --row-height: 2.75rem;
+        --sidebar-height: 2.75rem;
+        --card-min-height: 2.75rem;
+        --avatar-size: 1.125rem;
+        --icon-size: 0.875rem;
+    }
+}
+
+/* Secondary card details stay out of a compact board until the pointer is over the card. Touch keeps them visible. */
+@media (hover: hover) and (pointer: fine) {
+    html[data-density="compact"] [data-card-meta] {
+        display: none;
+    }
+
+    html[data-density="compact"] .group\/card:hover [data-card-meta],
+    html[data-density="compact"] .group\/card:focus-within [data-card-meta] {
+        display: flex;
+    }
 }
 
 :root[data-theme*="dark"] {

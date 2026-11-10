@@ -43,6 +43,7 @@ import { useViews } from "@/features/views/hooks/use-views";
 import { filtersFromParams, paramsFromFilters } from "@/features/views/lib/view-filters";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { useDensity } from "@/providers/density";
 import { issueNavigation } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
@@ -68,6 +69,7 @@ export const ProjectIssuesPage = ({ savedView }: { savedView?: SavedView }) => {
 
 const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const { t, i18n } = useTranslation();
+    const { density } = useDensity();
     const { projectId, projectKey } = useRouteProject();
     const selection = useIssueSelection()!;
     const params = useParams<{ scope: string }>();
@@ -250,6 +252,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         listScroll.addEventListener("scroll", load, { passive: true });
         return () => listScroll.removeEventListener("scroll", load);
     }, [completedWindow.fetchNextPage, completedWindow.hasNextPage, completedWindow.isFetchingNextPage, filteringClosed, listScroll, openWindow.fetchNextPage, openWindow.hasNextPage, openWindow.isFetchingNextPage, rows.length, showingClosed, view]);
+    useEffect(() => {
+        virtualizer.measure();
+    }, [density, virtualizer]);
 
     useEffect(() => {
         if (view !== "list") return;
@@ -536,7 +541,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                 style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
                                                             >
                                                                 <h2 className={cx("bg-layer-transparent-hover", reorder.overGroupKey === row.group.key && "bg-accent-subtle/40")}>
-                                                                    <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
+                                                                    <div className="flex h-[var(--row-height)] items-center gap-[var(--row-gap)] px-3 text-[13px] text-secondary">
                                                                         <button
                                                                             type="button"
                                                                             aria-expanded={!collapsedGroups.has(row.group.key)}

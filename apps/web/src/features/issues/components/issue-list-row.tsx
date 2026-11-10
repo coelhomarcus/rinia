@@ -84,7 +84,7 @@ export function IssueListRow({
             placement="row"
             style={{ transform: CSS.Translate.toString(transform), transition }}
             className={cx(
-                "group/issue relative flex h-9 w-full items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover",
+                "group/issue relative flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover",
                 selected && "bg-layer-1-selected",
                 checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80",
                 isDragging && cx("z-10 border opacity-50", dragSlotClass),

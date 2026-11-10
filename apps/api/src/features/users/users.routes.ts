@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { requireAuth, requireSession } from "../../middleware/auth.middleware";
 import { passwordRateLimiter } from "../../middleware/rate-limit.middleware";
-import { deleteEmailChange, downloadAvatar, getEmailChange, removeAvatar, startEmailChange, updateLocale, updateMe, updatePassword, uploadAvatar } from "./users.controller";
+import { deleteEmailChange, downloadAvatar, getEmailChange, removeAvatar, startEmailChange, updateDensity, updateLocale, updateMe, updatePassword, uploadAvatar } from "./users.controller";
 
 export const usersRouter = Router();
 
 usersRouter.use(requireAuth);
 usersRouter.patch("/me", updateMe);
 usersRouter.patch("/me/locale", updateLocale);
+usersRouter.patch("/me/density", updateDensity);
 usersRouter.put("/me/password", requireSession, passwordRateLimiter, updatePassword);
 usersRouter.get("/me/email-change", getEmailChange);
 usersRouter.post("/me/email-change", requireSession, passwordRateLimiter, startEmailChange);

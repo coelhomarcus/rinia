@@ -146,7 +146,7 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
                     {settled && lookup.isError && <Alert tone="error">{t("settings.couldNotCheckUser")}</Alert>}
                     {settled && lookup.data && !found && <Alert tone="warning">{t("settings.userNotFound", { username: typed })}</Alert>}
                     {found && (
-                        <div className="flex items-center gap-3 rounded-lg border border-secondary px-3 py-2.5">
+                        <div className="flex items-center gap-3 rounded-lg border border-secondary px-3 py-3">
                             <Avatar src={found.avatarUrl ?? undefined} initials={memberInitials(found.name)} size="sm" />
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-medium text-primary">{found.name}</p>

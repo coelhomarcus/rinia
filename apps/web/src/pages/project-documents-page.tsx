@@ -313,7 +313,7 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                         )}
                         <div className="document-page-icon-row relative z-10 mb-5 flex flex-wrap items-end gap-2" data-print-hide={state.iconAppearance ? undefined : true}>
                             <Popover.Root open={iconPickerOpen} onOpenChange={setIconPickerOpen}>
-                                <Popover.Trigger disabled={busy || state.status === "deleted"} aria-label={state.iconAppearance ? t("appearance.changePageIcon") : t("appearance.addPageIcon")} data-print-hide={state.iconAppearance ? undefined : true} className={`document-page-icon flex items-center justify-center rounded-md border border-subtle bg-layer-2 text-secondary hover:bg-layer-2-hover ${state.iconAppearance ? "size-12" : "h-7 gap-1.5 px-2 text-xs font-medium"}`}>
+                                <Popover.Trigger disabled={busy || state.status === "deleted"} aria-label={state.iconAppearance ? t("appearance.changePageIcon") : t("appearance.addPageIcon")} data-print-hide={state.iconAppearance ? undefined : true} className={`document-page-icon flex items-center justify-center rounded-md border border-subtle bg-layer-2 text-secondary hover:bg-layer-2-hover ${state.iconAppearance ? "size-12" : "h-7 gap-2 px-2 text-xs font-medium"}`}>
                                     {state.iconAppearance ? <ProjectIcon icon={state.iconAppearance} className="size-6" /> : <><Sparkles className="size-3.5" /> {t("appearance.addPageIcon")}</>}
                                 </Popover.Trigger>
                                 <Popover.Portal>

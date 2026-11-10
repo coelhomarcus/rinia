@@ -1,4 +1,4 @@
-import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type ChangePasswordInput, type CreateApiTokenInput, type RequestEmailChangeInput, type ForgotPasswordInput, type LoginInput, type RegisterInput, type ResetPasswordInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
+import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type ChangePasswordInput, type CreateApiTokenInput, type Density, type RequestEmailChangeInput, type ForgotPasswordInput, type LoginInput, type RegisterInput, type ResetPasswordInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { TAB_ID } from "@/lib/tab-id";
 
@@ -9,6 +9,7 @@ export interface AuthUser {
     email: string;
     avatarUrl: string | null;
     locale: "pt-BR" | "en";
+    density?: Density;
     isAdmin: boolean;
     createdAt: string;
     updatedAt: string;
@@ -79,6 +80,11 @@ export async function deleteAvatar(): Promise<AuthUser> {
 
 export async function updateLocale(locale: UpdateLocaleInput["locale"]): Promise<AuthUser> {
     const { user } = await apiClient.patch<{ user: AuthUser }>("/users/me/locale", { locale });
+    return user;
+}
+
+export async function updateDensity(density: Density): Promise<AuthUser> {
+    const { user } = await apiClient.patch<{ user: AuthUser }>("/users/me/density", { density });
     return user;
 }
 

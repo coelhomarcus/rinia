@@ -62,7 +62,7 @@ export function CreatedBarChart({ buckets, granularity }: { buckets: PeriodBucke
             <ChartHeader title={title} figure={t("projectStats.createdTotal", { count: totalCreated })}>
                 <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary">
                     {SERIES.map((series) => (
-                        <li key={series.key} className="flex items-center gap-1.5">
+                        <li key={series.key} className="flex items-center gap-2">
                             <span aria-hidden="true" className="size-2.5 rounded-[2px]" style={{ background: series.color }} />
                             {labels[series.key]} <span className="text-tertiary tabular-nums">({number.format(totals[series.key])})</span>
                         </li>

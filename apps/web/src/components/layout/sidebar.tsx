@@ -26,7 +26,7 @@ import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
 
 const SECTIONS_KEY = "rinia-sidebar-sections";
-const ITEM = "flex h-7 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150";
+const ITEM = "flex h-[var(--sidebar-height)] w-full min-w-0 items-center gap-[var(--row-gap)] rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150";
 const IDLE = "text-tertiary hover:bg-layer-transparent-hover hover:text-primary";
 const ACTIVE = "bg-layer-1-selected text-primary [&_svg]:text-primary";
 
@@ -285,7 +285,7 @@ function SectionLabel({ label, owner, open, onToggle, action }: { label: string;
                 className="group/section flex h-6 min-w-0 items-center gap-1 rounded-md px-2 text-[12px] font-medium text-tertiary hover:text-secondary"
             >
                 {owner && (
-                    <Avatar src={owner.avatarUrl ?? undefined} initials={getInitials(owner.name)} size="xs" className="size-4" contentClassName="[&>span]:text-[8px]" />
+                    <Avatar src={owner.avatarUrl ?? undefined} initials={getInitials(owner.name)} size="xs" className="size-[var(--avatar-size)]" contentClassName="[&>span]:text-[8px]" />
                 )}
                 <span className="truncate">{label}</span>
                 <span className="text-placeholder group-hover/section:text-tertiary"><Caret open={open} /></span>

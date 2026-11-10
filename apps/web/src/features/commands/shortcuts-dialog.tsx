@@ -31,7 +31,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
                                         {section.shortcuts.map((shortcut) => (
                                             <div key={shortcut.id} className="flex min-h-8 items-center justify-between gap-3 border-b border-subtle/60 py-1 last:border-b-0">
                                                 <dt className="min-w-0 truncate text-[13px] text-secondary">{t(shortcut.label)}</dt>
-                                                <dd className="flex shrink-0 items-center gap-1.5">
+                                                <dd className="flex shrink-0 items-center gap-2">
                                                     {shortcut.keys.map((keys, index) => (
                                                         <Fragment key={keys.join(" ")}>
                                                             {index > 0 && <span className="text-[11px] text-placeholder">{t("commands.or")}</span>}

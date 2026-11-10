@@ -19,4 +19,10 @@
         var locale = localStorage.getItem("rinia.locale.anonymous");
         if (locale === "en" || locale === "pt-BR") root.lang = locale;
     } catch (e) {}
+    var density = "comfortable";
+    try {
+        var storedDensity = localStorage.getItem("rinia.density");
+        if (storedDensity === "compact" || storedDensity === "comfortable") density = storedDensity;
+    } catch (e) {}
+    root.setAttribute("data-density", density);
 })();

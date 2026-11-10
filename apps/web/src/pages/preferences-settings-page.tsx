@@ -1,6 +1,7 @@
 import { SettingsControl, SettingsGroup, SettingsPage } from "@/components/settings/settings-layout";
 import { LanguageSelector } from "@/i18n/language-selector";
 import { useLanguage } from "@/i18n/language-provider";
+import { DensitySelector } from "@/providers/density-selector";
 import { ThemeSelector } from "@/providers/theme-selector";
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +19,9 @@ export function PreferencesSettingsPage() {
             <SettingsGroup title={t("settings.interfaceAndTheme")}>
                 <SettingsControl title={t("profile.theme")} description={t("profile.themeDescription")}>
                     <ThemeSelector />
+                </SettingsControl>
+                <SettingsControl title={t("profile.density")} description={t("profile.densityDescription")}>
+                    <DensitySelector />
                 </SettingsControl>
             </SettingsGroup>
         </SettingsPage>

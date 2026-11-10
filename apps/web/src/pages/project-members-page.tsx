@@ -66,12 +66,12 @@ export const ProjectMembersPage = () => {
                         {isLoading &&
                             Array.from({ length: 3 }, (_, index) => (
                                 <tr key={index}>
-                                    <td className="px-3 py-2.5" colSpan={isProjectOwner ? 4 : 3}><Skeleton className="h-8 w-full" /></td>
+                                    <td className="px-3 py-3" colSpan={isProjectOwner ? 4 : 3}><Skeleton className="h-8 w-full" /></td>
                                 </tr>
                             ))}
                         {sorted.map((member) => (
                             <tr key={member.id} className="group rounded-md hover:bg-layer-transparent-hover">
-                                <td className="rounded-l-md px-3 py-2.5">
+                                <td className="rounded-l-md px-3 py-3">
                                     <div className="flex min-w-0 items-center gap-3">
                                         <Avatar src={member.avatarUrl ?? undefined} initials={memberInitials(member.name)} size="sm" />
                                         <div className="min-w-0">
@@ -80,14 +80,14 @@ export const ProjectMembersPage = () => {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="hidden truncate px-3 py-2.5 text-secondary md:table-cell">{member.email}</td>
-                                <td className={`px-3 py-2.5 ${isProjectOwner ? "" : "rounded-r-md"}`}>
+                                <td className="hidden truncate px-3 py-3 text-secondary md:table-cell">{member.email}</td>
+                                <td className={`px-3 py-3 ${isProjectOwner ? "" : "rounded-r-md"}`}>
                                     <span className={member.role === "owner" ? "font-medium text-accent-primary" : "text-secondary"}>
                                         {member.role === "owner" ? t("settings.owner") : t("settings.member")}
                                     </span>
                                 </td>
                                 {isProjectOwner && (
-                                    <td className="rounded-r-md px-2 py-2.5">
+                                    <td className="rounded-r-md px-2 py-3">
                                         {member.role !== "owner" && (
                                             <div className="opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">
                                                 <ConfirmDialog

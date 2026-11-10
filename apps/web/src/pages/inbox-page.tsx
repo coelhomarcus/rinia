@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { TFunction } from "i18next";
 import { MailCheck, MailOpen } from "lucide-react";
@@ -17,11 +17,13 @@ import { useMarkAllNotificationsRead, useNotifications, useSetNotificationRead }
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { useDensity } from "@/providers/density";
 import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 export const InboxPage = () => {
     const { t } = useTranslation();
+    const { density } = useDensity();
     const [searchParams, setSearchParams] = useSearchParams();
     const unreadOnly = searchParams.get("show") === "unread";
     const { data: notifications, isLoading, isError } = useNotifications();
@@ -43,6 +45,9 @@ export const InboxPage = () => {
         overscan: 8,
         getItemKey: (index) => rows[index]?.key ?? index,
     });
+    useEffect(() => {
+        virtualizer.measure();
+    }, [density, virtualizer]);
 
     function show(next: "all" | "unread") {
         setReadHere(new Set());
@@ -114,7 +119,7 @@ export const InboxPage = () => {
 
 /** A tab in the bar under the title, matching the issue list's scopes. */
 const tab = (active: boolean) =>
-    cx("flex h-7 items-center gap-1.5 rounded-md px-2 text-[13px]", active ? "bg-layer-1-selected text-primary" : "text-tertiary hover:bg-layer-transparent-hover hover:text-primary");
+    cx("flex h-[var(--sidebar-height)] items-center gap-2 rounded-md px-2 text-[13px]", active ? "bg-layer-1-selected text-primary" : "text-tertiary hover:bg-layer-transparent-hover hover:text-primary");
 
 function NotificationRow({ notification, onRead }: { notification: InboxNotification; onRead: (read: boolean) => void }) {
     const { t, i18n } = useTranslation();
@@ -127,7 +132,7 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 to={urls.issue(issue.identifier, issue.title)}
                 state={{ issueTitle: issue.title }}
                 onClick={() => onRead(true)}
-                className="flex items-center gap-3 py-2.5 pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none"
+                className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none"
             >
                 <span aria-hidden="true" className={cx("size-1.5 shrink-0 rounded-full bg-accent-primary transition-[opacity,scale] duration-200", unread ? "scale-100 opacity-100" : "scale-50 opacity-0")} />
                 <IssueAvatar name={actor.name} avatarUrl={actor.avatarUrl} className="size-7 text-[12px]" />
@@ -137,7 +142,7 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                         <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>{issue.identifier}</span>
                         <span className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")} style={issueViewTransitionStyle(issue.identifier, "title")}>{issue.title}</span>
                     </span>
-                    <span className="flex min-w-0 items-center gap-1.5 text-xs text-tertiary">
+                    <span className="flex min-w-0 items-center gap-2 text-xs text-tertiary">
                         {notification.status?.to && <StateIcon name={notification.status.to.name} color={notification.status.to.color} className="size-3 shrink-0" />}
                         <span className="shrink-0">{describe(notification, t)}</span>
                         {notification.excerpt && <span className="min-w-0 truncate text-placeholder">{notification.excerpt}</span>}

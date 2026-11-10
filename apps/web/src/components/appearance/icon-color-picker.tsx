@@ -67,7 +67,7 @@ export function IconColorPicker({ color, onPreview, onChange }: IconColorPickerP
 
     return (
         <div className="flex flex-col gap-2" role="group" aria-label={t("appearance.iconColor")}>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
                 <button type="button" aria-label={t("appearance.defaultColor")} aria-pressed={!color} className={cx(swatch, "border border-dashed border-primary text-tertiary")} onClick={() => onChange(null)}>
                     {!color && <Check className="size-3" />}
                 </button>

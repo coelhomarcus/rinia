@@ -79,7 +79,7 @@ export function DescriptionHistorySheet({
                                     >
                                         <IssueAvatarGroup name={revision.author.name} avatarUrl={revision.author.avatarUrl} source={revision.source} className="mt-0.5 size-5 text-[10px]" />
                                         <span className="flex min-w-0 flex-1 flex-col">
-                                            <span className="flex items-center gap-1.5 text-[13px] text-primary">
+                                            <span className="flex items-center gap-2 text-[13px] text-primary">
                                                 <span className="truncate">{revision.author.name}</span>
                                                 {revision.source && <span className="shrink-0 text-[12px] text-tertiary">{t("issue.viaSource", { client: sourceLabel(revision.source) })}</span>}
                                                 {index === 0 && <span className="shrink-0 rounded bg-layer-2 px-1 text-[10px] text-tertiary">{t("issue.currentVersion")}</span>}

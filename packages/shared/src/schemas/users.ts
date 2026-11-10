@@ -19,3 +19,9 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
 export const updateLocaleSchema = z.object({ locale: localeSchema }).strict();
 export type UpdateLocaleInput = z.infer<typeof updateLocaleSchema>;
+
+export const densityValues = ["comfortable", "compact"] as const;
+export const densitySchema = z.enum(densityValues);
+export type Density = z.infer<typeof densitySchema>;
+export const updateDensitySchema = z.object({ density: densitySchema }).strict();
+export type UpdateDensityInput = z.infer<typeof updateDensitySchema>;
