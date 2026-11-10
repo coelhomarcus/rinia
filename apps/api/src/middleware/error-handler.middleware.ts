@@ -34,6 +34,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     if (err instanceof HttpError) {
         const level = httpErrorLevel(err.statusCode);
         log[level]({ event: "http.error", status: err.statusCode, code: err.code, ...(level === "error" ? { err } : {}) }, err.message);
+        if (err.retryAfter) res.setHeader("Retry-After", String(err.retryAfter));
         res.status(err.statusCode).json({ error: err.message, code: err.code, params: err.params });
         return;
     }

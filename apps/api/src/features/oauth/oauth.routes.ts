@@ -8,6 +8,7 @@ import { Router, type Request } from "express";
 import { z } from "zod";
 import { asyncHandler } from "../../middleware/async-handler";
 import { requireAuth, requireSession } from "../../middleware/auth.middleware";
+import { limitRoute } from "../../middleware/rate-limit.middleware";
 import { answerConsent, appBaseUrl, describeConsent, OAUTH_SCOPES, oauthProvider } from "./oauth.service";
 
 /** Where the MCP server lives, which is what OAuth calls the protected resource. */
@@ -23,6 +24,7 @@ export function resourceMetadataUrl(req: Request) {
  * live under /api/oauth rather than at the root, where /register is the web app's sign-up page.
  */
 export const oauthRouter = Router();
+oauthRouter.use(limitRoute("oauth"));
 oauthRouter.use("/authorize", authorizationHandler({ provider: oauthProvider }));
 oauthRouter.use("/token", tokenHandler({ provider: oauthProvider }));
 oauthRouter.use("/register", clientRegistrationHandler({ clientsStore: oauthProvider.clientsStore, clientSecretExpirySeconds: 0 }));

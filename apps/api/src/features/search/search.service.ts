@@ -1,6 +1,8 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, issues, projectDocuments, projectMembers, projects } from "../../db/schema";
+import { HttpError } from "../../lib/http-error";
+import { consumeRateLimit } from "../../lib/rate-limit";
 
 export interface SearchOptions {
     /** Only this project. Membership is the caller's to check. */
@@ -21,6 +23,12 @@ const richText = (column: SQL | typeof issues.descriptionJson | typeof projectDo
  * `RIN-4` finds that issue first. Pages are searched in their last saved state.
  */
 export async function searchWorkspace(userId: string, term: string, options: SearchOptions = {}) {
+    const hit = consumeRateLimit("search", userId);
+    if (!hit.allowed) {
+        const error = new HttpError(429, "Too many requests. Please try again later.");
+        error.retryAfter = hit.retryAfterSeconds;
+        throw error;
+    }
     const limit = options.limit ?? 20;
     const pattern = containing(term.trim());
     const scope: SQL[] = [];

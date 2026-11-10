@@ -12,10 +12,12 @@ import type { Logger } from "../../lib/logger";
 import { logFor } from "../../lib/request-context";
 import { HttpError } from "../../lib/http-error";
 import { documentRooms, fromBase64 } from "../documents/document-rooms";
+import { forgetRealtime, takeRealtimeMessage } from "../../lib/rate-limit";
 import { authorizeChannel, type RealtimeConnection, realtimeHub } from "./realtime.service";
 
 /** How often the server checks that each socket still answers, and that its session has not expired. */
 const LIVENESS_INTERVAL_MS = 30_000;
+let socketSerial = 0;
 const PRESENCE_SWEEP_MS = 5_000;
 
 export function sessionToken(cookieHeader: string | undefined): string | undefined {
@@ -100,6 +102,7 @@ export function attachRealtime(server: Server) {
 
 async function accept(ws: LiveSocket, session: SessionToken) {
     const log = logFor("realtime").child({ userId: session.sub });
+    const socketId = `${session.sub}:${socketSerial += 1}`;
     ws.alive = true;
     ws.on("pong", () => (ws.alive = true));
     // Messages that arrive while the user loads are kept and handled in order once it has.
@@ -109,8 +112,20 @@ async function accept(ws: LiveSocket, session: SessionToken) {
     const handle = (raw: string) => {
         queue = queue.then(() => receive(ws, connection!, raw, log)).catch((error: unknown) => log.error({ event: "realtime.message_failed", err: error }, "realtime message failed"));
     };
-    ws.on("message", (data) => (connection ? handle(data.toString()) : pending.push(data.toString())));
+    ws.on("message", (data) => {
+        const pace = takeRealtimeMessage(socketId);
+        if (!pace.ok) {
+            if (pace.close) {
+                log.warn({ event: "rate_limited", limiter: "realtime" }, "realtime rate limit");
+                ws.close(1008, "Rate limit");
+            }
+            return;
+        }
+        if (connection) handle(data.toString());
+        else pending.push(data.toString());
+    });
     ws.on("close", (code, reason) => {
+        forgetRealtime(socketId);
         if (connection) {
             realtimeHub.disconnect(connection);
             log.info({ event: "realtime.disconnected", code, reason: reason.toString(), connections: realtimeHub.connections.size }, "realtime disconnected");

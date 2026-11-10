@@ -4,6 +4,7 @@ export class HttpError extends Error {
     statusCode: number;
     code: string;
     params?: Record<string, string>;
+    retryAfter?: number;
 
     constructor(statusCode: number, message: string, code?: string, params?: Record<string, string>) {
         super(message);

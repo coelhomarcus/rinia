@@ -3,8 +3,10 @@ import { authenticateApiToken } from "../features/api-tokens/api-tokens.service"
 import { resolveSession } from "../features/auth/sessions.service";
 import { SESSION_COOKIE_NAME } from "../lib/cookies";
 import { verifyToken } from "../lib/jwt";
+import { rateLimitRetry, consumeRateLimit } from "../lib/rate-limit";
 import { identifyRequest, logFor } from "../lib/request-context";
 import { asyncHandler } from "./async-handler";
+import { enforceRequestLimit, rejectLimited } from "./rate-limit.middleware";
 
 /** The token in `Authorization: Bearer <token>`, "" for a bearer header without one, or undefined without a bearer header. */
 export function bearerToken(header: string | undefined): string | undefined {
@@ -23,8 +25,15 @@ const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export const requireAuth = asyncHandler(async (req, res, next) => {
     const apiToken = bearerToken(req.get("authorization"));
     if (apiToken !== undefined) {
+        const ip = req.ip || "unknown";
+        const blockedFor = rateLimitRetry("invalidBearer", ip);
+        if (blockedFor !== null) {
+            rejectLimited(req, res, "invalidBearer", blockedFor);
+            return;
+        }
         const authenticated = apiToken ? await authenticateApiToken(apiToken) : null;
         if (!authenticated) {
+            consumeRateLimit("invalidBearer", ip);
             logFor("auth").warn({ event: "auth.token_rejected", ip: req.ip, empty: !apiToken }, "invalid or revoked API token used");
             res.status(401).json({ error: "Invalid or revoked API token", code: "errors.invalidSession" });
             return;
@@ -38,6 +47,7 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
             res.status(403).json({ error: "This API token can only read", code: "errors.permissionDenied" });
             return;
         }
+        if (!enforceRequestLimit(req, res)) return;
         next();
         return;
     }
@@ -66,6 +76,7 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
     req.user = user;
     req.authMethod = "session";
     identifyRequest(req);
+    if (!enforceRequestLimit(req, res)) return;
     next();
 });
 
