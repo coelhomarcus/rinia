@@ -37,6 +37,7 @@ export const ProjectViewPage = () => {
             <EmptyState
                 framed={false}
                 className="h-full"
+                illustration="layout"
                 title={t("views.notFoundTitle")}
                 description={t("views.notFoundDescription")}
                 action={

@@ -1,10 +1,10 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Menu } from "@base-ui/react/menu";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AddOutline } from "@makeplane/propel/icons";
 import type { UpdateIssueInput } from "@rinia/shared";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { EyeOff, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
@@ -16,9 +16,9 @@ import type { Issue, IssuePerson } from "@/features/issues/api";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { translateStatusName } from "@/i18n/status-label";
 import { ApiError } from "@/lib/api-client";
+import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
 import type { BoardColumn } from "../api";
-import { useDensity } from "@/providers/density";
 import { columnBucket } from "../column-bucket";
 import { useDeleteColumn, useUpdateColumn } from "../hooks/use-board";
 import { IssueCard } from "./issue-card";
@@ -110,7 +110,8 @@ export const Column = memo(function Column({
         const element = scrollRef.current;
         if (!element || hiddenCompleted != null) return;
         const load = () => {
-            if (element.scrollHeight <= element.clientHeight + 8 || element.scrollTop + element.clientHeight >= element.scrollHeight - 240) loadMoreRef.current?.();
+            if (element.scrollHeight <= element.clientHeight + 8 || element.scrollTop + element.clientHeight >= element.scrollHeight - 240)
+                loadMoreRef.current?.();
         };
         load();
         element.addEventListener("scroll", load, { passive: true });
@@ -123,7 +124,9 @@ export const Column = memo(function Column({
         const index = issuesRef.current.findIndex((issue) => issue.id === focusIssueId);
         if (index < 0) return;
         virtualizer.scrollToIndex(index, { align: "auto" });
-        const frame = requestAnimationFrame(() => requestAnimationFrame(() => scrollRef.current?.querySelector<HTMLElement>(`[data-issue-id="${focusIssueId}"] [data-issue-context]`)?.focus()));
+        const frame = requestAnimationFrame(() =>
+            requestAnimationFrame(() => scrollRef.current?.querySelector<HTMLElement>(`[data-issue-id="${focusIssueId}"] [data-issue-context]`)?.focus()),
+        );
         return () => cancelAnimationFrame(frame);
         // The virtualizer instance is stable; the list is read from the ref so a refresh does not steal focus.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,7 +182,7 @@ export const Column = memo(function Column({
         <div
             data-board-column={column.id}
             className={cx(
-                "group/column animate-enter flex h-full max-h-full w-80 shrink-0 flex-col overflow-hidden rounded-lg bg-surface-1",
+                "group/column animate-enter flex h-full max-h-full w-[85vw] shrink-0 snap-start flex-col overflow-hidden rounded-lg bg-surface-1 md:w-80 md:snap-align-none",
                 (lit || isOver) && "bg-accent-subtle/50",
             )}
         >
@@ -298,7 +301,14 @@ export const Column = memo(function Column({
                                         key={virtual.key}
                                         data-index={virtual.index}
                                         ref={virtualizer.measureElement}
-                                        style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)`, paddingBottom: 8 }}
+                                        style={{
+                                            position: "absolute",
+                                            top: 0,
+                                            left: 0,
+                                            width: "100%",
+                                            transform: `translateY(${virtual.start}px)`,
+                                            paddingBottom: 8,
+                                        }}
                                     >
                                         <IssueCard
                                             issue={issue}
@@ -321,7 +331,11 @@ export const Column = memo(function Column({
                     </SortableContext>
                 )}
                 {hasMore && hiddenCompleted == null && (
-                    <button type="button" onClick={onLoadMore} className="flex h-7 shrink-0 items-center justify-center text-xs text-tertiary hover:text-secondary">
+                    <button
+                        type="button"
+                        onClick={onLoadMore}
+                        className="flex h-7 shrink-0 items-center justify-center text-xs text-tertiary hover:text-secondary"
+                    >
                         {loadingMore ? t("common.loading") : t("issue.loadMoreIssues")}
                     </button>
                 )}
@@ -329,7 +343,7 @@ export const Column = memo(function Column({
                 <button
                     type="button"
                     onClick={() => onCreateIssue(column.id)}
-                    className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-0 transition-opacity duration-150 group-hover/column:opacity-100 hover:bg-layer-1-hover hover:text-secondary focus-visible:opacity-100 motion-reduce:transition-none"
+                    className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-100 transition-opacity duration-150 hover:bg-layer-1-hover hover:text-secondary motion-reduce:transition-none md:opacity-0 md:group-hover/column:opacity-100 md:focus-visible:opacity-100"
                 >
                     <AddOutline className="size-3.5" />
                     {t("issue.newIssue")}

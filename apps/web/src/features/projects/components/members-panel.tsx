@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { type AddProjectMemberInput, addProjectMemberSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AddOutline as Plus, SearchOutline as Search, UserMinusOutline as UserRoundMinus } from "@makeplane/propel/icons";
+import { type AddProjectMemberInput, addProjectMemberSchema } from "@rinia/shared";
 import { useForm, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
@@ -12,12 +13,11 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { ControlledInput } from "@/components/form/controlled-input";
-import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
+import { SettingsCard, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
 import { ApiError } from "@/lib/api-client";
 import { useAddProjectMember, useMemberLookup, useProjectMembers, useRemoveProjectMember } from "../hooks/use-project-members";
-import { useTranslation } from "react-i18next";
 
 export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
     const { t, i18n } = useTranslation();
@@ -67,6 +67,7 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
             {isError && <ErrorMessage message={t("settings.couldNotLoadMembers")} />}
             {filtered && filtered.length === 0 && (
                 <EmptyState
+                    illustration={search.trim() ? "crate" : "briefcase"}
                     title={search.trim() ? t("settings.noMembersFound") : t("settings.noMembers")}
                     description={search.trim() ? t("settings.tryMemberSearch") : t("settings.inviteTeammates")}
                 />
@@ -81,15 +82,27 @@ export const MembersPanel = ({ projectId, isProjectOwner }: { projectId: string;
                             description={member.email}
                         >
                             <span className="hidden text-[13px] whitespace-nowrap text-tertiary sm:inline">
-                                {t("settings.joinedOnDate", { date: new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(member.joinedAt)) })}
+                                {t("settings.joinedOnDate", {
+                                    date: new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(member.joinedAt)),
+                                })}
                             </span>
-                            <span className="w-24 text-right text-[13px] text-secondary">{member.role === "owner" ? t("settings.owner") : t("settings.member")}</span>
+                            <span className="w-24 text-right text-[13px] text-secondary">
+                                {member.role === "owner" ? t("settings.owner") : t("settings.member")}
+                            </span>
                             {isProjectOwner && (
                                 <span className="flex w-8 justify-end">
                                     {member.role !== "owner" && (
                                         <SettingsRowActions>
                                             <ConfirmDialog
-                                                trigger={<ButtonUtility icon={UserRoundMinus} size="sm" color="tertiary" tooltip={`${t("settings.removeMember")} ${member.name}`} isDisabled={removeMutation.isPending} />}
+                                                trigger={
+                                                    <ButtonUtility
+                                                        icon={UserRoundMinus}
+                                                        size="sm"
+                                                        color="tertiary"
+                                                        tooltip={`${t("settings.removeMember")} ${member.name}`}
+                                                        isDisabled={removeMutation.isPending}
+                                                    />
+                                                }
                                                 title={t("settings.removeMember")}
                                                 description={t("settings.removeMemberDescription", { name: member.name, username: member.username })}
                                                 confirmLabel={t("settings.removeMember")}
@@ -125,7 +138,7 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
     const lookup = useMemberLookup(projectId, username);
     const checking = !!typed && (typed !== username || lookup.isFetching);
     const settled = !!typed && !checking;
-    const found = settled ? lookup.data?.user ?? null : null;
+    const found = settled ? (lookup.data?.user ?? null) : null;
     const isMember = !!found && !!lookup.data?.isMember;
 
     return (
@@ -139,7 +152,15 @@ export function AddMemberForm({ projectId, onClose }: { projectId: string; onClo
                 }),
             )}
         >
-            <ControlledInput control={control} name="username" label={t("settings.username")} placeholder={t("settings.username")} isRequired autoFocus isDisabled={mutation.isPending} />
+            <ControlledInput
+                control={control}
+                name="username"
+                label={t("settings.username")}
+                placeholder={t("settings.username")}
+                isRequired
+                autoFocus
+                isDisabled={mutation.isPending}
+            />
             {typed && (
                 <div aria-live="polite" className="space-y-2">
                     {checking && <p className="text-[13px] text-tertiary">{t("settings.checkingUser")}</p>}

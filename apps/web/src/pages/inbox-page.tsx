@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { TFunction } from "i18next";
 import { MailCheck, MailOpen } from "lucide-react";
-import { Link, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
-import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Presence, usePresence } from "@/components/base/presence";
+import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { Topbar } from "@/components/layout/topbar";
@@ -17,8 +17,8 @@ import { useMarkAllNotificationsRead, useNotifications, useSetNotificationRead }
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
-import { useDensity } from "@/providers/density";
 import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
 
 export const InboxPage = () => {
@@ -51,11 +51,14 @@ export const InboxPage = () => {
 
     function show(next: "all" | "unread") {
         setReadHere(new Set());
-        setSearchParams((current) => {
-            if (next === "unread") current.set("show", "unread");
-            else current.delete("show");
-            return current;
-        }, { replace: true });
+        setSearchParams(
+            (current) => {
+                if (next === "unread") current.set("show", "unread");
+                else current.delete("show");
+                return current;
+            },
+            { replace: true },
+        );
     }
 
     function markRead(notification: InboxNotification, read: boolean) {
@@ -69,7 +72,13 @@ export const InboxPage = () => {
             <Topbar
                 title={t("inbox.title")}
                 actions={
-                    <Button size="xs" color="secondary" iconLeading={MailCheck} isDisabled={unreadCount === 0 || markAll.isPending} onClick={() => markAll.mutate()}>
+                    <Button
+                        size="xs"
+                        color="secondary"
+                        iconLeading={MailCheck}
+                        isDisabled={unreadCount === 0 || markAll.isPending}
+                        onClick={() => markAll.mutate()}
+                    >
                         {t("inbox.markAllRead")}
                     </Button>
                 }
@@ -108,9 +117,20 @@ export const InboxPage = () => {
                 )}
                 {visible?.length === 0 &&
                     (unreadOnly && notifications?.length ? (
-                        <EmptyState framed={false} className="py-16" title={t("inbox.emptyUnreadTitle")} description={t("inbox.emptyUnread")} action={<Button size="sm" color="secondary" onClick={() => show("all")}>{t("inbox.showAll")}</Button>} />
+                        <EmptyState
+                            framed={false}
+                            className="py-16"
+                            illustration="check"
+                            title={t("inbox.emptyUnreadTitle")}
+                            description={t("inbox.emptyUnread")}
+                            action={
+                                <Button size="sm" color="secondary" onClick={() => show("all")}>
+                                    {t("inbox.showAll")}
+                                </Button>
+                            }
+                        />
                     ) : (
-                        <EmptyState framed={false} className="py-16" title={t("inbox.emptyTitle")} description={t("inbox.empty")} />
+                        <EmptyState framed={false} className="py-16" illustration="mail" title={t("inbox.emptyTitle")} description={t("inbox.empty")} />
                     ))}
             </main>
         </div>
@@ -119,7 +139,10 @@ export const InboxPage = () => {
 
 /** A tab in the bar under the title, matching the issue list's scopes. */
 const tab = (active: boolean) =>
-    cx("flex h-[var(--sidebar-height)] items-center gap-2 rounded-md px-2 text-[13px]", active ? "bg-layer-1-selected text-primary" : "text-tertiary hover:bg-layer-transparent-hover hover:text-primary");
+    cx(
+        "flex h-[var(--sidebar-height)] items-center gap-2 rounded-md px-2 text-[13px]",
+        active ? "bg-layer-1-selected text-primary" : "text-tertiary hover:bg-layer-transparent-hover hover:text-primary",
+    );
 
 function NotificationRow({ notification, onRead }: { notification: InboxNotification; onRead: (read: boolean) => void }) {
     const { t, i18n } = useTranslation();
@@ -134,16 +157,31 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 onClick={() => onRead(true)}
                 className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none"
             >
-                <span aria-hidden="true" className={cx("size-1.5 shrink-0 rounded-full bg-accent-primary transition-[opacity,scale] duration-200", unread ? "scale-100 opacity-100" : "scale-50 opacity-0")} />
+                <span
+                    aria-hidden="true"
+                    className={cx(
+                        "size-1.5 shrink-0 rounded-full bg-accent-primary transition-[opacity,scale] duration-200",
+                        unread ? "scale-100 opacity-100" : "scale-50 opacity-0",
+                    )}
+                />
                 <IssueAvatar name={actor.name} avatarUrl={actor.avatarUrl} className="size-7 text-[12px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-2 text-[13px]">
                         <ProjectIcon icon={notification.project.iconAppearance ?? notification.project.icon} className="size-3.5 shrink-0" />
-                        <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>{issue.identifier}</span>
-                        <span className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")} style={issueViewTransitionStyle(issue.identifier, "title")}>{issue.title}</span>
+                        <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>
+                            {issue.identifier}
+                        </span>
+                        <span
+                            className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")}
+                            style={issueViewTransitionStyle(issue.identifier, "title")}
+                        >
+                            {issue.title}
+                        </span>
                     </span>
                     <span className="flex min-w-0 items-center gap-2 text-xs text-tertiary">
-                        {notification.status?.to && <StateIcon name={notification.status.to.name} color={notification.status.to.color} className="size-3 shrink-0" />}
+                        {notification.status?.to && (
+                            <StateIcon name={notification.status.to.name} color={notification.status.to.color} className="size-3 shrink-0" />
+                        )}
                         <span className="shrink-0">{describe(notification, t)}</span>
                         {notification.excerpt && <span className="min-w-0 truncate text-placeholder">{notification.excerpt}</span>}
                     </span>
@@ -153,14 +191,14 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 </time>
             </Link>
             <Tooltip title={unread ? t("inbox.markRead") : t("inbox.markUnread")}>
-            <button
-                type="button"
-                aria-label={unread ? t("inbox.markRead") : t("inbox.markUnread")}
-                onClick={() => onRead(!unread)}
-                className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
-            >
-                {unread ? <MailOpen className="size-3.5" /> : <MailCheck className="size-3.5" />}
-            </button>
+                <button
+                    type="button"
+                    aria-label={unread ? t("inbox.markRead") : t("inbox.markUnread")}
+                    onClick={() => onRead(!unread)}
+                    className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
+                >
+                    {unread ? <MailOpen className="size-3.5" /> : <MailCheck className="size-3.5" />}
+                </button>
             </Tooltip>
         </div>
     );

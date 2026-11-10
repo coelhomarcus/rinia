@@ -1,27 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import { AssigneeOutline, ChevronDownOutline, ProjectsOutline, HistoryOutline, LabelsOutline, PriorityOutline, StateOutline } from "@makeplane/propel/icons";
-import { myIssuesFilterValues, type IssueOrder, type MyIssuesFilter } from "@rinia/shared";
+import { AssigneeOutline, ChevronDownOutline, HistoryOutline, LabelsOutline, PriorityOutline, ProjectsOutline, StateOutline } from "@makeplane/propel/icons";
+import { type IssueOrder, type MyIssuesFilter, myIssuesFilterValues } from "@rinia/shared";
 import { CalendarDays, Hash, Minus } from "lucide-react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { Collapse } from "@/components/base/collapse";
 import { Skeleton } from "@/components/base/feedback/skeleton";
-import { Presence, usePresence, type PresenceRow } from "@/components/base/presence";
+import { Presence, type PresenceRow, usePresence } from "@/components/base/presence";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { Topbar } from "@/components/layout/topbar";
 import { columnBucket } from "@/features/board/column-bucket";
 import { IssueAvatar, PriorityIcon, StateIcon } from "@/features/board/components/issue-property-icons";
 import { useColumns } from "@/features/board/hooks/use-board";
+import { useCategories } from "@/features/categories/hooks/use-categories";
+import { listStep } from "@/features/commands/shortcuts";
 import type { MyIssue } from "@/features/issues/api";
 import { IssueListRow } from "@/features/issues/components/issue-list-row";
-import { IssueFilterRow, IssueToolbar, dueFilter, pillTab, type IssueFilter } from "@/features/issues/components/issue-toolbar";
+import { type IssueFilter, IssueFilterRow, IssueToolbar, dueFilter, pillTab } from "@/features/issues/components/issue-toolbar";
+import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useMyIssues, useUpdateMyIssue } from "@/features/issues/hooks/use-issues";
 import { matchesDueFilter } from "@/features/issues/lib/due-date";
 import { matchesLabels, readLabels } from "@/features/issues/lib/issue-filters";
-import { resolveLabels } from "@/features/issues/components/labels-picker";
-import { useCategories } from "@/features/categories/hooks/use-categories";
 import { PRIORITY_OPTIONS, priorityLabelKey } from "@/features/issues/lib/priority";
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
@@ -30,7 +31,6 @@ import { useRealtimeChannels } from "@/features/realtime/use-realtime";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
 import { issueNavigation } from "@/lib/view-transition";
-import { listStep } from "@/features/commands/shortcuts";
 
 type OrderBy = Exclude<IssueOrder, "position">;
 type GroupBy = "status" | "project" | "none";
@@ -70,7 +70,10 @@ export const MyIssuesPage = () => {
                     (!priority || issue.priority === priority) &&
                     (!status || nameKey(issue.column.name) === status) &&
                     (!assignee || issue.assigneeId === assignee) &&
-                    matchesLabels(issue.categories.map((item) => nameKey(item.name)), labelFilter) &&
+                    matchesLabels(
+                        issue.categories.map((item) => nameKey(item.name)),
+                        labelFilter,
+                    ) &&
                     (!project || issue.projectId === project) &&
                     matchesDueFilter(issue.dueDate, due, columnBucket(issue.column.name) === "closed"),
             ),
@@ -80,8 +83,19 @@ export const MyIssuesPage = () => {
     const identifierWidth = useMemo(() => Math.max(4, ...(issues ?? []).map((issue) => issue.identifier.length)), [issues]);
 
     const groups = useMemo(() => {
-        if (groupBy === "none") return [{ key: "all", label: null as string | null, column: null as MyIssue["column"] | null, project: null as MyIssue["project"] | null, rows }];
-        const grouped = new Map<string, { key: string; label: string; column: MyIssue["column"] | null; project: MyIssue["project"] | null; rows: PresenceRow<MyIssue>[]; rank: number | string }>();
+        if (groupBy === "none")
+            return [{ key: "all", label: null as string | null, column: null as MyIssue["column"] | null, project: null as MyIssue["project"] | null, rows }];
+        const grouped = new Map<
+            string,
+            {
+                key: string;
+                label: string;
+                column: MyIssue["column"] | null;
+                project: MyIssue["project"] | null;
+                rows: PresenceRow<MyIssue>[];
+                rank: number | string;
+            }
+        >();
         for (const row of rows) {
             const issue = row.item;
             const key = groupBy === "status" ? nameKey(issue.column.name) : issue.projectId;
@@ -100,7 +114,10 @@ export const MyIssuesPage = () => {
         }
         return [...grouped.values()].sort((left, right) => (left.rank < right.rank ? -1 : left.rank > right.rank ? 1 : 0));
     }, [groupBy, rows, t]);
-    const orderedIssues = useMemo(() => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.rows.filter((row) => !row.leaving).map((row) => row.item))), [collapsedGroups, groups]);
+    const orderedIssues = useMemo(
+        () => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.rows.filter((row) => !row.leaving).map((row) => row.item))),
+        [collapsedGroups, groups],
+    );
 
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
@@ -110,14 +127,22 @@ export const MyIssuesPage = () => {
             const direction = listStep(event);
             if (direction) {
                 event.preventDefault();
-                const nextIndex = currentIndex < 0 ? (direction === 1 ? 0 : orderedIssues.length - 1) : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
+                const nextIndex =
+                    currentIndex < 0
+                        ? direction === 1
+                            ? 0
+                            : orderedIssues.length - 1
+                        : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
                 const next = orderedIssues[nextIndex];
                 setSelectedIssueId(next.id);
                 document.querySelector<HTMLElement>(`[data-issue-id="${next.id}"]`)?.scrollIntoView({ block: "nearest" });
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
-                void navigate(urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title), issueNavigation(orderedIssues[currentIndex].title));
+                void navigate(
+                    urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title),
+                    issueNavigation(orderedIssues[currentIndex].title),
+                );
             }
             if (event.key === "Escape") setSelectedIssueId(null);
         }
@@ -126,19 +151,65 @@ export const MyIssuesPage = () => {
     }, [navigate, orderedIssues, selectedIssueId]);
 
     const toolbarFilters: IssueFilter[] = [
-        { key: "status", label: t("issue.status"), icon: StateOutline, items: options.statuses.map((column) => ({ id: nameKey(column.name), name: translateStatusName(column.name, t), icon: <StateIcon name={column.name} color={column.color} /> })) },
-        { key: "priority", label: t("issue.priority"), icon: PriorityOutline, items: PRIORITY_OPTIONS.map((id) => ({ id, name: t(priorityLabelKey(id)), icon: <PriorityIcon priority={id} /> })) },
-        { key: "assignee", label: t("issue.assignee"), icon: AssigneeOutline, items: options.assignees.map((person) => ({ id: person.id, name: person.name, avatarUrl: person.avatarUrl, icon: person.avatarUrl ? undefined : <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} /> })) },
-        { key: "label", label: t("issue.label"), icon: LabelsOutline, multiple: true, items: options.labels.map((item) => ({ id: nameKey(item.name), name: item.name, icon: <LabelsOutline className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} /> })) },
-        { key: "project", label: t("myIssues.project"), icon: ProjectsOutline, items: options.projects.map((item) => ({ id: item.id, name: item.name, icon: <ProjectIcon icon={item.iconAppearance ?? item.icon} className="size-3.5" /> })) },
+        {
+            key: "status",
+            label: t("issue.status"),
+            icon: StateOutline,
+            items: options.statuses.map((column) => ({
+                id: nameKey(column.name),
+                name: translateStatusName(column.name, t),
+                icon: <StateIcon name={column.name} color={column.color} />,
+            })),
+        },
+        {
+            key: "priority",
+            label: t("issue.priority"),
+            icon: PriorityOutline,
+            items: PRIORITY_OPTIONS.map((id) => ({ id, name: t(priorityLabelKey(id)), icon: <PriorityIcon priority={id} /> })),
+        },
+        {
+            key: "assignee",
+            label: t("issue.assignee"),
+            icon: AssigneeOutline,
+            items: options.assignees.map((person) => ({
+                id: person.id,
+                name: person.name,
+                avatarUrl: person.avatarUrl,
+                icon: person.avatarUrl ? undefined : <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} />,
+            })),
+        },
+        {
+            key: "label",
+            label: t("issue.label"),
+            icon: LabelsOutline,
+            multiple: true,
+            items: options.labels.map((item) => ({
+                id: nameKey(item.name),
+                name: item.name,
+                icon: <LabelsOutline className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} />,
+            })),
+        },
+        {
+            key: "project",
+            label: t("myIssues.project"),
+            icon: ProjectsOutline,
+            items: options.projects.map((item) => ({
+                id: item.id,
+                name: item.name,
+                icon: <ProjectIcon icon={item.iconAppearance ?? item.icon} className="size-3.5" />,
+            })),
+        },
         dueFilter(t),
     ];
 
     function clearFilters() {
-        setSearchParams((current) => {
-            for (const key of ["q", "priority", "status", "assignee", "label", "project", "due"]) current.delete(key);
-            return current;
-        }, { replace: true });
+        setSearchParams(
+            (current) => {
+                for (const key of ["q", "priority", "status", "assignee", "label", "project", "due"]) current.delete(key);
+                return current;
+            },
+            { replace: true },
+        );
     }
 
     function setFilter(next: MyIssuesFilter) {
@@ -155,29 +226,47 @@ export const MyIssuesPage = () => {
             if (names.length === 0) return [];
             const name = new Intl.ListFormat(i18n.language, { type: "disjunction" }).format(names);
             if (item.key === "due") return [value === "overdue" ? t("issue.conditionDueOverdue") : t("issue.conditionDueThisWeek")];
-            const key = { status: "issue.conditionStatus", priority: "issue.conditionPriority", assignee: "issue.conditionAssignee", label: "issue.conditionLabel", project: "myIssues.conditionProject" }[item.key] as "issue.conditionStatus";
+            const key = {
+                status: "issue.conditionStatus",
+                priority: "issue.conditionPriority",
+                assignee: "issue.conditionAssignee",
+                label: "issue.conditionLabel",
+                project: "myIssues.conditionProject",
+            }[item.key] as "issue.conditionStatus";
             return [t(key, { value: name })];
         });
         if (search) conditions.push(t("issue.conditionSearch", { value: search }));
         if (issues?.length && conditions.length) {
             return {
+                illustration: "crate" as const,
                 title: t("issue.noMatchingIssues"),
                 description: t("issue.emptyFilteredAll", { conditions: new Intl.ListFormat(i18n.language, { type: "conjunction" }).format(conditions) }),
-                action: <Button size="sm" color="secondary" onClick={clearFilters}>{t("issue.clearFilters")}</Button>,
+                action: (
+                    <Button size="sm" color="secondary" onClick={clearFilters}>
+                        {t("issue.clearFilters")}
+                    </Button>
+                ),
             };
         }
-        if (filter === "created") return { title: t("myIssues.emptyCreatedTitle"), description: t("myIssues.emptyCreated") };
-        if (filter === "following") return { title: t("myIssues.emptyFollowingTitle"), description: t("myIssues.emptyFollowing") };
-        return { title: t("myIssues.emptyAssignedTitle"), description: t("myIssues.emptyAssigned") };
+        if (filter === "created") return { illustration: "kanban" as const, title: t("myIssues.emptyCreatedTitle"), description: t("myIssues.emptyCreated") };
+        if (filter === "following")
+            return { illustration: "mail" as const, title: t("myIssues.emptyFollowingTitle"), description: t("myIssues.emptyFollowing") };
+        return { illustration: "briefcase" as const, title: t("myIssues.emptyAssignedTitle"), description: t("myIssues.emptyAssigned") };
     }
 
     return (
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <Topbar title={t("myIssues.title")} />
-            <div className="flex h-11 shrink-0 select-none items-center gap-1 px-3">
+            <div className="flex h-11 shrink-0 items-center gap-1 px-3 select-none">
                 <div role="group" aria-label={t("myIssues.tabs")} className="flex min-w-0 items-center gap-1">
                     {myIssuesFilterValues.map((value) => (
-                        <button key={value} type="button" aria-pressed={filter === value} className={pillTab(filter === value)} onClick={() => setFilter(value)}>
+                        <button
+                            key={value}
+                            type="button"
+                            aria-pressed={filter === value}
+                            className={pillTab(filter === value)}
+                            onClick={() => setFilter(value)}
+                        >
                             {t(`myIssues.${value}`)}
                         </button>
                     ))}
@@ -216,17 +305,24 @@ export const MyIssuesPage = () => {
                                             <button
                                                 type="button"
                                                 aria-expanded={!collapsed}
-                                                onClick={() => setCollapsedGroups((current) => {
-                                                    const next = new Set(current);
-                                                    if (next.has(group.key)) next.delete(group.key);
-                                                    else next.add(group.key);
-                                                    return next;
-                                                })}
+                                                onClick={() =>
+                                                    setCollapsedGroups((current) => {
+                                                        const next = new Set(current);
+                                                        if (next.has(group.key)) next.delete(group.key);
+                                                        else next.add(group.key);
+                                                        return next;
+                                                    })
+                                                }
                                                 className="flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] px-3 text-left text-[13px] text-secondary"
                                             >
-                                                <ChevronDownOutline className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} aria-hidden="true" />
+                                                <ChevronDownOutline
+                                                    className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+                                                    aria-hidden="true"
+                                                />
                                                 {group.column && <StateIcon name={group.column.name} color={group.column.color} />}
-                                                {group.project && <ProjectIcon icon={group.project.iconAppearance ?? group.project.icon} className="size-3.5 shrink-0" />}
+                                                {group.project && (
+                                                    <ProjectIcon icon={group.project.iconAppearance ?? group.project.icon} className="size-3.5 shrink-0" />
+                                                )}
                                                 <span>{group.label}</span>
                                                 <span className="text-tertiary">{remaining}</span>
                                             </button>
@@ -257,7 +353,19 @@ export const MyIssuesPage = () => {
 };
 
 /** One issue with its own project's states and people, so its status and assignee menus work as in the project. */
-function MyIssueRow({ issue, identifierWidth, selected, onSelect, onUpdate }: { issue: MyIssue; identifierWidth: number; selected: boolean; onSelect: () => void; onUpdate: Parameters<typeof IssueListRow>[0]["onUpdate"] }) {
+function MyIssueRow({
+    issue,
+    identifierWidth,
+    selected,
+    onSelect,
+    onUpdate,
+}: {
+    issue: MyIssue;
+    identifierWidth: number;
+    selected: boolean;
+    onSelect: () => void;
+    onUpdate: Parameters<typeof IssueListRow>[0]["onUpdate"];
+}) {
     const { data: columns } = useColumns(issue.projectId);
     const { data: members } = useProjectMembers(issue.projectId);
     const { data: labels } = useCategories(issue.projectId);

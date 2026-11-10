@@ -32,12 +32,16 @@ import { filterIssues } from "@/features/issues/lib/issue-filters";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useRouteProject } from "@/features/projects/route-project";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
 import { issueNavigation } from "@/lib/view-transition";
+import { cx } from "@/utils/cx";
 import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
+import { useBoardColumnSnap } from "../hooks/use-board-column-snap";
 import { Column, type ColumnProps } from "./column";
+import { BoardColumnTabs } from "./column-tabs";
 import { IssueCardContent } from "./issue-card";
 
 /**
@@ -75,9 +79,11 @@ export const Board = ({
     const { t } = useTranslation();
     const showToast = useToast();
     const navigate = useNavigate();
+    const compact = !useBreakpoint("md");
     const { projectKey } = useRouteProject();
     const { data: columns, isLoading: columnsLoading, isError: columnsError } = useColumns(projectId);
     const [loadedByColumn, setLoadedByColumn] = useState<Map<string, Issue[]>>(new Map());
+    const [columnTotals, setColumnTotals] = useState<Map<string, number>>(new Map());
     const onLoaded = useCallback((columnId: string, next: Issue[]) => {
         setLoadedByColumn((current) => {
             const previous = current.get(columnId);
@@ -85,6 +91,14 @@ export const Board = ({
             if (previous && previous.length === next.length && previous.every((issue, index) => issue === next[index])) return current;
             const updated = new Map(current);
             updated.set(columnId, next);
+            return updated;
+        });
+    }, []);
+    const onTotal = useCallback((columnId: string, total: number) => {
+        setColumnTotals((current) => {
+            if (current.get(columnId) === total) return current;
+            const updated = new Map(current);
+            updated.set(columnId, total);
             return updated;
         });
     }, []);
@@ -115,6 +129,9 @@ export const Board = ({
 
     // J and K move the focus through the cards, column by column; Enter opens the focused card and X selects it.
     const boardRef = useRef<HTMLDivElement>(null);
+    const scrollerRef = useRef<HTMLDivElement>(null);
+    const columnIds = useMemo(() => shownColumns.map((column) => column.id), [shownColumns]);
+    const { activeId, selectColumn } = useBoardColumnSnap(scrollerRef, columnIds, compact);
     const visibleIdsRef = useRef<string[]>([]);
     const focusIssueRef = useRef<string | null>(null);
     const [focusIssueId, setFocusIssueId] = useState<string | null>(null);
@@ -164,6 +181,12 @@ export const Board = ({
     );
     visibleIdsRef.current = visibleIds;
     useRegisterVisibleIssues(visibleIds);
+
+    useEffect(() => {
+        if (!compact || !focusIssueId || dragging) return;
+        const columnId = board.find((issue) => issue.id === focusIssueId)?.columnId;
+        if (columnId && columnId !== activeId) selectColumn(columnId, "auto");
+    }, [activeId, board, compact, dragging, focusIssueId, selectColumn]);
 
     // The column callbacks read the latest props through a ref, so they stay stable and memoized columns can skip renders.
     const latest = useRef({ hideColumn, showColumn, showToast, t, projectKey, navigate });
@@ -338,7 +361,7 @@ export const Board = ({
     const activeAssignee = activeIssue?.assigneeId ? membersById.get(activeIssue.assigneeId) : undefined;
 
     return (
-        <>
+        <div className="flex h-full min-h-0 flex-1 flex-col">
             {moveError && (
                 <Alert tone="error" className="mb-3">
                     {moveError}
@@ -356,8 +379,23 @@ export const Board = ({
             >
                 <LayoutGroup>
                     <IssueMotionRoster ids={visibleIds}>
-                        <div ref={boardRef} className="flex h-full min-w-0 gap-3">
-                            <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
+                        <div ref={boardRef} className="flex min-h-0 min-w-0 flex-1 flex-col">
+                            {compact && (
+                                <BoardColumnTabs
+                                    columns={shownColumns}
+                                    counts={columnTotals}
+                                    activeId={activeId}
+                                    onSelect={(columnId) => selectColumn(columnId, reducedMotion ? "auto" : "smooth")}
+                                />
+                            )}
+                            <div
+                                ref={scrollerRef}
+                                className={cx(
+                                    "flex min-h-0 min-w-0 flex-1 items-start gap-3 overflow-x-auto",
+                                    compact && "scroll-px-3 overscroll-x-contain px-3",
+                                    compact && !dragging && "snap-x snap-mandatory",
+                                )}
+                            >
                                 {shownColumns.map((column) => (
                                     <ColumnWindow
                                         key={column.id}
@@ -377,6 +415,7 @@ export const Board = ({
                                         onHide={hideColumnWithUndo}
                                         onManageStates={manageStates}
                                         onLoaded={onLoaded}
+                                        onTotal={onTotal}
                                         focusIssueId={focusIssueId}
                                     />
                                 ))}
@@ -407,14 +446,22 @@ export const Board = ({
             </DndContext>
 
             {createColumnId && <IssueQuickCreateModal projectId={projectId} columnId={createColumnId} onClose={() => setCreateColumnId(null)} />}
-        </>
+        </div>
     );
 };
 
 const EMPTY_COLUMN_ISSUES: Issue[] = [];
 
 /** Loads one column's cards a page at a time. Closed columns stay counted until they are opened or a card is dragged onto them. */
-function ColumnWindow({ column, issues, lit, onLoaded, projectId, ...rest }: ColumnProps & { onLoaded: (columnId: string, next: Issue[]) => void }) {
+function ColumnWindow({
+    column,
+    issues,
+    lit,
+    onLoaded,
+    onTotal,
+    projectId,
+    ...rest
+}: ColumnProps & { onLoaded: (columnId: string, next: Issue[]) => void; onTotal: (columnId: string, total: number) => void }) {
     const closed = columnBucket(column.name) === "closed";
     const [revealed, setRevealed] = useState(!closed);
     const query = useMemo(() => ({ columnId: column.id, orderBy: "position" as const, limit: 40, closed: "include" as const }), [column.id]);
@@ -431,6 +478,10 @@ function ColumnWindow({ column, issues, lit, onLoaded, projectId, ...rest }: Col
     useEffect(() => {
         onLoaded(column.id, revealed ? window.issues : EMPTY_COLUMN_ISSUES);
     }, [column.id, onLoaded, revealed, window.issues]);
+
+    useEffect(() => {
+        onTotal(column.id, Math.max(issues.length, revealed ? window.total : count.total));
+    }, [column.id, count.total, issues.length, onTotal, revealed, window.total]);
 
     return (
         <Column
@@ -456,7 +507,7 @@ function BoardSkeleton() {
     return (
         <div className="flex h-full min-w-max items-start gap-3" aria-label={t("common.loading")} role="status">
             {["one", "two", "three"].map((key) => (
-                <div key={key} className="flex h-full w-80 shrink-0 flex-col overflow-hidden rounded-lg bg-surface-1">
+                <div key={key} className="flex h-full w-[85vw] shrink-0 flex-col overflow-hidden rounded-lg bg-surface-1 md:w-80">
                     <div className="flex h-10 items-center justify-between px-2.5">
                         <Skeleton className="h-3 w-28" />
                         <Skeleton className="size-4 rounded-full" />

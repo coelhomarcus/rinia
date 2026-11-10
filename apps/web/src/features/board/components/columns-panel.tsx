@@ -169,7 +169,9 @@ export const ColumnsPanel = ({ projectId, isProjectOwner }: { projectId: string;
                             onClose={() => setEditor(null)}
                         />
                     )}
-                    {!columns?.length && editor !== "new" && <EmptyState title={t("settings.noStates")} description={t("settings.addStateHint")} />}
+                    {!columns?.length && editor !== "new" && (
+                        <EmptyState illustration="settings" title={t("settings.noStates")} description={t("settings.addStateHint")} />
+                    )}
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}

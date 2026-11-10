@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { Skeleton } from "@/components/base/feedback/skeleton";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { FavoriteStar } from "@/features/favorites/components/favorite-star";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
@@ -51,17 +52,22 @@ export const ProjectViewsPage = () => {
                     </div>
                 )}
                 {views?.length === 0 && (
-                    <div className="animate-enter mx-auto flex h-full max-w-sm flex-col justify-center px-6 py-16">
-                        <Layers className="size-12 text-placeholder" strokeWidth={1.25} aria-hidden="true" />
-                        <h1 className="text-base mt-6 font-semibold text-primary">{t("views.title")}</h1>
-                        <p className="mt-2 text-[13px] text-tertiary">{t("views.emptyDescription")}</p>
-                        <p className="mt-3 text-[13px] text-tertiary">{t("views.emptyHint")}</p>
-                        <div className="mt-6">
+                    <EmptyState
+                        framed={false}
+                        className="h-full py-16"
+                        illustration="layout"
+                        title={t("views.title")}
+                        description={
+                            <>
+                                {t("views.emptyDescription")} {t("views.emptyHint")}
+                            </>
+                        }
+                        action={
                             <Button size="md" className="rounded-full" onClick={startView}>
                                 {t("views.createNew")}
                             </Button>
-                        </div>
-                    </div>
+                        }
+                    />
                 )}
                 {!!views?.length && (
                     <ul className="divide-y divide-subtle">

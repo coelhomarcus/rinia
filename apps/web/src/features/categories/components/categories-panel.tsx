@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { EditOutline as Pencil, AddOutline as Plus, DeleteOutline as Trash2 } from "@makeplane/propel/icons";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Alert } from "@/components/base/feedback/alert";
@@ -14,7 +15,6 @@ import { ApiError } from "@/lib/api-client";
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "../hooks/use-categories";
 import { CATEGORY_COLORS } from "./category-badge";
 import { LabelPresetsDialog } from "./label-presets-dialog";
-import { useTranslation } from "react-i18next";
 
 export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: string; isProjectOwner: boolean }) => {
     const { t } = useTranslation();
@@ -58,7 +58,9 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
             )}
             {isLoading && <LoadingState label={t("settings.loadingLabels")} />}
             {isError && <ErrorMessage message={t("settings.couldNotLoadLabels")} />}
-            {categories?.length === 0 && editor !== "new" && <EmptyState title={t("settings.noLabels")} description={t("settings.createLabelHint")} />}
+            {categories?.length === 0 && editor !== "new" && (
+                <EmptyState illustration="tag" title={t("settings.noLabels")} description={t("settings.createLabelHint")} />
+            )}
             {(!!categories?.length || editor === "new") && (
                 <SettingsCard>
                     {editor === "new" && (
@@ -98,9 +100,24 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                             >
                                 {editable && (
                                     <SettingsRowActions>
-                                        <ButtonUtility icon={Pencil} size="sm" color="tertiary" tooltip={`${t("common.edit")} ${category.name}`} isDisabled={pending || !!editor} onClick={() => setEditor(category.id)} />
+                                        <ButtonUtility
+                                            icon={Pencil}
+                                            size="sm"
+                                            color="tertiary"
+                                            tooltip={`${t("common.edit")} ${category.name}`}
+                                            isDisabled={pending || !!editor}
+                                            onClick={() => setEditor(category.id)}
+                                        />
                                         <ConfirmDialog
-                                            trigger={<ButtonUtility icon={Trash2} size="sm" color="tertiary" tooltip={t("settings.deleteLabel")} isDisabled={pending} />}
+                                            trigger={
+                                                <ButtonUtility
+                                                    icon={Trash2}
+                                                    size="sm"
+                                                    color="tertiary"
+                                                    tooltip={t("settings.deleteLabel")}
+                                                    isDisabled={pending}
+                                                />
+                                            }
                                             title={t("settings.deleteLabel")}
                                             description={t("settings.deleteLabelDescription", { name: category.name })}
                                             confirmLabel={t("settings.deleteLabel")}
@@ -108,7 +125,8 @@ export const CategoriesPanel = ({ projectId, isProjectOwner }: { projectId: stri
                                             onConfirm={() => {
                                                 setError(null);
                                                 deleteMutation.mutate(category.id, {
-                                                    onError: (reason) => setError(reason instanceof ApiError ? reason.message : t("settings.couldNotDeleteLabel")),
+                                                    onError: (reason) =>
+                                                        setError(reason instanceof ApiError ? reason.message : t("settings.couldNotDeleteLabel")),
                                                 });
                                             }}
                                         />

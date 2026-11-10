@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
 import type { IssueListQuery, IssueOrder, SavedViewFilters } from "@rinia/shared";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Layers, Plus, Users, X } from "lucide-react";
 import { LayoutGroup } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -43,8 +43,8 @@ import { useViews } from "@/features/views/hooks/use-views";
 import { filtersFromParams, paramsFromFilters } from "@/features/views/lib/view-filters";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
-import { useDensity } from "@/providers/density";
 import { issueNavigation } from "@/lib/view-transition";
+import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
 
 type OrderBy = IssueOrder;
@@ -136,7 +136,10 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const completedWindow = useIssueWindow(projectId!, completedQuery, { enabled: listView && (showClosed || filteringClosed) });
     const closedCount = useIssueWindow(projectId!, closedCountQuery, { enabled: listView && !showClosed && !filteringClosed });
     const showingClosed = showClosed || filteringClosed;
-    const issues = useMemo(() => [...openWindow.issues, ...(showingClosed ? completedWindow.issues : [])], [completedWindow.issues, openWindow.issues, showingClosed]);
+    const issues = useMemo(
+        () => [...openWindow.issues, ...(showingClosed ? completedWindow.issues : [])],
+        [completedWindow.issues, openWindow.issues, showingClosed],
+    );
     const isLoading = filteringClosed ? completedWindow.isLoading : openWindow.isLoading;
     const isError = openWindow.isError || completedWindow.isError;
     const filteredIssues = useMemo(
@@ -243,7 +246,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     useEffect(() => {
         if (view !== "list" || !listScroll) return;
         const load = () => {
-            const nearEnd = listScroll.scrollHeight <= listScroll.clientHeight + 8 || listScroll.scrollTop + listScroll.clientHeight >= listScroll.scrollHeight - 480;
+            const nearEnd =
+                listScroll.scrollHeight <= listScroll.clientHeight + 8 || listScroll.scrollTop + listScroll.clientHeight >= listScroll.scrollHeight - 480;
             if (!nearEnd) return;
             if (!filteringClosed && openWindow.hasNextPage && !openWindow.isFetchingNextPage) void openWindow.fetchNextPage();
             else if (showingClosed && completedWindow.hasNextPage && !completedWindow.isFetchingNextPage) void completedWindow.fetchNextPage();
@@ -251,7 +255,19 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         load();
         listScroll.addEventListener("scroll", load, { passive: true });
         return () => listScroll.removeEventListener("scroll", load);
-    }, [completedWindow.fetchNextPage, completedWindow.hasNextPage, completedWindow.isFetchingNextPage, filteringClosed, listScroll, openWindow.fetchNextPage, openWindow.hasNextPage, openWindow.isFetchingNextPage, rows.length, showingClosed, view]);
+    }, [
+        completedWindow.fetchNextPage,
+        completedWindow.hasNextPage,
+        completedWindow.isFetchingNextPage,
+        filteringClosed,
+        listScroll,
+        openWindow.fetchNextPage,
+        openWindow.hasNextPage,
+        openWindow.isFetchingNextPage,
+        rows.length,
+        showingClosed,
+        view,
+    ]);
     useEffect(() => {
         virtualizer.measure();
     }, [density, virtualizer]);
@@ -278,7 +294,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 setSelectedIssueId(nextIssue.id);
                 const rowIndex = rowIndexById.get(nextIssue.id);
                 if (rowIndex !== undefined) virtualizer.scrollToIndex(rowIndex, { align: "auto" });
-                requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-issue-id="${nextIssue.id}"]`)?.scrollIntoView({ block: "nearest" })));
+                requestAnimationFrame(() =>
+                    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-issue-id="${nextIssue.id}"]`)?.scrollIntoView({ block: "nearest" })),
+                );
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
@@ -329,6 +347,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         const statusName = (column: { name: string }) => translateStatusName(column.name, t);
         if (!issues?.length) {
             return {
+                illustration: "kanban" as const,
                 title: t("issue.noIssues"),
                 description: t("issue.createFirstIssue"),
                 action: (
@@ -357,6 +376,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         if (conditions.length > 0) {
             const scopeLabel = scope === "backlog" ? t("issue.backlog") : t("issue.active");
             return {
+                illustration: "crate" as const,
                 title: t("issue.noMatchingIssues"),
                 description:
                     scope === "all"
@@ -375,6 +395,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         if (scope === "backlog") {
             const backlogColumn = columns?.find((column) => columnBucket(column.name) === "backlog");
             return {
+                illustration: "kanban" as const,
                 title: t("issue.emptyBacklogTitle"),
                 description: t("issue.emptyBacklog", { states: statesWhere((bucket) => bucket === "backlog") }),
                 action: (
@@ -385,6 +406,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             };
         }
         return {
+            illustration: "kanban" as const,
             title: t("issue.emptyActiveTitle"),
             description: t("issue.emptyActive", { states: statesWhere((bucket) => bucket !== "active") }),
             action: (
@@ -513,7 +535,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             )}
             {/* Each view eases in when it opens, so switching (or a first-time preference arriving) never pops. */}
             {view === "board" && (
-                <div key="board" className="animate-enter min-h-0 flex-1 overflow-x-auto bg-surface-2 px-4 pt-1 pb-3">
+                <div key="board" className="animate-enter flex min-h-0 flex-1 flex-col overflow-hidden bg-surface-2 pt-1 pb-3 md:px-4">
                     <Board projectId={projectId!} filters={searchParams} scope={scope} hidden={hiddenColumns} hideColumn={hideColumn} showColumn={showColumn} />
                 </div>
             )}
@@ -538,9 +560,20 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                 key={virtual.key}
                                                                 data-index={virtual.index}
                                                                 ref={virtualizer.measureElement}
-                                                                style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: "100%",
+                                                                    transform: `translateY(${virtual.start}px)`,
+                                                                }}
                                                             >
-                                                                <h2 className={cx("bg-layer-transparent-hover", reorder.overGroupKey === row.group.key && "bg-accent-subtle/40")}>
+                                                                <h2
+                                                                    className={cx(
+                                                                        "bg-layer-transparent-hover",
+                                                                        reorder.overGroupKey === row.group.key && "bg-accent-subtle/40",
+                                                                    )}
+                                                                >
                                                                     <div className="flex h-[var(--row-height)] items-center gap-[var(--row-gap)] px-3 text-[13px] text-secondary">
                                                                         <button
                                                                             type="button"
@@ -559,9 +592,13 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                                 className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(row.group.key) ? "-rotate-90" : ""}`}
                                                                                 aria-hidden="true"
                                                                             />
-                                                                            {groupBy === "status" && <StateIcon name={column?.name ?? row.group.label ?? ""} color={column?.color} />}
+                                                                            {groupBy === "status" && (
+                                                                                <StateIcon name={column?.name ?? row.group.label ?? ""} color={column?.color} />
+                                                                            )}
                                                                             <span>
-                                                                                {row.group.label === "Unknown status" ? t("issue.unknownStatus") : translateStatusName(row.group.label ?? "", t)}
+                                                                                {row.group.label === "Unknown status"
+                                                                                    ? t("issue.unknownStatus")
+                                                                                    : translateStatusName(row.group.label ?? "", t)}
                                                                             </span>
                                                                             <span className="text-tertiary">{row.group.issues.length}</span>
                                                                         </button>
@@ -586,7 +623,13 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                             key={virtual.key}
                                                             data-index={virtual.index}
                                                             ref={virtualizer.measureElement}
-                                                            style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
+                                                            style={{
+                                                                position: "absolute",
+                                                                top: 0,
+                                                                left: 0,
+                                                                width: "100%",
+                                                                transform: `translateY(${virtual.start}px)`,
+                                                            }}
                                                         >
                                                             <IssueListRow
                                                                 issue={issue}
