@@ -4,6 +4,7 @@ import path from "node:path";
 import { UPLOAD_CHUNK_BYTES } from "@rinia/shared";
 import { HttpError } from "../../lib/http-error";
 import { assertIssueInProject, insertStoredFile } from "./files.service";
+import { sanitizeUploadedImage } from "./image-metadata";
 import { assemblePartial, checkUploadDeclaration, FILE_RETENTION_MS, inspectUpload, parseContentRange, partialUploadDir, removePartial, storedFilePath, uploadDirectory, writeStoredFile } from "./files.storage";
 
 interface UploadMeta {
@@ -71,15 +72,17 @@ export async function finishChunkedUpload(input: { projectId: string; userId: st
     const meta = await readMeta(input.uploadId, input.projectId, input.userId);
     const bytes = await assemblePartial(partialUploadDir(input.uploadId), meta.byteSize);
     let checked: { filename: string; contentType: string };
+    let clean: Buffer;
     try {
         checked = inspectUpload({ filename: meta.filename, contentType: meta.contentType, bytes });
+        clean = sanitizeUploadedImage(checked.contentType, bytes);
     } catch (error) {
         await removePartial(input.uploadId);
         throw error;
     }
-    await writeStoredFile(input.uploadId, bytes);
+    await writeStoredFile(input.uploadId, clean);
     try {
-        const file = await insertStoredFile({ id: input.uploadId, projectId: meta.projectId, userId: meta.userId, issueId: meta.issueId, filename: checked.filename, contentType: checked.contentType, byteSize: bytes.length });
+        const file = await insertStoredFile({ id: input.uploadId, projectId: meta.projectId, userId: meta.userId, issueId: meta.issueId, filename: checked.filename, contentType: checked.contentType, byteSize: clean.length });
         await removePartial(input.uploadId);
         return { id: file.id, filename: file.filename, contentType: file.contentType, byteSize: file.byteSize, url: `/api/files/${file.id}` };
     } catch (error) {

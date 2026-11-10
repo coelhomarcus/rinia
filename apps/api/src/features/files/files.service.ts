@@ -6,6 +6,7 @@ import { db } from "../../db";
 import { files, issues } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import { assertProjectMembership } from "../../middleware/project-membership.middleware";
+import { sanitizeUploadedImage } from "./image-metadata";
 import { inspectUpload, storedFilePath, uniqueFilename, writeStoredFile } from "./files.storage";
 
 export interface StoredFileRecord {
@@ -54,11 +55,12 @@ export async function insertStoredFile(input: { id: string; projectId: string; u
 
 export async function storeProjectFile(input: { projectId: string; userId: string; issueId: string | null; filename: string; contentType: string; bytes: Buffer }) {
     const checked = inspectUpload(input);
+    const bytes = sanitizeUploadedImage(checked.contentType, input.bytes);
     if (input.issueId) await assertIssueInProject(input.projectId, input.issueId);
     const id = randomUUID();
-    await writeStoredFile(id, input.bytes);
+    await writeStoredFile(id, bytes);
     try {
-        return present(await insertStoredFile({ id, projectId: input.projectId, userId: input.userId, issueId: input.issueId, filename: checked.filename, contentType: checked.contentType, byteSize: input.bytes.length }));
+        return present(await insertStoredFile({ id, projectId: input.projectId, userId: input.userId, issueId: input.issueId, filename: checked.filename, contentType: checked.contentType, byteSize: bytes.length }));
     } catch (error) {
         await unlink(storedFilePath(id)).catch(() => undefined);
         throw error;

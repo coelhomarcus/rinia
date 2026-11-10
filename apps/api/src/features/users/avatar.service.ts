@@ -6,6 +6,7 @@ import { db } from "../../db";
 import { users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
 import { toPublicUser } from "../auth/auth.service";
+import { sanitizeUploadedImage } from "../files/image-metadata";
 import { avatarFilePath, inspectUpload } from "../files/files.storage";
 
 function jpegType(contentType: string) {
@@ -16,10 +17,11 @@ function jpegType(contentType: string) {
 
 /** Replaces this user's photo. The cropper sends a JPEG, and the path's `v` busts the browser cache. */
 export async function saveAvatar(userId: string, bytes: Buffer, contentType: string) {
-    inspectUpload({ filename: "avatar.jpg", contentType: jpegType(contentType), bytes });
+    const checked = inspectUpload({ filename: "avatar.jpg", contentType: jpegType(contentType), bytes });
+    const clean = sanitizeUploadedImage(checked.contentType, bytes);
     const file = avatarFilePath(userId);
     await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, bytes);
+    await writeFile(file, clean);
     const avatarUrl = `/api/users/${userId}/avatar?v=${Date.now()}`;
     const [user] = await db.update(users).set({ avatarUrl, updatedAt: new Date() }).where(eq(users.id, userId)).returning();
     if (!user) throw new HttpError(404, "User not found");
