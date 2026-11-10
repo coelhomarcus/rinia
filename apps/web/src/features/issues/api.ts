@@ -77,6 +77,8 @@ export interface IssueComment {
     updatedAt: string;
     author: IssuePerson;
     reactions: ReactionGroup[];
+    /** Set on a comment shown before the server has stored it. */
+    pending?: boolean;
 }
 
 /** A saved version of an issue's description. */

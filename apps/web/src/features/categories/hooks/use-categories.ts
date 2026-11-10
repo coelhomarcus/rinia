@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateCategoryInput, UpdateCategoryInput } from "@rinia/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createCategory, deleteCategory, listCategories, updateCategory } from "../api";
 
 export function categoriesQueryKey(projectId: string) {
@@ -38,8 +38,18 @@ export function useDeleteCategory(projectId: string) {
 
 export function useUpdateCategory(projectId: string) {
     const queryClient = useQueryClient();
+    const key = categoriesQueryKey(projectId);
     return useMutation({
         mutationFn: ({ categoryId, input }: { categoryId: string; input: UpdateCategoryInput }) => updateCategory(projectId, categoryId, input),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: categoriesQueryKey(projectId) }),
+        onMutate: async ({ categoryId, input }) => {
+            await queryClient.cancelQueries({ queryKey: key });
+            const previous = queryClient.getQueryData<Awaited<ReturnType<typeof listCategories>>>(key);
+            queryClient.setQueryData<Awaited<ReturnType<typeof listCategories>>>(key, (current) =>
+                current?.map((category) => (category.id === categoryId ? { ...category, ...input } : category)),
+            );
+            return { previous };
+        },
+        onError: (_error, _variables, context) => queryClient.setQueryData(key, context?.previous),
+        onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
     });
 }

@@ -715,12 +715,16 @@ export const IssueView = () => {
                                 onSubmit={async () => {
                                     if (!hasMeaningfulTiptapContent(comment)) return;
                                     const submittedIssueId = issue.id;
+                                    const submitted = comment;
                                     setCommentSaveError(null);
+                                    setComment(EMPTY_TIPTAP_DOCUMENT);
                                     try {
-                                        await createComment.mutateAsync({ contentJson: comment });
-                                        if (loadedIssueId.current === submittedIssueId) setComment(EMPTY_TIPTAP_DOCUMENT);
+                                        await createComment.mutateAsync({ contentJson: submitted });
                                     } catch (reason) {
-                                        if (loadedIssueId.current === submittedIssueId) setCommentSaveError(errorMessage(reason, t("issue.couldNotAddComment")));
+                                        if (loadedIssueId.current === submittedIssueId) {
+                                            setComment(submitted);
+                                            setCommentSaveError(errorMessage(reason, t("issue.couldNotAddComment")));
+                                        }
                                     }
                                 }}
                                 onDelete={async (commentId) => {
@@ -1382,7 +1386,7 @@ function IssueRelations({
     );
 }
 
-type CommentEntry = { id: string; contentJson: TiptapDocument; authorId: string; author: { name: string; username?: string; avatarUrl: string | null }; source?: ActionSource | null; createdAt: string; updatedAt: string; reactions: ReactionGroup[]; parentCommentId: string | null };
+type CommentEntry = { id: string; contentJson: TiptapDocument; authorId: string; author: { name: string; username?: string; avatarUrl: string | null }; source?: ActionSource | null; createdAt: string; updatedAt: string; reactions: ReactionGroup[]; parentCommentId: string | null; pending?: boolean };
 /** Activity and comments in one chronological feed, followed by the comment composer. */
 function IssueTimeline({
     activity,
@@ -1539,14 +1543,16 @@ function ReplyComposer({ currentUser, mentionItems, uploads = null, onSubmit }: 
     const canSend = hasMeaningfulTiptapContent(value) && !sending;
     const send = async () => {
         if (!canSend) return;
+        const submitted = value;
         setSending(true);
         setError(null);
+        setValue(EMPTY_TIPTAP_DOCUMENT);
+        setEditorKey((key) => key + 1);
         try {
-            await onSubmit(value);
-            setValue(EMPTY_TIPTAP_DOCUMENT);
-            setEditorKey((key) => key + 1);
+            await onSubmit(submitted);
             setActive(false);
         } catch (reason) {
+            setValue(submitted);
             setError(errorMessage(reason, t("issue.couldNotAddReply")));
         } finally {
             setSending(false);
@@ -1615,10 +1621,10 @@ function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, 
                 {entry.source && <span className="text-tertiary">{t("issue.viaSource", { client: sourceLabel(entry.source) })}</span>}
                 <Tooltip title={formatFullIssueDate(entry.createdAt, i18n.language)}>
                     <time className="text-tertiary" dateTime={entry.createdAt}>
-                        {formatDistanceToNow(entry.createdAt, i18n.language)}{edited ? ` · ${t("issue.edited")}` : ""}
+                        {entry.pending ? t("issue.sendingComment") : formatDistanceToNow(entry.createdAt, i18n.language)}{!entry.pending && edited ? ` · ${t("issue.edited")}` : ""}
                     </time>
                 </Tooltip>
-                {!editing && (
+                {!editing && !entry.pending && (
                     <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/comment:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100">
                         <ReactionPicker onPick={(emoji) => onReact(entry.id, emoji, !entry.reactions.find((group) => group.emoji === emoji)?.users.some((user) => user.id === currentUserId))} />
                         {mine && <>
