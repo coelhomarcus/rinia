@@ -17,11 +17,12 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
     identifier: z.string().trim().min(1),
-    password: z.string().min(1),
+    /** Capped with registration so a huge body cannot stall hashing. */
+    password: z.string().min(1).max(72),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
-/** The same 8 to 72 characters registration asks for; bcrypt reads no further than 72 bytes. */
+/** The same 8 to 72 characters registration asks for. */
 const newPasswordSchema = z.string().min(8).max(72);
 
 /** Asks for a link to choose a new password, sent to the account's email. A username works as well as the email. */

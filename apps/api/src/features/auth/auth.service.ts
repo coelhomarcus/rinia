@@ -4,8 +4,9 @@ import { env } from "../../config/env";
 import { db } from "../../db";
 import { users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { hashPassword, isLegacyBcryptHash, verifyLoginPassword } from "../../lib/password";
+import { secretsEqual } from "../../lib/secrets";
 import { createSession, type SessionMeta } from "./sessions.service";
-import { hashPassword, verifyPassword } from "../../lib/password";
 
 export function toPublicUser(user: typeof users.$inferSelect) {
     const { passwordHash: _passwordHash, ...publicUser } = user;
@@ -13,7 +14,7 @@ export function toPublicUser(user: typeof users.$inferSelect) {
 }
 
 export async function registerUser(input: RegisterInput, meta: SessionMeta) {
-    if (input.specialCode !== env.SPECIAL_REGISTRATION_CODE) {
+    if (!secretsEqual(input.specialCode, env.SPECIAL_REGISTRATION_CODE)) {
         throw new HttpError(403, "Invalid special code");
     }
 
@@ -52,11 +53,16 @@ export async function loginUser(input: LoginInput, meta: SessionMeta) {
         where: or(eq(users.username, identifier), eq(users.email, identifier)),
     });
 
-    if (!user || !(await verifyPassword(input.password, user.passwordHash))) {
+    const passwordOk = await verifyLoginPassword(input.password, user?.passwordHash);
+    if (!user || !passwordOk) {
         throw new HttpError(401, "Incorrect username or password");
     }
     // Checked only after the password, so the message never tells a stranger that an account exists.
     if (user.suspendedAt) throw new HttpError(403, "This account is suspended");
+
+    if (isLegacyBcryptHash(user.passwordHash)) {
+        await db.update(users).set({ passwordHash: await hashPassword(input.password), updatedAt: new Date() }).where(eq(users.id, user.id));
+    }
 
     const token = await createSession(user, meta);
     return { user: toPublicUser(user), token };
