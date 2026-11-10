@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { requireAuth, requireSession } from "../../middleware/auth.middleware";
+import { requireAuth, requireSession, requireUnscopedToken } from "../../middleware/auth.middleware";
 import { requireAdmin } from "../../middleware/admin.middleware";
 import { getProject, getUser, listProjects, listUsers, resetPassword, revokeSessions, sendResetLink, updateUser } from "./admin.controller";
 
 export const adminRouter = Router();
 
-adminRouter.use(requireAuth, requireAdmin);
+adminRouter.use(requireAuth, requireUnscopedToken, requireAdmin);
 adminRouter.get("/projects", listProjects);
 adminRouter.get("/projects/:projectId", getProject);
 adminRouter.get("/users", listUsers);

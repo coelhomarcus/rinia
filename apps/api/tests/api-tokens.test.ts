@@ -32,7 +32,7 @@ const params = (where: SQL) => (db as unknown as { dialect: { sqlToQuery: (sql: 
 
 /** Stored tokens by hash, read and deleted through stubs of the queries the token service makes. */
 function stubTokenStore() {
-    const rows = new Map<string, { id: string; userId: string; lastUsedAt: Date | null; user: typeof ana }>();
+    const rows = new Map<string, { id: string; userId: string; lastUsedAt: Date | null; expiresAt: Date | null; projectScoped: boolean; projects: Array<{ projectId: string }>; user: typeof ana }>();
     spyOn(db.query.apiTokens, "findFirst").mockImplementation((async (config: { where: SQL }) => rows.get(params(config.where)[0] as string)) as never);
     spyOn(db, "update").mockImplementation((() => ({ set: () => ({ where: () => Promise.resolve() }) })) as never);
     spyOn(db, "delete").mockImplementation((() => ({
@@ -46,10 +46,12 @@ function stubTokenStore() {
         }),
     })) as never);
     return {
-        add(user: typeof ana) {
+        /** `projectIds` limits the token to those projects; `expiresAt` makes it expire. */
+        add(user: typeof ana, options: { expiresAt?: Date | null; projectIds?: string[] } = {}) {
             const secret = generateApiToken();
             const id = crypto.randomUUID();
-            rows.set(hashApiToken(secret), { id, userId: user.id, lastUsedAt: null, user });
+            const projectIds = options.projectIds ?? [];
+            rows.set(hashApiToken(secret), { id, userId: user.id, lastUsedAt: null, expiresAt: options.expiresAt ?? null, projectScoped: projectIds.length > 0, projects: projectIds.map((projectId) => ({ projectId })), user });
             return { id, secret };
         },
     };
@@ -255,4 +257,246 @@ test("Markdown survives a round trip through the editor's JSON", () => {
     const markdown = "## Escopo\n\nUm **atalho** com `Cmd+K` e [link](https://example.com).\n\n- [x] feito\n- [ ] falta\n\n1. um\n2. dois\n\n> citação\n\n```ts\nconst a = 1;\n```";
     assert.equal(tiptapToMarkdown(markdownToTiptap(markdown)), markdown);
     assert.equal(tiptapToMarkdown({ content: [{ type: "paragraph", content: [{ type: "mention", attrs: { id: ana.id, label: "ana" } }, { type: "text", text: " olha" }] }] }), `[@ id="${ana.id}" label="ana"] olha`);
+});
+
+const day = 24 * 60 * 60 * 1000;
+/** An issue in the project a scoped token must not reach. */
+const secretIssue = {
+    id: "8b2d1f66-0000-4000-8000-0000000000e1",
+    projectId: otherProjectId,
+    number: 4,
+    title: "Secret",
+    labels: [],
+    project: { id: otherProjectId, issueKey: "AM", name: "App Mobile" },
+};
+
+/** What a stubbed query was called with, including the values inside a subquery such as the projects a user can reach. */
+const deepParams = (where: SQL): unknown[] =>
+    params(where).flatMap((value) => (value && typeof value === "object" && "toSQL" in value ? (value as { toSQL: () => { params: unknown[] } }).toSQL().params : [value]));
+
+test("an expired token is refused with 401 over REST and MCP, and one that has not expired works", async () => {
+    stubMe();
+    const store = stubTokenStore();
+    const expired = store.add(ana, { expiresAt: new Date(Date.now() - 1000) });
+    const valid = store.add(ana, { expiresAt: new Date(Date.now() + 30 * day) });
+    const forever = store.add(ana, { expiresAt: null });
+
+    const refused = await get("/api/auth/me", { Authorization: `Bearer ${expired.secret}` });
+    assert.equal(refused.status, 401);
+    assert.match(((await refused.json()) as { error: string }).error, /expired/);
+    const mcp = await fetch(`${baseUrl}/api/mcp`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${expired.secret}`, "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    });
+    assert.equal(mcp.status, 401);
+    assert.match(mcp.headers.get("www-authenticate") ?? "", /^Bearer/);
+
+    assert.equal((await get("/api/auth/me", { Authorization: `Bearer ${valid.secret}` })).status, 200);
+    assert.equal((await get("/api/auth/me", { Authorization: `Bearer ${forever.secret}` })).status, 200);
+});
+
+test("a token stops working at the moment it expires", async () => {
+    stubMe();
+    const { authenticateApiToken } = await import("../src/features/api-tokens/api-tokens.service");
+    const expiresAt = new Date("2027-01-01T00:00:00Z");
+    const { secret } = stubTokenStore().add(ana, { expiresAt });
+    assert.ok(await authenticateApiToken(secret, new Date(expiresAt.getTime() - 1)));
+    assert.equal(await authenticateApiToken(secret, expiresAt), null);
+});
+
+test("a new token expires after the chosen number of days, 90 by default, or never", async () => {
+    const { createApiToken } = await import("../src/features/api-tokens/api-tokens.service");
+    const { createApiTokenSchema } = await import("@rinia/shared");
+    const inserted: Array<Record<string, unknown>> = [];
+    spyOn(db, "insert").mockImplementation((() => ({
+        values: (values: Record<string, unknown>) => {
+            inserted.push(values);
+            return { returning: async () => [{ id: "t1", lastUsedAt: null, createdAt: new Date(), ...values }] };
+        },
+    })) as never);
+    const now = new Date("2026-11-10T12:00:00Z");
+
+    await createApiToken(ana.id, createApiTokenSchema.parse({ name: "default" }), undefined, now);
+    await createApiToken(ana.id, createApiTokenSchema.parse({ name: "month", expiresInDays: 30 }), undefined, now);
+    await createApiToken(ana.id, createApiTokenSchema.parse({ name: "forever", expiresInDays: null }), undefined, now);
+    assert.equal((inserted[0].expiresAt as Date).toISOString(), "2027-02-08T12:00:00.000Z");
+    assert.equal((inserted[1].expiresAt as Date).toISOString(), "2026-12-10T12:00:00.000Z");
+    assert.equal(inserted[2].expiresAt, null);
+
+    // Only the offered lifetimes are accepted.
+    assert.equal(createApiTokenSchema.safeParse({ name: "odd", expiresInDays: 45 }).success, false);
+    assert.equal(createApiTokenSchema.safeParse({ name: "odd", projectIds: ["not-a-uuid"] }).success, false);
+});
+
+test("a token can only be limited to projects its owner belongs to", async () => {
+    const { createApiToken } = await import("../src/features/api-tokens/api-tokens.service");
+    // The owner belongs to the first project only.
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ projectId: memberProjectId }] }) })) as never);
+    const insert = spyOn(db, "insert").mockImplementation(() => {
+        throw new Error("Must not insert");
+    });
+    await assert.rejects(createApiToken(ana.id, { name: "x", access: "write", expiresInDays: 30, projectIds: [memberProjectId, otherProjectId] }), (error: { statusCode?: number }) => error.statusCode === 400);
+    assert.equal(insert.mock.calls.length, 0);
+});
+
+/** Ana belongs to both projects, so only a token's scope can keep her out of the second. */
+function stubBothProjects() {
+    const projects = [
+        { id: memberProjectId, issueKey: "RIN", name: "Rinia" },
+        { id: otherProjectId, issueKey: "AM", name: "App Mobile" },
+    ];
+    spyOn(db.query.projects, "findFirst").mockImplementation((async (config: { where: SQL }) => {
+        const [value] = params(config.where);
+        return projects.find((project) => project.id === value || project.issueKey === value);
+    }) as never);
+    spyOn(db.query.projectMembers, "findFirst").mockImplementation((async (config: { where: SQL }) => {
+        const [projectId, userId] = params(config.where);
+        return userId === ana.id ? { id: "membership", projectId, userId, role: "owner" } : undefined;
+    }) as never);
+}
+
+test("over REST, a token scoped to one project cannot reach another, wherever the project is named", async () => {
+    stubBothProjects();
+    const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
+    const auth = { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" };
+    spyOn(db.query.boardColumns, "findMany").mockImplementation(async () => []);
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) }) })) as never);
+    spyOn(db.query.issues, "findFirst").mockImplementation((async () => secretIssue) as never);
+    const write = spyOn(db, "insert").mockImplementation(() => {
+        throw new Error("Must not insert");
+    });
+
+    assert.equal((await get(`/api/projects/${memberProjectId}/columns`, auth)).status, 200);
+    for (const [method, path] of [
+        ["GET", `/api/projects/${otherProjectId}`],
+        ["GET", `/api/projects/${otherProjectId}/columns`],
+        ["GET", `/api/projects/${otherProjectId}/categories`],
+        ["GET", `/api/projects/${otherProjectId}/issues`],
+        ["POST", `/api/projects/${otherProjectId}/issues`],
+        ["PATCH", `/api/projects/${otherProjectId}/issues/bulk`],
+        ["GET", `/api/projects/${otherProjectId}/documents`],
+        ["GET", `/api/projects/${otherProjectId}/files`],
+        ["GET", `/api/projects/${otherProjectId}/members`],
+        ["PATCH", `/api/projects/${otherProjectId}`],
+        ["DELETE", `/api/projects/${otherProjectId}`],
+        ["GET", "/api/projects/by-key/AM"],
+        ["GET", "/api/issues/AM-4"],
+        ["PATCH", "/api/issues/AM-4"],
+        ["DELETE", "/api/issues/AM-4"],
+        ["GET", "/api/issues/AM-4/comments"],
+        ["POST", "/api/issues/AM-4/comments"],
+        ["PUT", "/api/issues/AM-4/subscription"],
+        ["POST", "/api/projects"],
+        ["GET", "/api/admin/projects"],
+    ] as const) {
+        const response = await fetch(`${baseUrl}${path}`, { method, headers: auth, body: method === "GET" || method === "DELETE" ? undefined : JSON.stringify(path.endsWith("/comments") ? { contentJson: markdownToTiptap("hello", "comment") } : {}) });
+        assert.equal(response.status, 403, `${method} ${path}`);
+    }
+    assert.equal(write.mock.calls.length, 0);
+});
+
+test("a scoped token is limited in every list: projects, my issues and notifications", async () => {
+    stubBothProjects();
+    const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
+    const auth = { Authorization: `Bearer ${secret}` };
+    const lookups: unknown[][] = [];
+    const record = async (config: { where: SQL }) => (lookups.push(deepParams(config.where)), []);
+    spyOn(db.query.projectMembers, "findMany").mockImplementation(record as never);
+    spyOn(db.query.issues, "findMany").mockImplementation(record as never);
+    spyOn(db.query.notifications, "findMany").mockImplementation(record as never);
+
+    for (const path of ["/api/projects", "/api/my-issues", "/api/notifications"]) assert.equal((await get(path, auth)).status, 200, path);
+    // Each one asked for its owner's projects narrowed to the token's, and none for the other project.
+    assert.equal(lookups.length, 3);
+    for (const values of lookups) {
+        assert.ok(values.includes(memberProjectId), JSON.stringify(values));
+        assert.ok(!values.includes(otherProjectId), JSON.stringify(values));
+    }
+});
+
+test("the shared project filters narrow to a token's scope, only for the token's own user", () => {
+    const { requestContext } = require("../src/lib/request-context") as typeof import("../src/lib/request-context");
+    const { reachableProjectIds, withinTokenScope } = require("../src/lib/project-access") as typeof import("../src/lib/project-access");
+    const { projectMembers } = require("../src/db/schema") as typeof import("../src/db/schema");
+    const inRequest = (tokenProjectIds: string[] | undefined, work: () => void) =>
+        requestContext({ user: { sub: ana.id }, tokenProjectIds } as never, {} as never, work);
+
+    inRequest([memberProjectId], () => {
+        assert.deepEqual(reachableProjectIds(ana.id).toSQL().params, [ana.id, memberProjectId]);
+        // Someone else's projects, such as a notification's recipient's, are not narrowed by the requester's token.
+        assert.deepEqual(reachableProjectIds(bruno.id).toSQL().params, [bruno.id]);
+    });
+    inRequest([], () => assert.match(reachableProjectIds(ana.id).toSQL().sql, /false/));
+    inRequest(undefined, () => {
+        assert.deepEqual(reachableProjectIds(ana.id).toSQL().params, [ana.id]);
+        assert.equal(withinTokenScope(projectMembers.projectId, ana.id), undefined);
+    });
+    // Outside a request there is no token.
+    assert.equal(withinTokenScope(projectMembers.projectId, ana.id), undefined);
+});
+
+test("a token scoped to projects that no longer exist reaches nothing, not everything", async () => {
+    stubBothProjects();
+    const { secret } = stubTokenStore().add(ana);
+    // The same token, now flagged as scoped with its project rows gone.
+    spyOn(db.query.apiTokens, "findFirst").mockImplementation((async () => ({ id: "t1", access: "write", lastUsedAt: new Date(), expiresAt: null, projectScoped: true, projects: [], user: ana })) as never);
+    const auth = { Authorization: `Bearer ${secret}` };
+    assert.equal((await get(`/api/projects/${memberProjectId}/columns`, auth)).status, 403);
+    assert.equal((await get(`/api/projects/${otherProjectId}/columns`, auth)).status, 403);
+});
+
+test("over MCP, a token scoped to one project cannot read or change another, through any tool", async () => {
+    stubBothProjects();
+    const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) }) })) as never);
+    spyOn(db.query.issues, "findFirst").mockImplementation((async () => secretIssue) as never);
+    const readIssues = spyOn(db.query.issues, "findMany").mockImplementation(() => {
+        throw new Error("Must not read issues");
+    });
+    const write = spyOn(db, "insert").mockImplementation(() => {
+        throw new Error("Must not insert");
+    });
+
+    for (const [name, args] of [
+        ["list_issues", { project: "AM" }],
+        ["search", { query: "login", project: "AM" }],
+        ["get_issue", { issue: "AM-4" }],
+        ["update_issue", { issue: "AM-4", title: "Changed" }],
+        ["delete_issue", { issue: "AM-4" }],
+        ["restore_issue", { issue: "AM-4", deletedAt: new Date().toISOString() }],
+        ["add_comment", { issue: "AM-4", body: "hello" }],
+        ["add_relation", { issue: "AM-4", target: "AM-5", type: "blocks" }],
+        ["create_issue", { project: "AM", title: "Sneaky" }],
+        ["list_documents", { project: "AM" }],
+        ["get_document", { project: "AM", document: "Roadmap" }],
+        ["create_document", { project: "AM", title: "Sneaky" }],
+        ["update_document", { project: "AM", document: "Roadmap", title: "Changed" }],
+    ] as const) {
+        const result = await callTool(secret, name, args);
+        assert.equal(result.isError, true, name);
+        assert.match(result.text, /cannot reach this project/, name);
+    }
+    assert.equal(readIssues.mock.calls.length, 0);
+    assert.equal(write.mock.calls.length, 0);
+});
+
+test("over MCP, the projects a scoped token lists, searches and reads come from its scope only", async () => {
+    stubBothProjects();
+    const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
+    const lookups: unknown[][] = [];
+    spyOn(db.query.projectMembers, "findMany").mockImplementation((async (config: { where: SQL }) => {
+        lookups.push(deepParams(config.where));
+        return [];
+    }) as never);
+    const result = await callTool(secret, "list_projects", {});
+    assert.equal(result.isError, false, result.text);
+    assert.equal(lookups.length, 1);
+    assert.ok(lookups[0].includes(memberProjectId));
+    assert.ok(!lookups[0].includes(otherProjectId));
+
+    // The tool that is allowed still works inside the scope.
+    spyOn(db.query.boardColumns, "findMany").mockImplementation(async () => []);
+    spyOn(db.query.categories, "findMany").mockImplementation(async () => []);
+    assert.equal((await callTool(secret, "list_issues", { project: "RIN" })).isError, false);
 });

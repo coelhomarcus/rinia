@@ -164,6 +164,6 @@ test("a favorited view disappears when it is deleted or made private by its owne
         favorite("private", { shared: false, ownerId, deletedAt: null }),
         favorite("own", { shared: false, ownerId: memberId, deletedAt: null }),
     ]) as never);
-    spyOn(db.query.projectMembers, "findMany").mockImplementation((async () => [{ projectId }]) as never);
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ id: projectId }] }) })) as never);
     assert.deepEqual((await listFavorites(memberId)).map((item) => item.id), ["shared", "own"]);
 });

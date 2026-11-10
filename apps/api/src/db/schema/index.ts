@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { apiTokens } from "./api-tokens";
+import { apiTokenProjects, apiTokens } from "./api-tokens";
 import { boardColumns } from "./board-columns";
 import { categories } from "./categories";
 import { commentReactions } from "./comment-reactions";
@@ -63,9 +63,15 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
     user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
-export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
+export const apiTokensRelations = relations(apiTokens, ({ one, many }) => ({
     user: one(users, { fields: [apiTokens.userId], references: [users.id] }),
     oauthClient: one(oauthClients, { fields: [apiTokens.oauthClientId], references: [oauthClients.clientId] }),
+    projects: many(apiTokenProjects),
+}));
+
+export const apiTokenProjectsRelations = relations(apiTokenProjects, ({ one }) => ({
+    token: one(apiTokens, { fields: [apiTokenProjects.tokenId], references: [apiTokens.id] }),
+    project: one(projects, { fields: [apiTokenProjects.projectId], references: [projects.id] }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({

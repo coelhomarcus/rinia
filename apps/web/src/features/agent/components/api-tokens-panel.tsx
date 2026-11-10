@@ -9,9 +9,11 @@ import { Link } from "react-router";
 import { SettingsControl, SettingsGroup, SettingsItemRow, SettingsRowIcon } from "@/components/settings/settings-layout";
 import { API_TOKENS_QUERY_KEY, fetchApiTokens, revokeApiToken, type ApiToken } from "@/features/auth/api";
 import { CopyField } from "@/features/integrations/components/copy-field";
+import { useProjects } from "@/features/projects/hooks/use-projects";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
+import { tokenExpiry } from "../token-expiry";
 import { CreateTokenForm } from "./create-token-form";
 
 /** Personal tokens for AI tools and scripts. A new token is shown once, right after it is created. */
@@ -79,7 +81,14 @@ export const ApiTokensPanel = () => {
 
 function ApiTokenRow({ token, isRevoking, onRevoke }: { token: ApiToken; isRevoking: boolean; onRevoke: () => void }) {
     const { t, i18n } = useTranslation();
+    const { data: projects } = useProjects();
     const date = (value: string) => new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(value));
+    const expiry = tokenExpiry(token.expiresAt);
+    const scope = token.projectIds
+        ? token.projectIds.length === 0
+            ? t("agent.onlyProjectsDeleted")
+            : t("agent.onlyProjects", { projects: token.projectIds.map((id) => projects?.find((project) => project.id === id)?.issueKey ?? "…").join(", ") })
+        : t("agent.allProjects");
     return (
         <SettingsItemRow
             leading={<SettingsRowIcon icon={KeyOutline} />}
@@ -91,9 +100,21 @@ function ApiTokenRow({ token, isRevoking, onRevoke }: { token: ApiToken; isRevok
                     {token.access === "read" ? t("agent.accessRead") : t("agent.accessWrite")}
                     {token.oauth && ` · ${t("agent.viaOAuth")}`}
                     {" · "}
+                    {scope}
+                    {" · "}
                     {t("agent.tokenCreatedOn", { date: date(token.createdAt) })}
                     {" · "}
                     {token.lastUsedAt ? t("agent.tokenLastUsed", { date: date(token.lastUsedAt) }) : t("agent.tokenNeverUsed")}
+                    {" · "}
+                    {expiry.state === "never" ? (
+                        t("agent.noExpiry")
+                    ) : expiry.state === "expired" ? (
+                        <span className="font-medium text-danger-primary">{t("agent.expiredOn", { date: date(token.expiresAt!) })}</span>
+                    ) : expiry.days === 0 ? (
+                        t("agent.expiresToday")
+                    ) : (
+                        t("agent.expiresInDays", { count: expiry.days })
+                    )}
                 </>
             }
         >

@@ -34,13 +34,14 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
         const authenticated = apiToken ? await authenticateApiToken(apiToken) : null;
         if (!authenticated) {
             consumeRateLimit("invalidBearer", ip);
-            logFor("auth").warn({ event: "auth.token_rejected", ip: req.ip, empty: !apiToken }, "invalid or revoked API token used");
-            res.status(401).json({ error: "Invalid or revoked API token", code: "errors.invalidSession" });
+            logFor("auth").warn({ event: "auth.token_rejected", ip: req.ip, empty: !apiToken }, "invalid, expired or revoked API token used");
+            res.status(401).json({ error: "Invalid, expired or revoked API token", code: "errors.invalidSession" });
             return;
         }
         req.user = authenticated.user;
         req.authMethod = "token";
         req.tokenAccess = authenticated.access;
+        if (authenticated.projectIds) req.tokenProjectIds = authenticated.projectIds;
         identifyRequest(req);
         if (authenticated.access === "read" && !READ_METHODS.has(req.method) && !req.baseUrl.startsWith("/api/mcp")) {
             logFor("audit").warn({ event: "permission.denied", reason: "read_only_token", method: req.method }, "read-only API token used to change something");
@@ -79,6 +80,19 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
     if (!enforceRequestLimit(req, res)) return;
     next();
 });
+
+/**
+ * For actions that are not about one project, such as creating a project or administering the instance, which a
+ * token limited to some projects must not do. Runs after `requireAuth`.
+ */
+export function requireUnscopedToken(req: Request, res: Response, next: NextFunction): void {
+    if (req.tokenProjectIds) {
+        logFor("audit").warn({ event: "permission.denied", reason: "project_scoped_token" }, "project-scoped API token used where it must reach every project");
+        res.status(403).json({ error: "This API token is limited to some projects and cannot do this", code: "errors.permissionDenied" });
+        return;
+    }
+    next();
+}
 
 /** For actions only a signed-in person may take, never a script holding an API token. Runs after `requireAuth`. */
 export function requireSession(req: Request, res: Response, next: NextFunction): void {

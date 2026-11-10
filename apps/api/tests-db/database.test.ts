@@ -244,4 +244,31 @@ describe.skipIf(!adminUrl)("against PostgreSQL", () => {
             for (let index = 1; index < rows.length; index++) assert.ok(rows[index - 1].position < rows[index].position, `after move ${round}, two columns share a position`);
         }
     }, 60_000);
+
+    test("an API token's expiry and project scope hold in the database, and losing every project leaves it reaching none", async () => {
+        const { createApiToken, authenticateApiToken } = await import("../src/features/api-tokens/api-tokens.service");
+        const now = new Date("2026-11-10T12:00:00Z");
+        const second = "6a4b8c02-0000-4000-8000-000000000021";
+        await direct!.query(`INSERT INTO projects (id, name, issue_key, created_by) VALUES ($1, 'Mobile', 'MOB', $2)`, [second, ids.user]);
+        await direct!.query(`INSERT INTO project_members (project_id, user_id, role) VALUES ($1, $2, 'owner')`, [second, ids.user]);
+
+        const open = await createApiToken(ids.user, { name: "all", access: "write", expiresInDays: null, projectIds: [] }, undefined, now);
+        const scoped = await createApiToken(ids.user, { name: "one", access: "read", expiresInDays: 30, projectIds: [ids.project] }, undefined, now);
+        assert.equal(open.token.projectIds, null);
+        assert.deepEqual(scoped.token.projectIds, [ids.project]);
+
+        assert.equal((await authenticateApiToken(open.secret, now))?.projectIds, null);
+        assert.deepEqual((await authenticateApiToken(scoped.secret, now))?.projectIds, [ids.project]);
+        // 30 days later the scoped token is gone; the one without an expiry is not.
+        const later = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        assert.equal(await authenticateApiToken(scoped.secret, later), null);
+        assert.ok(await authenticateApiToken(open.secret, later));
+
+        // Someone else's project cannot be put in a token's scope.
+        await assert.rejects(createApiToken(ids.user, { name: "x", access: "read", expiresInDays: 30, projectIds: ["6a4b8c02-0000-4000-8000-0000000000ff"] }), /belong to/);
+
+        // The project the token was limited to is deleted: it must not turn into a token for every project.
+        await direct!.query(`DELETE FROM projects WHERE id = $1`, [ids.project]);
+        assert.deepEqual((await authenticateApiToken(scoped.secret, now))?.projectIds, []);
+    });
 });

@@ -5,6 +5,7 @@ import { respaceIssuesIfCrowded } from "../../db/positions";
 import { boardColumns, categories, commentReactions, issueActivities, issueComments, issueDescriptionRevisions, issueLabels, issueRelations, issues, issueSubscriptions, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import type { TiptapDocument as StoredDocument } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { assertTokenReachesProject, reachableProjectIds } from "../../lib/project-access";
 import { assertRichText } from "../../lib/rich-text";
 import { requireUndoWindow } from "../../lib/soft-delete";
 import { mentionedUserIds, newMentions, recordIssueChange } from "../notifications/notifications.service";
@@ -139,6 +140,7 @@ async function ensureColumnInProject(columnId: string, projectId: string) {
 }
 
 async function ensureProjectMember(userId: string, projectId: string) {
+    assertTokenReachesProject(projectId, userId);
     const membership = await db.query.projectMembers.findFirst({
         where: and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)),
         columns: { id: true },
@@ -292,7 +294,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
               ? eq(issues.createdBy, userId)
               : inArray(issues.id, db.select({ id: issueSubscriptions.issueId }).from(issueSubscriptions).where(eq(issueSubscriptions.userId, userId))),
     ];
-    filters.push(inArray(issues.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
+    filters.push(inArray(issues.projectId, reachableProjectIds(userId)));
 
     const rows = await db.query.issues.findMany({
         where: and(...filters),

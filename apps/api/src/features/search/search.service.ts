@@ -1,7 +1,8 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { boardColumns, issues, projectDocuments, projectMembers, projects } from "../../db/schema";
+import { boardColumns, issues, projectDocuments, projects } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { reachableProjectIds } from "../../lib/project-access";
 import { consumeRateLimit } from "../../lib/rate-limit";
 
 export interface SearchOptions {
@@ -33,7 +34,7 @@ export async function searchWorkspace(userId: string, term: string, options: Sea
     const pattern = containing(term.trim());
     const scope: SQL[] = [];
     if (options.projectId) scope.push(eq(projects.id, options.projectId));
-    scope.push(inArray(projects.id, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId))));
+    scope.push(inArray(projects.id, reachableProjectIds(userId)));
 
     const identifier = /^([A-Za-z0-9]{2,8})-(\d+)$/.exec(term.trim());
     const issueMatch = or(

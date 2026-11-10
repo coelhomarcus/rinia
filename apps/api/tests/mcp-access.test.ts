@@ -43,7 +43,7 @@ function stubInserts() {
 function stubToken(access: "read" | "write") {
     const secret = generateApiToken();
     spyOn(db.query.apiTokens, "findFirst").mockImplementation((async (config: { where: SQL }) =>
-        params(config.where)[0] === hashApiToken(secret) ? { id: "t1", access, lastUsedAt: new Date(), user: ana } : undefined) as never);
+        params(config.where)[0] === hashApiToken(secret) ? { id: "t1", access, lastUsedAt: new Date(), expiresAt: null, projectScoped: false, projects: [], user: ana } : undefined) as never);
     spyOn(db.query.users, "findFirst").mockImplementation((async () => ana) as never);
     return secret;
 }
@@ -174,13 +174,18 @@ test("an authorization code becomes an API token for that app, once", async () =
 
     const response = await exchange();
     assert.equal(response.status, 200);
-    const tokens = (await response.json()) as { access_token: string; token_type: string; scope: string };
+    const tokens = (await response.json()) as { access_token: string; token_type: string; scope: string; expires_in: number };
     assert.match(tokens.access_token, /^rinia_/);
+    // OAuth tokens live 90 days, and the client is told so.
+    assert.equal(tokens.expires_in, 90 * 24 * 60 * 60);
     assert.equal(tokens.token_type.toLowerCase(), "bearer");
     assert.equal(tokens.scope, "read");
     const token = inserted.find((entry) => entry.table === apiTokens)!;
     assert.deepEqual([token.values.name, token.values.access, token.values.oauthClientId, token.values.userId], ["Claude", "read", client.client_id, ana.id]);
     assert.equal(token.values.tokenHash, hashApiToken(tokens.access_token));
+    const lifetime = (token.values.expiresAt as Date).getTime() - Date.now();
+    assert.ok(Math.abs(lifetime - 90 * 24 * 60 * 60 * 1000) < 60_000, `expires in ${lifetime} ms`);
+    assert.equal(token.values.projectScoped, false);
 
     assert.equal((await exchange()).status, 400);
 });

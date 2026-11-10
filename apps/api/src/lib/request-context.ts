@@ -43,6 +43,17 @@ export function logFor(module: string): Logger {
     return currentLogger().child({ module });
 }
 
+/**
+ * The projects the current request's API token is limited to, or null when it may reach all of them: a session, a
+ * token without a scope, or no request at all. It applies only to the token's own user, so a service that looks at
+ * someone else (a notification's recipients, say) is not narrowed by the person who made the request.
+ */
+export function tokenProjectScope(userId?: string): readonly string[] | null {
+    const req = storage.getStore();
+    if (!req?.tokenProjectIds) return null;
+    return userId === undefined || req.user?.sub === userId ? req.tokenProjectIds : null;
+}
+
 /** Who caused the change being handled: the signed-in user and the tab they sent it from. Both are null outside a request. */
 export function currentOrigin(): { actorId: string | null; clientId: string | null } {
     const req = storage.getStore();

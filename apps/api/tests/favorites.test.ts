@@ -41,7 +41,7 @@ test("a document from another project cannot be favorited under this one", async
 
 test("favorites in projects the user has left are hidden", async () => {
     spyOn(db.query.favorites, "findMany").mockImplementation(async () => [row("kept", projectId), row("left", otherProjectId)] as never);
-    spyOn(db.query.projectMembers, "findMany").mockImplementation(async () => [{ projectId }] as never);
+    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ id: projectId }] }) })) as never);
     assert.deepEqual((await listFavorites("user")).map((favorite) => favorite.id), ["kept"]);
 });
 

@@ -96,6 +96,10 @@ export interface ApiToken {
     access: ApiTokenAccess;
     /** Handed to an app when someone signed in to it with Rinia, rather than made on this page. */
     oauth: boolean;
+    /** When the token stops working; null for one that never expires. */
+    expiresAt: string | null;
+    /** The projects the token is limited to; null when it reaches every project its owner is in. */
+    projectIds: string[] | null;
     lastUsedAt: string | null;
     createdAt: string;
 }

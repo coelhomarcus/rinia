@@ -3,6 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { boardColumns, projectKeyAliases, projectMembers, projects, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { withinTokenScope } from "../../lib/project-access";
 import { logFor } from "../../lib/request-context";
 import { DEFAULT_COLUMNS } from "./default-columns";
 import { isProjectKeyConflict } from "./project-key";
@@ -99,11 +100,14 @@ export async function createProject(input: CreateProjectInput, creatorId: string
     throw new HttpError(409, "Could not generate a unique project key");
 }
 
-/** The projects the user belongs to. Site admins are no exception: they see only the projects they are members of. */
+/**
+ * The projects the user belongs to. Site admins are no exception: they see only the projects they are members of. An API
+ * token limited to some projects sees only those.
+ */
 export async function listProjectsForUser(userId: string) {
     const projectList = (
         await db.query.projectMembers.findMany({
-            where: eq(projectMembers.userId, userId),
+            where: and(eq(projectMembers.userId, userId), withinTokenScope(projectMembers.projectId, userId)),
             with: { project: { columns: PROJECT_LIST_COLUMNS } },
         })
     ).map((membership) => membership.project);

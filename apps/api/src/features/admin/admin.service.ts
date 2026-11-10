@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { apiTokens, issues, projectDocuments, projectMembers, projects, users } from "../../db/schema";
 import { db } from "../../db";
 import { HttpError } from "../../lib/http-error";
@@ -96,7 +96,7 @@ export async function getAdminUser(userId: string) {
         },
     });
     if (!user) throw new HttpError(404, "User not found");
-    const [tokens] = await db.select({ value: count() }).from(apiTokens).where(eq(apiTokens.userId, userId));
+    const [tokens] = await db.select({ value: count() }).from(apiTokens).where(and(eq(apiTokens.userId, userId), or(isNull(apiTokens.expiresAt), gt(apiTokens.expiresAt, new Date()))));
     const { projectMemberships, ...rest } = user;
     return {
         ...rest,

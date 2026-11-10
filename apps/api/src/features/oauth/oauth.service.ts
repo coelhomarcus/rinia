@@ -4,7 +4,7 @@ import { InvalidGrantError, InvalidTokenError, UnsupportedGrantTypeError } from 
 import { redirectUriMatches } from "@modelcontextprotocol/sdk/server/auth/handlers/authorize.js";
 import type { AuthorizationParams, OAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth/provider.js";
 import type { OAuthClientInformationFull, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
-import type { ApiTokenAccess } from "@rinia/shared";
+import { DEFAULT_API_TOKEN_EXPIRY_DAYS, type ApiTokenAccess } from "@rinia/shared";
 import { and, eq, gt, lt } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { env } from "../../config/env";
@@ -121,7 +121,7 @@ async function dropExpiredCodes() {
 /**
  * Rinia as an OAuth authorization server for MCP clients. Signing in happens on Rinia's own consent page, and what
  * the app gets is an ordinary API token tied to it: it shows in the person's API tokens, where it can be revoked.
- * Tokens do not expire, so there are no refresh tokens.
+ * The token expires after `DEFAULT_API_TOKEN_EXPIRY_DAYS`; the app signs in again then, so there are no refresh tokens yet.
  */
 export const oauthProvider: OAuthServerProvider = {
     clientsStore,
@@ -151,17 +151,17 @@ export const oauthProvider: OAuthServerProvider = {
         const [used] = await db.delete(oauthCodes).where(eq(oauthCodes.codeHash, row.codeHash)).returning({ codeHash: oauthCodes.codeHash });
         if (!used) throw new InvalidGrantError("The authorization code was already used");
         void dropExpiredCodes().catch((error: unknown) => logFor("oauth").error({ err: error }, "could not drop expired OAuth codes"));
-        const { secret } = await createApiToken(row.userId, { name: client.client_name?.trim().slice(0, 80) || "MCP client", access: row.access }, client.client_id);
-        return { access_token: secret, token_type: "bearer", scope: row.access };
+        const { secret } = await createApiToken(row.userId, { name: client.client_name?.trim().slice(0, 80) || "MCP client", access: row.access, expiresInDays: DEFAULT_API_TOKEN_EXPIRY_DAYS, projectIds: [] }, client.client_id);
+        return { access_token: secret, token_type: "bearer", scope: row.access, expires_in: DEFAULT_API_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 };
     },
 
     async exchangeRefreshToken() {
-        throw new UnsupportedGrantTypeError("Rinia's tokens do not expire, so it issues no refresh tokens");
+        throw new UnsupportedGrantTypeError("Rinia issues no refresh tokens: sign in again when the token expires");
     },
 
     async verifyAccessToken(token) {
         const authenticated = await authenticateApiToken(token);
-        if (!authenticated) throw new InvalidTokenError("Invalid or revoked token");
+        if (!authenticated) throw new InvalidTokenError("Invalid, expired or revoked token");
         return { token, clientId: "", scopes: [authenticated.access] };
     },
 

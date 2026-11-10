@@ -8,7 +8,7 @@ import { categoriesRouter } from "../categories/categories.routes";
 import { columnsRouter } from "../columns/columns.routes";
 import { viewPreferencesRouter } from "../view-preferences/view-preferences.routes";
 import { viewsRouter } from "../views/views.routes";
-import { requireAuth } from "../../middleware/auth.middleware";
+import { requireAuth, requireUnscopedToken } from "../../middleware/auth.middleware";
 import {
   requireProjectMember,
   requireProjectOwner,
@@ -33,7 +33,7 @@ export const projectsRouter = Router();
 projectsRouter.use(requireAuth);
 
 projectsRouter.get("/", list);
-projectsRouter.post("/", create);
+projectsRouter.post("/", requireUnscopedToken, create);
 
 projectsRouter.get("/by-key/:key", getByKey);
 projectsRouter.get("/:projectId", requireProjectMember, getOne);

@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-or
 import { db } from "../../db";
 import { boardColumns, issueSubscriptions, notifications, projectMembers, users } from "../../db/schema";
 import { HttpError } from "../../lib/http-error";
+import { reachableProjectIds } from "../../lib/project-access";
 import { logFor } from "../../lib/request-context";
 
 const PERSON = { id: true, name: true, username: true, avatarUrl: true } as const;
@@ -130,9 +131,9 @@ export async function recordIssueChange(issue: { id: string; projectId: string }
     }
 }
 
-/** Hides notifications from projects the user has left. */
+/** Hides notifications from projects the user has left, or that the API token in use cannot reach. */
 function visibleTo(userId: string) {
-    return inArray(notifications.projectId, db.select({ id: projectMembers.projectId }).from(projectMembers).where(eq(projectMembers.userId, userId)));
+    return inArray(notifications.projectId, reachableProjectIds(userId));
 }
 
 export async function listNotifications(userId: string) {
@@ -187,14 +188,14 @@ export async function setNotificationRead(userId: string, notificationId: string
     const [updated] = await db
         .update(notifications)
         .set({ readAt: read ? new Date() : null })
-        .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)))
+        .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId), visibleTo(userId)))
         .returning({ id: notifications.id, readAt: notifications.readAt });
     if (!updated) throw new HttpError(404, "Notification not found");
     return updated;
 }
 
 export async function markAllNotificationsRead(userId: string) {
-    await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    await db.update(notifications).set({ readAt: new Date() }).where(and(eq(notifications.userId, userId), isNull(notifications.readAt), visibleTo(userId)));
 }
 
 export async function isFollowingIssue(userId: string, issueId: string) {
