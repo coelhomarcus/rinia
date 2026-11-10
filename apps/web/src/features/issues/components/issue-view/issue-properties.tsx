@@ -21,7 +21,7 @@ import { formatFullIssueDate } from "../../lib/relative-time";
 import { DueDatePopover } from "../due-date-picker";
 import { LabelChip, LabelsPicker, resolveLabels, useLabelToggle } from "../labels-picker";
 import { assigneeOptions, estimateOptions, priorityOptions, statusOptions, type PropertyOption } from "../property-options";
-import { PropertyMenu, type PropertyMenuId } from "./property-menu";
+import { PropertyMenu, type PropertyMenuId, type PropertyPresentation } from "./property-menu";
 import { propertyButton } from "./styles";
 import { useIssuePropertySave, type IssueUpdater } from "./use-issue-mutations";
 
@@ -55,11 +55,13 @@ export const IssueProperties = memo(function IssueProperties({
     updater,
     openMenu,
     onOpenMenuChange,
+    presentation = "popover",
 }: {
     issue: IssueDetail;
     updater: IssueUpdater;
     openMenu: PropertyMenuId | null;
     onOpenMenuChange: (menu: PropertyMenuId | null) => void;
+    presentation?: PropertyPresentation;
 }) {
     const { t, i18n } = useTranslation();
     const { data: project } = useProject(issue.projectId);
@@ -80,7 +82,8 @@ export const IssueProperties = memo(function IssueProperties({
     const issueLabels = resolveLabels(issue.categoryIds, labelById);
     const labelEditor = useLabelToggle(issue.categoryIds, (categoryIds) => save({ categoryIds }));
     const parent = projectIssues.find((candidate) => candidate.id === issue.parent?.id);
-    const menu = (id: PropertyMenuId) => ({ open: openMenu === id, onOpenChange: (open: boolean) => onOpenMenuChange(open ? id : null), disabled: isPending });
+    const row = presentation === "sheet" ? cx(propertyButton, "min-h-11") : propertyButton;
+    const menu = (id: PropertyMenuId) => ({ open: openMenu === id, onOpenChange: (open: boolean) => onOpenMenuChange(open ? id : null), disabled: isPending, presentation, triggerClassName: row });
     const avatar = (person: { name: string; avatarUrl: string | null }) => <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} className="size-4 text-[9px]" />;
     const created = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(issue.createdAt));
     const parentIcon = <ListTree className="size-4 text-tertiary" />;
@@ -148,7 +151,7 @@ export const IssueProperties = memo(function IssueProperties({
                     value={issue.dueDate}
                     onChange={(dueDate) => save({ dueDate })}
                     triggerLabel={t("issue.dueDate")}
-                    triggerClassName={propertyButton}
+                    triggerClassName={row}
                 >
                     <PropertyIcon><CalendarDays className={cx("size-3.5", dueState ? dueStateClass[dueState] : "text-tertiary")} /></PropertyIcon>
                     <span className={cx("truncate", !issue.dueDate ? "text-tertiary" : dueState !== "upcoming" && dueState ? dueStateClass[dueState] : undefined)}>
@@ -179,7 +182,7 @@ export const IssueProperties = memo(function IssueProperties({
                     onToggle={labelEditor.toggle}
                     onClose={labelEditor.reset}
                     triggerLabel={t("issue.labels")}
-                    triggerClassName={cx(propertyButton, issueLabels.length > 0 && "h-auto min-h-8 flex-wrap gap-1 py-1")}
+                    triggerClassName={cx(row, issueLabels.length > 0 && "h-auto min-h-11 flex-wrap gap-1 py-1")}
                 >
                     {issueLabels.length > 0 ? (
                         issueLabels.map((label) => <LabelChip key={label.id} label={label} className="h-6 max-w-full px-2 text-[12px]" />)
@@ -193,7 +196,7 @@ export const IssueProperties = memo(function IssueProperties({
             </PropertyGroup>
 
             <PropertyGroup title={t("issue.project")}>
-                <Link to={urls.project(issue.project.issueKey)} className={propertyButton}>
+                <Link to={urls.project(issue.project.issueKey)} className={row}>
                     <ProjectIcon icon={projectIcon} className="size-4 shrink-0" />
                     <span className="truncate">{issue.project.name}</span>
                 </Link>
