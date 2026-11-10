@@ -27,10 +27,29 @@ app.use(accessLog());
 // would see the proxy's internal IP instead of each client's real IP.
 app.set("trust proxy", 1);
 
-// CSP is intentionally disabled: Helmet's default may block the SPA bundle (Vite)
-// before each directive has been thoroughly tested. The other protections
-// (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS, etc.) are still worthwhile.
-app.use(helmet({ contentSecurityPolicy: false }));
+// Scripts come from this origin only, so a script that slipped into rich text cannot run.
+// Styles stay loose: the editors, charts and menus set them on the element.
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            useDefaults: false,
+            directives: {
+                "default-src": ["'self'"],
+                "script-src": ["'self'"],
+                "style-src": ["'self'", "'unsafe-inline'"],
+                "img-src": ["'self'", "data:", "blob:", "https:"],
+                "font-src": ["'self'"],
+                "connect-src": ["'self'", "wss:", "ws:"],
+                "worker-src": ["'self'"],
+                "manifest-src": ["'self'"],
+                "frame-ancestors": ["'none'"],
+                "base-uri": ["'self'"],
+                "form-action": ["'self'"],
+                "object-src": ["'none'"],
+            },
+        },
+    }),
+);
 
 // URL images keep document payloads small; allow long text and tables without the default 100 KB limit.
 app.use("/api/projects/:projectId/documents", express.json({ limit: "2mb" }));
