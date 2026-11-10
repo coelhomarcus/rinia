@@ -8,7 +8,7 @@ export function NotFound() {
     const { t } = useTranslation();
 
     return (
-        <section className="flex min-h-dvh items-center justify-center bg-surface-1 px-4 py-10 sm:px-6">
+        <section className="flex min-h-dvh items-center justify-center bg-surface-1 pt-[max(2.5rem,env(safe-area-inset-top,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] sm:pr-[max(1.5rem,env(safe-area-inset-right,0px))] sm:pl-[max(1.5rem,env(safe-area-inset-left,0px))]">
             <div className="w-full max-w-sm rounded-lg border border-subtle bg-surface-1 p-5 shadow-xl">
                 <div className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">

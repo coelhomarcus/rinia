@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 export function AuthLayout() {
     const { t } = useTranslation();
     return (
-        <div className="flex min-h-dvh flex-col bg-canvas text-primary">
+        <div className="flex min-h-dvh flex-col bg-canvas p-safe text-primary">
             <header className="flex h-12 items-center justify-between px-4 md:px-6">
                 <RiniaLogo />
                 <LanguageSelector compact />

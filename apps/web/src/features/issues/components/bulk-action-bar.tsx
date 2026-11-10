@@ -167,7 +167,7 @@ export function BulkActionBar({
                 aria-label={t("issue.bulkActions")}
                 inert={!open}
                 className={cx(
-                    "absolute bottom-5 left-4 right-4 z-30 mx-auto flex w-fit max-w-full flex-wrap justify-center items-center gap-0.5 overflow-hidden rounded-xl border border-subtle bg-layer-2 p-1 shadow-overlay-200 transition-[opacity,transform] motion-reduce:transition-none",
+                    "absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] left-4 right-4 z-30 mx-auto flex w-fit max-w-full flex-wrap justify-center items-center gap-0.5 overflow-hidden rounded-xl border border-subtle bg-layer-2 p-1 shadow-overlay-200 transition-[opacity,transform] motion-reduce:transition-none",
                     motionTiming(open),
                     open ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0",
                 )}

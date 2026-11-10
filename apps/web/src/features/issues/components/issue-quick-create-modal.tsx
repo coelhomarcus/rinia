@@ -114,7 +114,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
             <Dialog.Portal>
                 <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/60 transition-opacity duration-(--motion-enter) data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
                 <Dialog.Viewport
-                    className={cx("fixed inset-0 z-50 flex justify-center overflow-y-auto p-4", expanded ? "items-center" : "items-start pt-[12vh]")}
+                    className={cx("fixed inset-0 z-50 flex justify-center overflow-y-auto p-safe-4", expanded ? "items-center" : "items-start pt-[max(12vh,env(safe-area-inset-top,0px))]")}
                 >
                     <Dialog.Popup
                         initialFocus={titleRef}

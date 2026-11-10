@@ -34,7 +34,7 @@ export const NetworkStatus = () => {
     const Icon = isOffline ? WifiOff : RefreshCw;
 
     return (
-        <div className="fixed inset-x-0 bottom-3 z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2 animate-enter rounded-full border border-subtle bg-surface-1 px-3 py-2 text-xs font-medium text-secondary shadow-xl" role="status" aria-live="polite" data-print-hide>
+        <div className="fixed inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px))] items-center gap-2 animate-enter rounded-full border border-subtle bg-surface-1 px-3 py-2 text-xs font-medium text-secondary shadow-xl" role="status" aria-live="polite" data-print-hide>
             <Icon className={`size-3.5 shrink-0 text-fg-warning-primary ${isOffline ? "" : "motion-safe:animate-spin"}`} aria-hidden="true" />
             <span>{isOffline ? t("common.offlineNotice") : t("realtime.reconnecting")}</span>
         </div>

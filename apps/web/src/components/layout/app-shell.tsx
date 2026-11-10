@@ -35,7 +35,7 @@ export const AppShell = () => {
         <NavigationContext.Provider value={{ openNavigation }}>
             <AppCommandsProvider>
             {/* While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes. */}
-            <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-canvas text-primary ${resizing ? "cursor-ew-resize select-none" : ""}`}>
+            <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-canvas p-safe text-primary ${resizing ? "cursor-ew-resize select-none" : ""}`}>
                 <aside
                     className={`relative hidden h-full shrink-0 overflow-hidden md:flex ${resizing ? "" : "transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)]"}`}
                     style={{ width }}
@@ -67,7 +67,7 @@ export const AppShell = () => {
                 <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
                     <Dialog.Portal>
                         <Dialog.Backdrop data-print-hide className="fixed inset-0 z-40 bg-backdrop transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-                        <Dialog.Popup data-print-hide className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
+                        <Dialog.Popup data-print-hide className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas pt-safe pb-safe pl-safe outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
                             <Dialog.Title className="sr-only">{t("nav.navigation")}</Dialog.Title>
                             <Sidebar onNavigate={() => setMobileOpen(false)} />
                         </Dialog.Popup>

@@ -152,7 +152,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
                 aria-live="polite"
                 data-print-hide
-                className="pointer-events-none fixed right-4 bottom-4 z-[80] grid w-[min(22rem,calc(100vw-2rem))]"
+                className="pointer-events-none fixed right-[calc(1rem+env(safe-area-inset-right,0px))] bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] z-[80] grid w-[min(22rem,calc(100vw-2rem-env(safe-area-inset-left,0px)-env(safe-area-inset-right,0px)))]"
                 onMouseEnter={() => hold("hover")}
                 onMouseLeave={() => release("hover")}
                 onFocusCapture={() => hold("focus")}
