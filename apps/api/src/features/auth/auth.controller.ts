@@ -1,4 +1,4 @@
-import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from "@rinia/shared";
+import { confirmEmailChangeSchema, forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from "@rinia/shared";
 import { env } from "../../config/env";
 import { asyncHandler } from "../../middleware/async-handler";
 import { clearSessionCookie, setSessionCookie } from "../../lib/cookies";
@@ -6,6 +6,7 @@ import { HttpError } from "../../lib/http-error";
 import { logFor } from "../../lib/request-context";
 import { appBaseUrl } from "../../lib/app-url";
 import { getUserById, loginUser, registerUser } from "./auth.service";
+import { confirmEmailChange } from "../users/email-change.service";
 import { requestPasswordReset, resetPassword } from "./password.service";
 
 /** People sign in with a username or an email; only a username is logged. */
@@ -53,15 +54,15 @@ export const me = asyncHandler(async (req, res) => {
     res.json({ user });
 });
 
-/** What the sign-in page may offer. Password recovery needs email, which a server may not have set up. */
+/** What the sign-in page and the profile may offer. Both need email, which a server may not have set up. */
 export const options = asyncHandler(async (_req, res) => {
-    res.json({ passwordRecovery: env.passwordRecoveryEnabled });
+    res.json({ passwordRecovery: env.emailLinksEnabled, emailChange: env.emailLinksEnabled });
 });
 
 /** Always answers the same way, so the form cannot tell anyone which accounts exist. */
 export const forgotPassword = asyncHandler(async (req, res) => {
     const { identifier } = forgotPasswordSchema.parse(req.body);
-    if (!env.passwordRecoveryEnabled) throw new HttpError(503, "Email is not set up on this server");
+    if (!env.emailLinksEnabled) throw new HttpError(503, "Email is not set up on this server");
     await requestPasswordReset(identifier, appBaseUrl(req));
     res.status(204).send();
 });
@@ -70,4 +71,11 @@ export const resetPasswordWithLink = asyncHandler(async (req, res) => {
     const { token, password } = resetPasswordSchema.parse(req.body);
     await resetPassword(token, password);
     res.status(204).send();
+});
+
+/** Opened from the new inbox, signed in or not. */
+export const confirmEmail = asyncHandler(async (req, res) => {
+    const { token } = confirmEmailChangeSchema.parse(req.body);
+    const user = await confirmEmailChange(token);
+    res.json({ email: user.email });
 });

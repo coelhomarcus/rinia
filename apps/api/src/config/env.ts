@@ -41,8 +41,8 @@ if (!parsed.success) {
 export const env = {
     ...parsed.data,
     emailEnabled: Boolean(parsed.data.RESEND_API_KEY && parsed.data.RESEND_FROM_EMAIL),
-    /** Recovery by email works with Resend set up, and in development, where the email is written to the log instead. */
-    passwordRecoveryEnabled: Boolean(parsed.data.RESEND_API_KEY && parsed.data.RESEND_FROM_EMAIL) || parsed.data.NODE_ENV === "development",
+    /** Links by email (password recovery, email change) work with Resend set up, and in development, where the email is written to the log instead. */
+    emailLinksEnabled: Boolean(parsed.data.RESEND_API_KEY && parsed.data.RESEND_FROM_EMAIL) || parsed.data.NODE_ENV === "development",
     adminUsernames: parsed.data.ADMIN_USERNAMES.split(",")
         .map((username) => username.trim().toLowerCase())
         .filter(Boolean),

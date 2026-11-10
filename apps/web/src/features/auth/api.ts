@@ -1,4 +1,4 @@
-import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type ChangePasswordInput, type CreateApiTokenInput, type ForgotPasswordInput, type LoginInput, type RegisterInput, type ResetPasswordInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
+import { REALTIME_CLIENT_HEADER, type ApiTokenAccess, type ChangePasswordInput, type CreateApiTokenInput, type RequestEmailChangeInput, type ForgotPasswordInput, type LoginInput, type RegisterInput, type ResetPasswordInput, type UpdateLocaleInput, type UpdateProfileInput } from "@rinia/shared";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { TAB_ID } from "@/lib/tab-id";
 
@@ -35,9 +35,10 @@ export function logout(): Promise<void> {
     return apiClient.post<void>("/auth/logout");
 }
 
-/** What this server offers on the sign-in page. Password recovery needs email set up on the server. */
+/** What this server offers on the sign-in page and the profile. Both need email set up on the server. */
 export interface AuthOptions {
     passwordRecovery: boolean;
+    emailChange: boolean;
 }
 
 export const AUTH_OPTIONS_QUERY_KEY = ["auth", "options"] as const;
@@ -108,3 +109,21 @@ export function createApiToken(input: CreateApiTokenInput): Promise<{ token: Api
 export function revokeApiToken(tokenId: string): Promise<void> {
     return apiClient.delete<void>(`/api-tokens/${tokenId}`);
 }
+
+/** A new email waiting for the person to open the link sent to it. */
+export interface PendingEmailChange {
+    email: string;
+    expiresAt: string;
+}
+
+export const EMAIL_CHANGE_QUERY_KEY = ["auth", "email-change"] as const;
+
+export const fetchPendingEmailChange = () => apiClient.get<{ pending: PendingEmailChange | null }>("/users/me/email-change").then((res) => res.pending);
+
+/** Sends a confirmation link to the new address; the email does not change until it is opened. */
+export const requestEmailChange = (input: RequestEmailChangeInput) => apiClient.post<{ pending: PendingEmailChange }>("/users/me/email-change", input).then((res) => res.pending);
+
+export const cancelEmailChange = () => apiClient.delete<void>("/users/me/email-change");
+
+/** Works signed in or not, since the link may be opened on another device. */
+export const confirmEmailChange = (token: string) => apiClient.post<{ email: string }>("/auth/confirm-email", { token }).then((res) => res.email);

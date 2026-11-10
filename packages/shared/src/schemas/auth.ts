@@ -50,3 +50,15 @@ export type ResetPasswordFormInput = z.infer<typeof resetPasswordFormSchema>;
 
 export const changePasswordFormSchema = changePasswordSchema.extend({ confirm: z.string() }).refine((value) => value.newPassword === value.confirm, passwordsMatch);
 export type ChangePasswordFormInput = z.infer<typeof changePasswordFormSchema>;
+
+/** Asks to move the account to a new email. Nothing changes until the link sent there is opened. */
+export const requestEmailChangeSchema = z.object({
+    newEmail: z.string().trim().toLowerCase().email().max(320),
+    currentPassword: z.string().min(1),
+});
+export type RequestEmailChangeInput = z.infer<typeof requestEmailChangeSchema>;
+
+export const confirmEmailChangeSchema = z.object({
+    token: z.string().trim().min(1).max(200),
+});
+export type ConfirmEmailChangeInput = z.infer<typeof confirmEmailChangeSchema>;

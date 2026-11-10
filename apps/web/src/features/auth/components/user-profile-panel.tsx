@@ -8,6 +8,7 @@ import { Alert } from "@/components/base/feedback/alert";
 import { SettingsControl, SettingsGroup, settingsFieldClass } from "@/components/settings/settings-layout";
 import { AvatarPhotoPicker } from "@/components/appearance/avatar-url-picker";
 import { AUTH_QUERY_KEY, updateProfile } from "@/features/auth/api";
+import { ChangeEmailButton, PendingEmailChangeNotice } from "@/features/auth/components/email-change";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
 import { useTranslation } from "react-i18next";
@@ -54,7 +55,9 @@ export const UserProfilePanel = () => {
                 </SettingsControl>
                 <SettingsControl title={t("profile.email")}>
                     <span className="truncate text-md text-secondary">{user.email}</span>
+                    <ChangeEmailButton />
                 </SettingsControl>
+                <PendingEmailChangeNotice />
                 <SettingsControl title={t("profile.fullName")}>
                     <Controller control={control} name="name" render={({ field: name }) => (
                         <input {...name} required disabled={mutation.isPending} aria-label={t("profile.fullName")} className={settingsFieldClass} />

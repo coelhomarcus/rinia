@@ -56,7 +56,7 @@ export async function requestPasswordReset(identifier: string, baseUrl: string) 
 
 /** An admin sends someone the same link by email, instead of reading a temporary password out to them. */
 export async function sendAdminResetLink(userId: string, baseUrl: string) {
-    if (!env.passwordRecoveryEnabled) throw new HttpError(503, "Email is not set up on this server");
+    if (!env.emailLinksEnabled) throw new HttpError(503, "Email is not set up on this server");
     const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: RECIPIENT });
     if (!user) throw new HttpError(404, "User not found");
     const link = await issueResetLink(user, baseUrl, ADMIN_RESET_LIFETIME_MS);

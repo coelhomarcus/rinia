@@ -1,4 +1,5 @@
 const auth = {
+        confirmEmailTitle: "Confirmar novo e-mail", emailConfirmed: "Pronto. O e-mail da sua conta agora é {{email}}.", backToProfile: "Voltar para o perfil",
         forgotPassword: "Esqueceu a senha?", forgotPasswordTitle: "Recuperar acesso", forgotPasswordDescription: "Informe seu usuário ou e-mail e enviaremos um link para você escolher uma nova senha.",
         sendResetLink: "Enviar link", resetLinkSent: "Se houver uma conta com esse usuário ou e-mail, enviamos um link para o e-mail dela. Confira também o spam. O link vale por 1 hora.",
         couldNotSendLink: "Não foi possível enviar o link.", recoveryUnavailable: "A recuperação por e-mail não está ativa neste servidor. Peça a um administrador para redefinir sua senha.",

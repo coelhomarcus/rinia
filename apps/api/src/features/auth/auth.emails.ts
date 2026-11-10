@@ -93,3 +93,64 @@ export function passwordChangedEmail(recipient: Recipient, changedAt: Date): Ema
         text: [copy.hello(recipient.name), stripTags(copy.body(recipient.username, when)), copy.warning].join("\n\n"),
     };
 }
+
+const CONFIRM_EMAIL = {
+    "pt-BR": {
+        subject: "Confirme seu novo e-mail no Rinia",
+        hello: (name: string) => `Olá, ${name}.`,
+        body: (username: string, email: string) => `Você pediu para trocar o e-mail da conta <strong>@${username}</strong> para <strong>${email}</strong>. Confirme pelo botão abaixo; até lá, o e-mail antigo continua valendo.`,
+        validity: "O link vale por 24 horas e só pode ser usado uma vez.",
+        action: "Confirmar novo e-mail",
+        plainLink: "Abra este endereço para confirmar o novo e-mail:",
+        ignore: "Se você não pediu isso, ignore este e-mail. Nada muda na conta.",
+    },
+    en: {
+        subject: "Confirm your new email on Rinia",
+        hello: (name: string) => `Hi ${name},`,
+        body: (username: string, email: string) => `You asked to change the email of the account <strong>@${username}</strong> to <strong>${email}</strong>. Confirm with the button below; until then, the old email keeps working.`,
+        validity: "The link works for 24 hours and only once.",
+        action: "Confirm new email",
+        plainLink: "Open this address to confirm the new email:",
+        ignore: "If you did not ask for this, ignore this email. Nothing changes on the account.",
+    },
+} as const;
+
+/** Sent to the new address, which proves the person can read it. */
+export function confirmEmailChangeEmail(recipient: Recipient, newEmail: string, link: string): Email {
+    const copy = CONFIRM_EMAIL[localeOf(recipient)];
+    const body = copy.body(escapeHtml(recipient.username), escapeHtml(newEmail));
+    return {
+        to: newEmail,
+        subject: copy.subject,
+        html: layout({ paragraphs: [copy.hello(escapeHtml(recipient.name)), body, copy.validity], action: { label: copy.action, url: link }, footer: copy.ignore }),
+        text: [copy.hello(recipient.name), stripTags(copy.body(recipient.username, newEmail)), `${copy.plainLink}\n${link}`, copy.validity, copy.ignore].join("\n\n"),
+    };
+}
+
+const EMAIL_CHANGED = {
+    "pt-BR": {
+        subject: "O e-mail da sua conta no Rinia mudou",
+        hello: (name: string) => `Olá, ${name}.`,
+        body: (username: string, email: string) => `O e-mail da conta <strong>@${username}</strong> agora é <strong>${email}</strong>. Este endereço não recebe mais e-mails do Rinia.`,
+        warning: "Se não foi você, fale agora com um administrador do Rinia.",
+        footer: "Você recebeu este aviso porque este era o e-mail da conta.",
+    },
+    en: {
+        subject: "Your Rinia account's email changed",
+        hello: (name: string) => `Hi ${name},`,
+        body: (username: string, email: string) => `The email of the account <strong>@${username}</strong> is now <strong>${email}</strong>. This address no longer gets email from Rinia.`,
+        warning: "If this was not you, contact a Rinia admin right away.",
+        footer: "You received this notice because this was the account's email.",
+    },
+} as const;
+
+/** Sent to the old address once the change is done, so a takeover does not go unnoticed. */
+export function emailChangedEmail(recipient: Recipient, oldEmail: string, newEmail: string): Email {
+    const copy = EMAIL_CHANGED[localeOf(recipient)];
+    return {
+        to: oldEmail,
+        subject: copy.subject,
+        html: layout({ paragraphs: [copy.hello(escapeHtml(recipient.name)), copy.body(escapeHtml(recipient.username), escapeHtml(newEmail)), copy.warning], footer: copy.footer }),
+        text: [copy.hello(recipient.name), stripTags(copy.body(recipient.username, newEmail)), copy.warning].join("\n\n"),
+    };
+}

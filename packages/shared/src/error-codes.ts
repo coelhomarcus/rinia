@@ -13,6 +13,7 @@ const messageCodes: Record<string, string> = {
     "This account is suspended": "errors.accountSuspended",
     "You cannot do this to your own account": "errors.ownAccount",
     "This link is invalid or has expired": "errors.resetLinkInvalid",
+    "This is already your email": "errors.sameEmail",
     "The current password is incorrect": "errors.incorrectPassword",
     "Email is not set up on this server": "errors.emailUnavailable",
     "Could not send the email. Try again later.": "errors.emailFailed",

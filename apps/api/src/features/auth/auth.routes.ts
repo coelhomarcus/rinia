@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.middleware";
 import { loginRateLimiter, passwordRateLimiter, registerRateLimiter } from "../../middleware/rate-limit.middleware";
-import { forgotPassword, login, logout, me, options, register, resetPasswordWithLink } from "./auth.controller";
+import { confirmEmail, forgotPassword, login, logout, me, options, register, resetPasswordWithLink } from "./auth.controller";
 
 export const authRouter = Router();
 
@@ -12,3 +12,4 @@ authRouter.get("/me", requireAuth, me);
 authRouter.get("/options", options);
 authRouter.post("/forgot-password", passwordRateLimiter, forgotPassword);
 authRouter.post("/reset-password", passwordRateLimiter, resetPasswordWithLink);
+authRouter.post("/confirm-email", passwordRateLimiter, confirmEmail);

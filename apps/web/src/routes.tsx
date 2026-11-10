@@ -35,6 +35,7 @@ const ApiTokensSettingsPage = lazy(() => import("@/pages/api-tokens-settings-pag
 const PreferencesSettingsPage = lazy(() => import("@/pages/preferences-settings-page").then((module) => ({ default: module.PreferencesSettingsPage })));
 const OAuthConsentPage = lazy(() => import("@/pages/oauth-consent-page").then((module) => ({ default: module.OAuthConsentPage })));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password-page").then((module) => ({ default: module.ForgotPasswordPage })));
+const ConfirmEmailPage = lazy(() => import("@/pages/confirm-email-page").then((module) => ({ default: module.ConfirmEmailPage })));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password-page").then((module) => ({ default: module.ResetPasswordPage })));
 const RegisterPage = lazy(() => import("@/pages/register-page").then((module) => ({ default: module.RegisterPage })));
 
@@ -79,6 +80,7 @@ export const AppRoutes = () => {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/confirm-email" element={<ConfirmEmailPage />} />
                     {/* Where MCP clients send someone to sign in with Rinia. */}
                     <Route path="/oauth/authorize" element={<RequireAuth><OAuthConsentPage /></RequireAuth>} />
                 </Route>

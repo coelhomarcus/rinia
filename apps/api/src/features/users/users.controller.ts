@@ -1,12 +1,14 @@
 import { createReadStream } from "node:fs";
 import { access } from "node:fs/promises";
-import { changePasswordSchema, updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
+import { changePasswordSchema, requestEmailChangeSchema, updateLocaleSchema, updateProfileSchema } from "@rinia/shared";
 import { z } from "zod";
+import { appBaseUrl } from "../../lib/app-url";
 import { setSessionCookie } from "../../lib/cookies";
 import { HttpError } from "../../lib/http-error";
 import { signToken } from "../../lib/jwt";
 import { changePassword } from "../auth/password.service";
 import { realtimeHub } from "../realtime/realtime.service";
+import { cancelEmailChange, pendingEmailChange, requestEmailChange } from "./email-change.service";
 import { asyncHandler } from "../../middleware/async-handler";
 import { contentDisposition, readMultipart } from "../files/files.http";
 import { avatarFilePath } from "../files/files.storage";
@@ -65,5 +67,19 @@ export const updatePassword = asyncHandler(async (req, res) => {
     setSessionCookie(res, signToken({ sub: req.user!.sub, username: req.user!.username, isAdmin: req.user!.isAdmin }));
     // Once this browser has its new cookie, sockets reconnect: this one with the new session, the others are refused.
     res.on("finish", () => realtimeHub.closeUser(req.user!.sub, "recheck"));
+    res.status(204).send();
+});
+
+export const startEmailChange = asyncHandler(async (req, res) => {
+    const input = requestEmailChangeSchema.parse(req.body);
+    res.json({ pending: await requestEmailChange(req.user!.sub, input, appBaseUrl(req)) });
+});
+
+export const getEmailChange = asyncHandler(async (req, res) => {
+    res.json({ pending: await pendingEmailChange(req.user!.sub) });
+});
+
+export const deleteEmailChange = asyncHandler(async (req, res) => {
+    await cancelEmailChange(req.user!.sub);
     res.status(204).send();
 });

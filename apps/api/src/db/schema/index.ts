@@ -24,6 +24,7 @@ export * from "./api-tokens";
 export * from "./board-columns";
 export * from "./categories";
 export * from "./comment-reactions";
+export * from "./email-change-tokens";
 export * from "./favorites";
 export * from "./files";
 export * from "./issue-activities";
