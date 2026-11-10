@@ -9,6 +9,7 @@ import { columnBucket } from "@/features/board/column-bucket";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from "@/features/issues/components/issue-property-menus";
 import { cx } from "@/utils/cx";
+import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { useEffect, type MouseEvent } from "react";
 import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
 import { useTranslation } from "react-i18next";
@@ -27,6 +28,9 @@ export function IssueListRow({
     selected,
     onSelect,
     onUpdate,
+    suspendLayout = false,
+    animatePresence = false,
+    layoutAnimation = true,
 }: {
     issue: Issue;
     projectId: string;
@@ -44,6 +48,12 @@ export function IssueListRow({
     selected: boolean;
     onSelect: () => void;
     onUpdate: (input: UpdateIssueInput) => void;
+    /** True while a row is being dragged, so dnd-kit animates instead of the layout glide. */
+    suspendLayout?: boolean;
+    /** Fade rows that join or leave. My issues leaves this off; its own presence animation already does that. */
+    animatePresence?: boolean;
+    /** Off where another animation already moves the row. */
+    layoutAnimation?: boolean;
 }) {
     const { t, i18n } = useTranslation();
     const date = new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric" }).format(new Date(issue.createdAt));
@@ -61,10 +71,16 @@ export function IssueListRow({
         selection.toggle(issue.id, { range: true });
     };
     return (
-        <div
-            ref={setNodeRef}
+        <IssueMotionFrame
+            nodeRef={setNodeRef}
+            issueId={issue.id}
+            suspendLayout={suspendLayout}
+            animatePresence={animatePresence}
+            layoutAnimation={layoutAnimation}
+            people={members}
+            placement="row"
             style={{ transform: CSS.Translate.toString(transform), transition }}
-            className={cx("group/issue relative flex h-9 items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover", selected && "bg-layer-1-selected", checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80", isDragging && "z-10 opacity-40")}
+            className={cx("group/issue relative flex h-9 w-full items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover", selected && "bg-layer-1-selected", checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80", isDragging && "z-10 opacity-40")}
             onMouseEnter={() => selection?.setFocused(issue.id)}
             data-issue-id={issue.id}
             data-issue-context="true"
@@ -109,6 +125,6 @@ export function IssueListRow({
             <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} className="opacity-0 group-hover/issue:opacity-100 focus-visible:opacity-100" />
             <AssigneeMenu value={member} people={members} onChange={(assigneeId) => onUpdate({ assigneeId })} />
             <span className="w-14 shrink-0 text-right text-xs text-tertiary">{date}</span>
-        </div>
+        </IssueMotionFrame>
     );
 }

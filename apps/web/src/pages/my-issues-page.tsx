@@ -268,6 +268,7 @@ function MyIssueRow({ issue, identifierWidth, selected, onSelect, onUpdate }: { 
             issue={issue}
             projectId={issue.projectId}
             identifierWidth={identifierWidth}
+            layoutAnimation={false}
             sortable={false}
             column={column}
             columns={columns ?? [issue.column]}

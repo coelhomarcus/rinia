@@ -389,6 +389,25 @@ html[data-theme*="dark"] .chart-accent {
 .animate-enter { animation: rinia-enter 180ms var(--motion-ease-enter); }
 @media (prefers-reduced-motion: reduce) { .animate-enter { animation: none; } }
 
+/* A change from someone else: the accent washes across the card for a second. Movement is removed separately; this tint stays. */
+@keyframes remote-issue-highlight {
+    from { background-color: color-mix(in srgb, var(--bg-accent-primary) 32%, transparent); }
+    to { background-color: transparent; }
+}
+.remote-issue-highlight { animation: remote-issue-highlight 1s var(--motion-ease-exit) forwards; }
+@keyframes remote-issue-actor {
+    0%, 65% { opacity: 1; }
+    100% { opacity: 0; }
+}
+.remote-issue-actor { animation: remote-issue-actor 1s var(--motion-ease-exit) forwards; }
+@media (prefers-reduced-motion: reduce) {
+    .remote-issue-highlight,
+    .remote-issue-actor {
+        animation-duration: 1s !important;
+        animation-iteration-count: 1 !important;
+    }
+}
+
 /* Issue page: the description reads as page text, and comments stay compact. */
 .issue-description .tiptap-editor { min-height: 0; }
 .issue-description .ProseMirror { min-height: 3rem; padding: 0; }

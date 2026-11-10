@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { AnimatePresence, LayoutGroup } from "motion/react";
 import type { Issue } from "@/features/issues/api";
 import type { IssueOrder, SavedViewFilters } from "@rinia/shared";
 import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
@@ -21,6 +22,7 @@ import { useColumns } from "@/features/board/hooks/use-board";
 import { columnBucket, defaultIssueColumn } from "@/features/board/column-bucket";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
 import { IssueListRow } from "@/features/issues/components/issue-list-row";
+import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
 import { IssueFilterRow, IssueToolbar, pillTab } from "@/features/issues/components/issue-toolbar";
@@ -173,7 +175,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     }, [columnById, columns, listIssues, groupBy, memberById, t]);
     const orderedIssues = useMemo(() => groups.flatMap((group) => group.issues), [groups]);
     // Collapsed groups hide their issues, so they are not selected by Cmd/Ctrl+A or included in ranges.
-    useRegisterVisibleIssues(view === "list" ? groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.issues.map((issue) => issue.id))) : null);
+    const visibleIds = useMemo(() => groups.flatMap((group) => (collapsedGroups.has(group.key) ? [] : group.issues.map((issue) => issue.id))), [groups, collapsedGroups]);
+    useRegisterVisibleIssues(view === "list" ? visibleIds : null);
     const selectedIssues = useMemo(() => (issues ?? []).filter((issue) => selection.selected.has(issue.id)), [issues, selection.selected]);
 
     useEffect(() => {
@@ -393,6 +396,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                     {isLoading && <IssueListSkeleton />}
                     {isError && <ErrorMessage message={t("issue.couldNotLoadIssues")} />}
                     {!isLoading && !isError && (
+                        <LayoutGroup>
+                        <IssueMotionRoster ids={visibleIds}>
                         <DndContext {...reorder.dndProps}>
                             {groups.map((group) => {
                                 const column = columnById.get(group.key);
@@ -425,14 +430,18 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                             </div>
                                         </h2>
                                     )}
-                                    <SortableContext items={collapsedGroups.has(group.key) ? [] : group.issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
-                                    {!collapsedGroups.has(group.key) && group.issues.map((issue) => (
+                                    {!collapsedGroups.has(group.key) && (
+                                    <SortableContext items={group.issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
+                                    <AnimatePresence initial={false} mode="popLayout">
+                                    {group.issues.map((issue) => (
                                         <IssueListRow
                                             key={issue.id}
                                             issue={issue}
                                             projectId={projectId!}
                                             identifierWidth={identifierWidth}
                                             sortable={manualOrder}
+                                            suspendLayout={reorder.suspendLayout}
+                                            animatePresence
                                             column={columnById.get(issue.columnId)}
                                             columns={columns ?? []}
                                             member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
@@ -444,7 +453,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                             onUpdate={(input) => updateIssue.mutate({ identifier: issue.identifier, input })}
                                         />
                                     ))}
+                                    </AnimatePresence>
                                     </SortableContext>
+                                    )}
                                 </section>
                                 );
                             })}
@@ -473,6 +484,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                 )}
                             </DragOverlay>
                         </DndContext>
+                        </IssueMotionRoster>
+                        </LayoutGroup>
                     )}
                 </div>
             </main>

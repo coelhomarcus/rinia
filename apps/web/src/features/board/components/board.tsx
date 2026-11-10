@@ -15,6 +15,7 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { LayoutGroup } from "motion/react";
 import { useNavigate } from "react-router";
 import { positionAtIndex, type UpdateIssueInput } from "@rinia/shared";
 import { useRouteProject } from "@/features/projects/route-project";
@@ -36,6 +37,7 @@ import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
 import { isTypingTarget } from "@/features/commands/shortcuts";
 import { IssueCardContent } from "./issue-card";
+import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/feedback/toaster";
 
@@ -129,7 +131,8 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
      */
     const board = useMemo(() => dragIssues ?? [...filtered].sort((a, b) => a.position - b.position || a.number - b.number), [dragIssues, filtered]);
 
-    useRegisterVisibleIssues(useMemo(() => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)), [board, shownColumns]));
+    const visibleIds = useMemo(() => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)), [board, shownColumns]);
+    useRegisterVisibleIssues(visibleIds);
 
     // The column callbacks read the latest props through a ref, so they stay stable and memoized columns can skip renders.
     const latest = useRef({ hideColumn, showColumn, showToast, t, projectKey, navigate });
@@ -304,6 +307,8 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
             >
+                <LayoutGroup>
+                <IssueMotionRoster ids={visibleIds}>
                 <div ref={boardRef} className="flex h-full min-w-0 gap-3">
                 <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
                     {shownColumns.map((column) => (
@@ -317,6 +322,7 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                             membersById={membersById}
                             people={members ?? NONE}
                             labels={categories ?? NONE}
+                            suspendLayout={dragIssues !== null}
                             onUpdateIssue={onUpdateIssue}
                             onOpenIssue={onOpenIssue}
                             onCreateIssue={setCreateColumnId}
@@ -326,6 +332,8 @@ export const Board = ({ projectId, filters = new URLSearchParams(), scope = "all
                     ))}
                 </div>
                 </div>
+                </IssueMotionRoster>
+                </LayoutGroup>
 
                 <DragOverlay>
                     {activeIssue && (

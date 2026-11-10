@@ -90,6 +90,8 @@ export function useListReorder({ issues, groupBy, onMove }: { issues: Issue[]; g
     return {
         items,
         activeIssue,
+        /** True from pickup until the saved order replaces the preview, so the layout glide stays out of dnd-kit's way. */
+        suspendLayout: dragIssues !== null,
         dndProps: { sensors, collisionDetection: closestCenter, onDragStart, onDragOver, onDragEnd, onDragCancel: end },
     };
 }

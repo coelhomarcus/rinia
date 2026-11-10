@@ -8,6 +8,7 @@ import type { Issue, IssuePerson } from "@/features/issues/api";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
 import { cx } from "@/utils/cx";
+import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { useIssueSelection } from "@/features/issues/selection";
 
 type Status = { id: string; name: string; color: string | null };
@@ -92,6 +93,8 @@ interface IssueCardProps extends Omit<IssueCardContentProps, "onUpdate"> {
     /** Stable across renders (the board keeps one), so the card's content can skip re-rendering while dragging. */
     onUpdateIssue: (identifier: string, input: UpdateIssueInput) => void;
     onClick: () => void;
+    /** True while anyone on this board is dragging, so dnd-kit animates instead of the layout glide. */
+    suspendLayout?: boolean;
 }
 
 const sameLabels = (a: IssueCardContentProps["categories"] = [], b: IssueCardContentProps["categories"] = []) =>
@@ -115,7 +118,7 @@ const CardContent = memo(
         sameLabels(prev.categories, next.categories),
 );
 
-export const IssueCard = ({ issue, status, statuses, categories, assignee, people, labels, onUpdateIssue, closed, projectId, onClick }: IssueCardProps) => {
+export const IssueCard = ({ issue, status, statuses, categories, assignee, people, labels, onUpdateIssue, closed, projectId, onClick, suspendLayout = false }: IssueCardProps) => {
     const onUpdate = useCallback((input: UpdateIssueInput) => onUpdateIssue(issue.identifier, input), [issue.identifier, onUpdateIssue]);
     const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id });
 
@@ -126,11 +129,15 @@ export const IssueCard = ({ issue, status, statuses, categories, assignee, peopl
     const checked = selection?.isSelected(issue.id) ?? false;
 
     return (
-        <div
-            ref={setNodeRef}
+        <IssueMotionFrame
+            nodeRef={setNodeRef}
+            issueId={issue.id}
+            suspendLayout={suspendLayout}
+            animatePresence
+            people={people}
             style={style}
             data-issue-id={issue.id}
-            className={cx("group/card relative", isDragging && "z-10 opacity-40")}
+            className={cx("group/card relative w-full", isDragging && "z-10 opacity-40")}
             onMouseEnter={() => selection?.setFocused(issue.id)}
         >
             {/* A div rather than a button: the property menus inside it are buttons themselves. */}
@@ -170,6 +177,6 @@ export const IssueCard = ({ issue, status, statuses, categories, assignee, peopl
                 entity={{ type: "issue", projectId, identifier: issue.identifier, title: issue.title }}
                 className="absolute top-1.5 right-1.5 z-10 rounded-md bg-layer-2"
             />
-        </div>
+        </IssueMotionFrame>
     );
 };

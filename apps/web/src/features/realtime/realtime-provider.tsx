@@ -5,6 +5,7 @@ import { AUTH_QUERY_KEY } from "@/features/auth/api";
 import { TAB_ID } from "@/lib/tab-id";
 import { invalidateForEvents } from "./invalidate";
 import { realtimeClient } from "./realtime-client";
+import { remoteIssueChanges } from "./remote-issue-changes";
 
 /** Events that arrive together are applied together, so a bulk change refetches each list once. */
 const BATCH_MS = 50;
@@ -24,6 +25,8 @@ export function RealtimeProvider() {
                 const events = batch;
                 batch = [];
                 timer = undefined;
+                // Recorded before the refetch, so the tint is on the card while it glides to its new place.
+                remoteIssueChanges.note(events);
                 invalidateForEvents(client, events);
             }, BATCH_MS);
         });
