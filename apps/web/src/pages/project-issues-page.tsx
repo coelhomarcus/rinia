@@ -20,6 +20,7 @@ import { useCategories } from "@/features/categories/hooks/use-categories";
 import { listStep } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
 import { BulkActionBar } from "@/features/issues/components/bulk-action-bar";
+import { DragLift } from "@/features/issues/components/drag-feedback";
 import { IssueListRow } from "@/features/issues/components/issue-list-row";
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
@@ -28,7 +29,6 @@ import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useIssueView } from "@/features/issues/hooks/use-issue-view";
 import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
 import { type ListGroupBy, listGroupKey, useListReorder } from "@/features/issues/hooks/use-list-reorder";
-import { touchLiftClass } from "@/features/issues/lib/drag-sensors";
 import { matchesDueFilter } from "@/features/issues/lib/due-date";
 import { matchesLabels, readLabels } from "@/features/issues/lib/issue-filters";
 import { priorityLabelKey } from "@/features/issues/lib/priority";
@@ -449,7 +449,11 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                         {groups.map((group) => {
                                             const column = columnById.get(group.key);
                                             return (
-                                                <section key={group.key} aria-label={group.label ?? t("issue.allIssues")}>
+                                                <section
+                                                    key={group.key}
+                                                    aria-label={group.label ?? t("issue.allIssues")}
+                                                    className={cx(reorder.overGroupKey === group.key && "bg-accent-subtle/40")}
+                                                >
                                                     {group.label && (
                                                         <h2 className="bg-layer-transparent-hover">
                                                             <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
@@ -543,20 +547,19 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                 </button>
                                             </div>
                                         )}
-                                        <DragOverlay>
+                                        <DragOverlay dropAnimation={reorder.dropAnimation}>
                                             {reorder.activeIssue && (
-                                                <div
-                                                    className={cx(
-                                                        "flex h-9 items-center gap-2 rounded-md border border-accent-strong bg-surface-1 px-2 text-[13px] shadow-overlay-200",
-                                                        reorder.touchLift && touchLiftClass,
-                                                    )}
+                                                <DragLift
+                                                    tilt={reorder.tilt}
+                                                    reducedMotion={reorder.reducedMotion}
+                                                    className="flex h-9 items-center gap-2 rounded-md border border-accent-strong bg-surface-1 px-2 text-[13px]"
                                                 >
                                                     <span className="size-5 shrink-0" />
                                                     <span className="shrink-0 font-mono text-xs text-tertiary" style={{ width: `${identifierWidth}ch` }}>
                                                         {reorder.activeIssue.identifier}
                                                     </span>
                                                     <span className="min-w-0 flex-1 truncate text-secondary">{reorder.activeIssue.title}</span>
-                                                </div>
+                                                </DragLift>
                                             )}
                                         </DragOverlay>
                                     </DndContext>

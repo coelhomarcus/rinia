@@ -5,6 +5,7 @@ import type { UpdateIssueInput } from "@rinia/shared";
 import { useLocation } from "react-router";
 import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { Issue, IssuePerson } from "@/features/issues/api";
+import { dragSlotClass } from "@/features/issues/components/drag-feedback";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
@@ -204,7 +205,7 @@ export const IssueCard = ({
             people={people}
             style={style}
             data-issue-id={issue.id}
-            className={cx("group/card relative w-full", isDragging && "z-10 opacity-40")}
+            className={cx("group/card relative w-full", isDragging && "z-10 opacity-50")}
             onMouseEnter={() => selection?.setFocused(issue.id)}
         >
             {/* A div rather than a button: the property menus inside it are buttons themselves. */}
@@ -234,6 +235,7 @@ export const IssueCard = ({
                 className={cx(
                     "block w-full cursor-pointer rounded-md border border-subtle bg-surface-1 px-3 py-2.5 pr-9 text-left transition-colors duration-200 ease-out outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-accent-strong md:pr-3",
                     dragSurfaceClass,
+                    isDragging && dragSlotClass,
                     selected && "border-accent-strong",
                     checked && "border-accent-strong bg-accent-subtle/40",
                 )}

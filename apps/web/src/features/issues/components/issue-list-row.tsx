@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { columnBucket } from "@/features/board/column-bucket";
 import type { Issue } from "@/features/issues/api";
+import { dragSlotClass } from "@/features/issues/components/drag-feedback";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from "@/features/issues/components/issue-property-menus";
@@ -85,7 +86,7 @@ export function IssueListRow({
                 "group/issue relative flex h-9 w-full items-center gap-2 bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover",
                 selected && "bg-layer-1-selected",
                 checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80",
-                isDragging && "z-10 opacity-40",
+                isDragging && cx("z-10 border opacity-50", dragSlotClass),
             )}
             onMouseEnter={() => selection?.setFocused(issue.id)}
             data-issue-id={issue.id}

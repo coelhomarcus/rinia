@@ -22,18 +22,18 @@ import { useToast } from "@/components/feedback/toaster";
 import { useCategories } from "@/features/categories/hooks/use-categories";
 import { isTypingTarget } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
+import { DragLift, useDragTilt } from "@/features/issues/components/drag-feedback";
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
-import { signalLongPress, touchLiftClass, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
+import { signalLongPress, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
 import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useRouteProject } from "@/features/projects/route-project";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
-import { cx } from "@/utils/cx";
 import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
 import { Column } from "./column";
@@ -94,8 +94,9 @@ export const Board = ({
 
     const [createColumnId, setCreateColumnId] = useState<string | null>(null);
     const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
-    const [touchLift, setTouchLift] = useState(false);
+    const [overColumnId, setOverColumnId] = useState<string | null>(null);
     const [activeIssueWidth, setActiveIssueWidth] = useState<number>();
+    const { tilt, reducedMotion, onDragMove, resetTilt, dropAnimation } = useDragTilt();
     const [dragIssues, setDragIssues] = useState<Issue[] | null>(null);
     const [moveError, setMoveError] = useState<string | null>(null);
 
@@ -178,10 +179,12 @@ export const Board = ({
     }
 
     function handleDragStart(event: DragStartEvent) {
-        setTouchLift(signalLongPress(event.activatorEvent));
+        signalLongPress(event.activatorEvent);
         setMoveError(null);
         const activeId = String(event.active.id);
-        setActiveIssue(board.find((issue) => issue.id === activeId) ?? null);
+        const issue = board.find((issue) => issue.id === activeId) ?? null;
+        setActiveIssue(issue);
+        setOverColumnId(issue?.columnId ?? null);
         setDragIssues(board);
 
         // `active.rect.current.initial` is sometimes not measured in this frame yet; reading the
@@ -202,6 +205,8 @@ export const Board = ({
 
         const activeId = String(active.id);
         const overId = String(over.id);
+        const hoveredColumnId = resolveColumnId(overId, dragIssues ?? board);
+        setOverColumnId(hoveredColumnId ?? null);
 
         setDragIssues((current) => {
             const list = current ?? board;
@@ -223,7 +228,8 @@ export const Board = ({
         const list = dragIssues ?? board;
 
         setActiveIssue(null);
-        setTouchLift(false);
+        setOverColumnId(null);
+        resetTilt();
 
         if (!over) {
             setDragIssues(null);
@@ -294,7 +300,8 @@ export const Board = ({
 
     function handleDragCancel() {
         setActiveIssue(null);
-        setTouchLift(false);
+        setOverColumnId(null);
+        resetTilt();
         setDragIssues(null);
     }
 
@@ -321,6 +328,7 @@ export const Board = ({
                 collisionDetection={collisionDetection}
                 measuring={measuring}
                 onDragStart={handleDragStart}
+                onDragMove={onDragMove}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
@@ -340,6 +348,7 @@ export const Board = ({
                                         membersById={membersById}
                                         people={members ?? NONE}
                                         labels={categories ?? NONE}
+                                        lit={overColumnId === column.id}
                                         suspendLayout={dragIssues !== null}
                                         onUpdateIssue={onUpdateIssue}
                                         onOpenIssue={onOpenIssue}
@@ -353,14 +362,13 @@ export const Board = ({
                     </IssueMotionRoster>
                 </LayoutGroup>
 
-                <DragOverlay>
+                <DragOverlay dropAnimation={dropAnimation}>
                     {activeIssue && (
-                        <div
+                        <DragLift
+                            tilt={tilt}
+                            reducedMotion={reducedMotion}
                             style={{ width: activeIssueWidth }}
-                            className={cx(
-                                "block rotate-1 cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-2.5 shadow-overlay-200",
-                                touchLift && touchLiftClass,
-                            )}
+                            className="block cursor-grabbing rounded-md border border-accent-strong bg-surface-1 px-3 py-2.5"
                         >
                             <IssueCardContent
                                 issue={activeIssue}
@@ -369,7 +377,7 @@ export const Board = ({
                                 assignee={activeAssignee}
                                 closed={closedColumnIds.has(activeIssue.columnId)}
                             />
-                        </div>
+                        </DragLift>
                     )}
                 </DragOverlay>
             </DndContext>

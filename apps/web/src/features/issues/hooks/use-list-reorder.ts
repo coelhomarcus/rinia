@@ -3,6 +3,7 @@ import { type DragEndEvent, type DragOverEvent, type DragStartEvent, closestCent
 import { arrayMove } from "@dnd-kit/sortable";
 import { type UpdateIssueInput, positionAtIndex } from "@rinia/shared";
 import type { Issue } from "../api";
+import { useDragTilt } from "../components/drag-feedback";
 import { signalLongPress, useIssueDragSensors } from "../lib/drag-sensors";
 
 export type ListGroupBy = "none" | "status" | "assignee";
@@ -37,18 +38,23 @@ export function useListReorder({
 }) {
     const [dragIssues, setDragIssues] = useState<Issue[] | null>(null);
     const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
-    const [touchLift, setTouchLift] = useState(false);
+    const [overGroupKey, setOverGroupKey] = useState<string | null>(null);
     const items = dragIssues ?? issues;
     const sensors = useIssueDragSensors();
+    const { tilt, reducedMotion, onDragMove, resetTilt, dropAnimation } = useDragTilt();
 
     function onDragStart(event: DragStartEvent) {
-        setTouchLift(signalLongPress(event.activatorEvent));
-        setActiveIssue(issues.find((issue) => issue.id === event.active.id) ?? null);
+        signalLongPress(event.activatorEvent);
+        const issue = issues.find((item) => item.id === event.active.id) ?? null;
+        setActiveIssue(issue);
+        setOverGroupKey(issue && groupBy !== "none" ? listGroupKey(issue, groupBy) : null);
         setDragIssues(issues);
     }
 
     function onDragOver({ active, over }: DragOverEvent) {
         if (!over) return;
+        const hovered = (dragIssues ?? issues).find((issue) => issue.id === over.id);
+        if (hovered && groupBy !== "none") setOverGroupKey(listGroupKey(hovered, groupBy));
         setDragIssues((current) => {
             const list = current ?? issues;
             const dragged = list.find((issue) => issue.id === active.id);
@@ -64,7 +70,8 @@ export function useListReorder({
 
     function end() {
         setActiveIssue(null);
-        setTouchLift(false);
+        setOverGroupKey(null);
+        resetTilt();
         setDragIssues(null);
     }
 
@@ -89,7 +96,8 @@ export function useListReorder({
         if (!movedGroup && position === original.position) return end();
 
         setActiveIssue(null);
-        setTouchLift(false);
+        setOverGroupKey(null);
+        resetTilt();
         // Keep the preview, in its new order, until the save settles, so the row does not jump back for a frame.
         let slot = 0;
         setDragIssues(
@@ -105,10 +113,12 @@ export function useListReorder({
     return {
         items,
         activeIssue,
-        /** True when a long-press picked the row up, so the overlay can lift. Mouse drags stay as they were. */
-        touchLift,
+        overGroupKey,
+        tilt,
+        reducedMotion,
+        dropAnimation,
         /** True from pickup until the saved order replaces the preview, so the layout glide stays out of dnd-kit's way. */
         suspendLayout: dragIssues !== null,
-        dndProps: { sensors, collisionDetection: closestCenter, onDragStart, onDragOver, onDragEnd, onDragCancel: end },
+        dndProps: { sensors, collisionDetection: closestCenter, onDragStart, onDragMove, onDragOver, onDragEnd, onDragCancel: end },
     };
 }
