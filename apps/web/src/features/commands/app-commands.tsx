@@ -8,6 +8,7 @@ import { useCurrentProject } from "@/features/projects/hooks/use-current-project
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { readOpenProjectId } from "@/features/projects/lib/last-project";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { CommandPalette } from "./command-palette";
 import { ShortcutsDialog } from "./shortcuts-dialog";
 import { isTypingTarget } from "./shortcuts";
@@ -100,7 +101,7 @@ export function AppCommandsProvider({ children }: { children: ReactNode }) {
             {children}
             {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} onCreateIssue={() => createIssue()} onShowShortcuts={() => setShortcutsOpen(true)} />}
             <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-            {creatingProjectId && <CreateIssue projectId={creatingProjectId} onClose={() => setCreatingProjectId(null)} onCreated={(identifier) => navigate(urls.issue(identifier))} />}
+            {creatingProjectId && <CreateIssue projectId={creatingProjectId} onClose={() => setCreatingProjectId(null)} onCreated={(identifier) => navigate(urls.issue(identifier), issueNavigation())} />}
         </AppCommandsContext.Provider>
     );
 }

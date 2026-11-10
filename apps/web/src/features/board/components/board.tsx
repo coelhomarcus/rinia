@@ -34,6 +34,7 @@ import { useProjectMembers } from "@/features/projects/hooks/use-project-members
 import { useRouteProject } from "@/features/projects/route-project";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
 import { Column } from "./column";
@@ -126,7 +127,12 @@ export const Board = ({
     // Kept stable so the cards' content is not re-rendered on every frame of a drag (see IssueCard).
     const { mutate: mutateIssue } = updateIssue;
     const onUpdateIssue = useCallback((identifier: string, input: UpdateIssueInput) => mutateIssue({ identifier, input }), [mutateIssue]);
-    const onOpenIssue = useCallback((identifier: string) => navigate(urls.issue(identifier)), [navigate]);
+    const issuesRef = useRef(issues);
+    issuesRef.current = issues;
+    const onOpenIssue = useCallback(
+        (identifier: string) => navigate(urls.issue(identifier), issueNavigation(issuesRef.current?.find((issue) => issue.identifier === identifier)?.title)),
+        [navigate],
+    );
 
     const categoriesById = useMemo(() => new Map((categories ?? []).map((category) => [category.id, category])), [categories]);
     const membersById = useMemo(() => new Map((members ?? []).map((member) => [member.id, member])), [members]);
@@ -376,6 +382,7 @@ export const Board = ({
                                 categories={activeCategories}
                                 assignee={activeAssignee}
                                 closed={closedColumnIds.has(activeIssue.columnId)}
+                                shareTransition={false}
                             />
                         </DragLift>
                     )}

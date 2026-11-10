@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router";
+import { ViewTransitionRouter } from "@/components/application/view-transition-router";
 import { AppErrorBoundary } from "@/components/feedback/app-error-boundary";
 import { ToastProvider } from "@/components/feedback/toaster";
 import { ContextMenuProvider } from "@/components/overlay/context-menu-provider";
@@ -28,7 +28,7 @@ createRoot(document.getElementById("root")!).render(
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
                         <LanguageProvider>
-                            <BrowserRouter>
+                            <ViewTransitionRouter>
                                 <RouteProvider>
                                     <ToastProvider>
                                         <ServiceWorkerUpdates />
@@ -37,7 +37,7 @@ createRoot(document.getElementById("root")!).render(
                                         </ContextMenuProvider>
                                     </ToastProvider>
                                 </RouteProvider>
-                            </BrowserRouter>
+                            </ViewTransitionRouter>
                         </LanguageProvider>
                     </AuthProvider>
                 </QueryClientProvider>

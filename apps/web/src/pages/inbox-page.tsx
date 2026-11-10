@@ -16,6 +16,7 @@ import { useMarkAllNotificationsRead, useNotifications, useSetNotificationRead }
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 export const InboxPage = () => {
@@ -104,7 +105,9 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
     return (
         <div className="group/notification relative border-b border-subtle">
             <Link
+                viewTransition
                 to={urls.issue(issue.identifier, issue.title)}
+                state={{ issueTitle: issue.title }}
                 onClick={() => onRead(true)}
                 className="flex items-center gap-3 py-2.5 pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none"
             >
@@ -113,8 +116,8 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-2 text-[13px]">
                         <ProjectIcon icon={notification.project.iconAppearance ?? notification.project.icon} className="size-3.5 shrink-0" />
-                        <span className="shrink-0 font-mono text-xs text-tertiary">{issue.identifier}</span>
-                        <span className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")}>{issue.title}</span>
+                        <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>{issue.identifier}</span>
+                        <span className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")} style={issueViewTransitionStyle(issue.identifier, "title")}>{issue.title}</span>
                     </span>
                     <span className="flex min-w-0 items-center gap-1.5 text-xs text-tertiary">
                         {notification.status?.to && <StateIcon name={notification.status.to.name} color={notification.status.to.color} className="size-3 shrink-0" />}
@@ -161,6 +164,8 @@ function formatAge(value: string, locale: string) {
     if (days < 7) return relative.format(-days, "day");
     return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(value));
 }
+
+void import("@/features/issues/components/issue-view");
 
 function InboxSkeleton() {
     const { t } = useTranslation();

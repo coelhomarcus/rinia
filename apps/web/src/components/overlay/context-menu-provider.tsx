@@ -17,6 +17,7 @@ import { DeleteProjectDialog } from "@/features/projects/components/delete-proje
 import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { UNMOUNT_AFTER } from "@/components/base/motion";
 import { cx } from "@/utils/cx";
 import { useTranslation } from "react-i18next";
@@ -362,7 +363,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
             if (confirmation.type === "issue") {
                 const { deletedAt } = await deleteIssue.mutateAsync(confirmation.identifier);
                 const key = projects?.find((project) => project.id === confirmation.projectId)?.issueKey;
-                if (key) navigate(urls.issues(key));
+                if (key) navigate(urls.issues(key), issueNavigation());
                 showToast({
                     title: t("issue.deletedOne"),
                     action: {
@@ -375,7 +376,7 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                                     queryClient.invalidateQueries({ queryKey: ["my-issues"] }),
                                     queryClient.invalidateQueries({ queryKey: ["issues"] }),
                                 ]);
-                                navigate(urls.issue(confirmation.identifier, confirmation.title));
+                                navigate(urls.issue(confirmation.identifier, confirmation.title), issueNavigation(confirmation.title));
                             } catch {
                                 showToast({ tone: "error", title: t("issue.couldNotUndo") });
                             }

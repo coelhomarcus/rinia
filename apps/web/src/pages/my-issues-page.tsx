@@ -29,6 +29,7 @@ import { useProjects } from "@/features/projects/hooks/use-projects";
 import { useRealtimeChannels } from "@/features/realtime/use-realtime";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { listStep } from "@/features/commands/shortcuts";
 
 type OrderBy = Exclude<IssueOrder, "position">;
@@ -116,7 +117,7 @@ export const MyIssuesPage = () => {
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
-                navigate(urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title));
+                navigate(urls.issue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title), issueNavigation(orderedIssues[currentIndex].title));
             }
             if (event.key === "Escape") setSelectedIssueId(null);
         }
@@ -331,3 +332,5 @@ function readOrder(value: string | null): OrderBy {
 function readGroup(value: string | null): GroupBy {
     return value === "none" || value === "project" ? value : "status";
 }
+
+void import("@/features/issues/components/issue-view");

@@ -21,6 +21,7 @@ import { useProjectMembers } from "@/features/projects/hooks/use-project-members
 import { translateStatusName } from "@/i18n/status-label";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 import { useCreateIssue } from "../hooks/use-issues";
 import { PRIORITY_OPTIONS, priorityLabelKey } from "../lib/priority";
@@ -100,7 +101,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                     titleRef.current?.focus();
                     showToast({
                         title: t("issue.issueCreated", { identifier: issue.identifier }),
-                        action: { label: t("contextMenu.open"), onClick: () => navigate(urls.issue(issue.identifier, issue.title)) },
+                        action: { label: t("contextMenu.open"), onClick: () => navigate(urls.issue(issue.identifier, issue.title), issueNavigation(issue.title)) },
                     });
                 },
                 onError: (reason) => setError(reason instanceof ApiError ? reason.message : t("errors.requestFailed")),

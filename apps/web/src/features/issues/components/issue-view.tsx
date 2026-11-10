@@ -33,7 +33,9 @@ import { FollowButton } from "@/features/notifications/components/follow-button"
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { useProject } from "@/features/projects/hooks/use-project";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
+import { issuePreviewTitle } from "@/features/issues/lib/cached-issue-title";
 import { urls } from "@/lib/urls";
+import { issueNavigation, issueViewTransitionStyle } from "@/lib/view-transition";
 import { priorityLabelKey } from "@/features/issues/lib/priority";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
@@ -415,7 +417,10 @@ export const IssueView = () => {
         void save.catch(() => undefined);
     };
 
-    if (isLoading) return <IssueLoadingSkeleton />;
+    if (isLoading) {
+        const previewTitle = issuePreviewTitle(location.state, queryClient, resolvedIdentifier);
+        return previewTitle ? <IssueArrival identifier={resolvedIdentifier} title={previewTitle} /> : <IssueLoadingSkeleton />;
+    }
     if (isError || !issue) {
         return (
             <main className="flex h-full min-h-0 items-center justify-center bg-surface-1 p-6">
@@ -557,10 +562,10 @@ export const IssueView = () => {
                         <span className="truncate">{issue.project.name}</span>
                     </Link>
                     <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
-                    <Link to={urls.issues(issue.project.issueKey)} className="shrink-0 text-secondary hover:text-primary">{t("nav.issues")}</Link>
+                    <Link viewTransition to={urls.issues(issue.project.issueKey)} className="shrink-0 text-secondary hover:text-primary">{t("nav.issues")}</Link>
                     <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
                     <span className="min-w-0 truncate text-primary">
-                        <span className="text-tertiary">{issue.identifier}</span> {currentTitle}
+                        <span className="text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>{issue.identifier}</span> {currentTitle}
                     </span>
                     <FavoriteStar target={{ kind: "issue", projectId: issue.projectId, issueId: issue.id }} />
                     <FollowButton identifier={issue.identifier} />
@@ -575,7 +580,7 @@ export const IssueView = () => {
                 <div className="flex shrink-0 items-center gap-3">
                     <PresenceAvatars viewers={viewers} />
                     {(saving || unsaved) && <span className="text-xs text-tertiary" role="status">{saving ? t("issue.savingIssue") : t("issue.unsavedIssue")}</span>}
-                    {projectIssues && projectIssues.length > 0 && <IssuePager issues={projectIssues} identifier={issue.identifier} onOpen={(next) => navigate(urls.issue(next))} />}
+                    {projectIssues && projectIssues.length > 0 && <IssuePager issues={projectIssues} identifier={issue.identifier} onOpen={(next) => navigate(urls.issue(next), issueNavigation(projectIssues.find((item) => item.identifier === next)?.title))} />}
                 </div>
             </header>
 
@@ -601,6 +606,7 @@ export const IssueView = () => {
                             }}
                             onBlur={saveTitle}
                             className="block w-full resize-none overflow-hidden bg-transparent text-[26px] leading-8 font-semibold tracking-tight text-primary outline-none placeholder:text-placeholder"
+                            style={issueViewTransitionStyle(issue.identifier, "title")}
                             aria-label={t("issue.title")}
                         />
                         {titleSaveError && <p role="alert" className="mt-1 text-xs text-danger-primary">{titleSaveError}</p>}
@@ -658,7 +664,7 @@ export const IssueView = () => {
                                         const key = descriptionDraftKey.current;
                                         if (key) void issueDescriptionDrafts.clearDescription(key).catch(() => undefined);
                                         descriptionDirty.current = false;
-                                        navigate(urls.issue(created.identifier, created.title));
+                                        navigate(urls.issue(created.identifier, created.title), issueNavigation(created.title));
                                     } catch (reason) {
                                         setDescriptionSaveError(errorMessage(reason, t("issue.couldNotSaveIssue")));
                                     }
@@ -774,7 +780,7 @@ export const IssueView = () => {
                 isPending={deleteIssue.isPending}
                 onConfirm={() => deleteIssue.mutate(issue.identifier, {
                     onSuccess: ({ deletedAt }) => {
-                        navigate(urls.issues(issue.project.issueKey));
+                        navigate(urls.issues(issue.project.issueKey), issueNavigation());
                         showToast({
                             title: t("issue.deletedOne"),
                             action: {
@@ -787,7 +793,7 @@ export const IssueView = () => {
                                             queryClient.invalidateQueries({ queryKey: ["my-issues"] }),
                                             queryClient.invalidateQueries({ queryKey: ["issues"] }),
                                         ]);
-                                        navigate(urls.issue(issue.identifier, issue.title));
+                                        navigate(urls.issue(issue.identifier, issue.title), issueNavigation(issue.title));
                                     } catch {
                                         showToast({ tone: "error", title: t("issue.couldNotUndo") });
                                     }
@@ -1218,10 +1224,10 @@ function IssueSubIssues({ issue, columns, isCreating, onCreate }: { issue: Issue
                             const column = columnOf(child.columnId);
                             return (
                                 <li key={child.id} className="animate-enter" data-issue-id={child.id} data-issue-context="true" data-project-id={issue.projectId} data-issue-identifier={identifier} data-issue-title={child.title}>
-                                    <Link to={urls.issue(identifier, child.title)} className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
+                                    <Link viewTransition to={urls.issue(identifier, child.title)} state={{ issueTitle: child.title }} className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
                                         <StateIcon name={column?.name ?? ""} color={column?.color} />
-                                        <span className="shrink-0 whitespace-nowrap text-tertiary">{identifier}</span>
-                                        <span className="min-w-0 truncate text-primary">{child.title}</span>
+                                        <span className="shrink-0 whitespace-nowrap text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
+                                        <span className="min-w-0 truncate text-primary" style={issueViewTransitionStyle(identifier, "title")}>{child.title}</span>
                                     </Link>
                                 </li>
                             );
@@ -1326,7 +1332,9 @@ function IssueRelations({
                         <li key={relation.id} className="group/relation animate-enter flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
                             <span className="w-24 shrink-0 truncate text-tertiary">{typeLabels[relation.type as RelationType] ?? relation.type}</span>
                             <Link
+                                viewTransition
                                 to={urls.issue(identifier, relation.target.title)}
+                                state={{ issueTitle: relation.target.title }}
                                 className="flex min-w-0 flex-1 items-center gap-2"
                                 data-issue-id={relation.target.id}
                                 data-issue-context="true"
@@ -1334,8 +1342,8 @@ function IssueRelations({
                                 data-issue-identifier={identifier}
                                 data-issue-title={relation.target.title}
                             >
-                                <span className="shrink-0 text-tertiary">{identifier}</span>
-                                <span className="truncate text-primary">{relation.target.title}</span>
+                                <span className="shrink-0 text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
+                                <span className="truncate text-primary" style={issueViewTransitionStyle(identifier, "title")}>{relation.target.title}</span>
                             </Link>
                             <span className="opacity-0 transition-opacity group-hover/relation:opacity-100 focus-within:opacity-100">
                                 <ButtonUtility icon={Trash2} size="xs" color="tertiary" tooltip={t("issue.removeRelation")} onClick={() => onDelete(relation.id)} isDisabled={isPending} />
@@ -1672,6 +1680,31 @@ function gitBranchName(username: string | undefined, identifier: string, title: 
         .replace(/-+$/g, "");
     const branch = [identifier.toLowerCase(), slug].filter(Boolean).join("-");
     return username ? `${username.toLowerCase()}/${branch}` : branch;
+}
+
+/** The first paint of an issue, before its request returns, so the row's identifier and title have somewhere to land. */
+function IssueArrival({ identifier, title }: { identifier: string; title: string }) {
+    const { t } = useTranslation();
+    return (
+        <main className="flex h-full min-h-0 flex-col bg-surface-1" role="status" aria-label={t("issue.loadingIssueDetails")} aria-live="polite">
+            <header className="flex h-11 shrink-0 items-center gap-1.5 border-b border-subtle px-3 text-[13px]">
+                <Skeleton className="h-4 w-24" />
+                <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
+                <Skeleton className="h-4 w-14" />
+                <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
+                <span className="truncate text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
+            </header>
+            <div className="mx-auto w-full max-w-[48rem] px-6 pt-10 lg:px-12">
+                <h1 className="text-[26px] leading-8 font-semibold tracking-tight text-primary" style={issueViewTransitionStyle(identifier, "title")}>{title}</h1>
+                <div className="mt-6 space-y-5">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="mt-10 h-5 w-24" />
+                    <Skeleton className="h-16 w-full" />
+                </div>
+            </div>
+        </main>
+    );
 }
 
 function IssueLoadingSkeleton() {

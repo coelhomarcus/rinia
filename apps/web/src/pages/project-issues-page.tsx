@@ -42,6 +42,7 @@ import { useViews } from "@/features/views/hooks/use-views";
 import { filtersFromParams, paramsFromFilters } from "@/features/views/lib/view-filters";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 type OrderBy = IssueOrder;
@@ -210,7 +211,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
-                openIssue(orderedIssues[currentIndex].identifier);
+                openIssue(orderedIssues[currentIndex].identifier, orderedIssues[currentIndex].title);
             }
             if (event.key === "Escape") setSelectedIssueId(null);
 
@@ -321,8 +322,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         setIsCreating(true);
     }
 
-    function openIssue(identifier: string) {
-        navigate(urls.issue(identifier));
+    function openIssue(identifier: string, title?: string) {
+        navigate(urls.issue(identifier), issueNavigation(title ?? issues?.find((issue) => issue.identifier === identifier)?.title));
     }
 
     function setScope(next: Scope) {
@@ -618,3 +619,5 @@ function readScope(value: string | null): Scope {
 function readSavedScope(value: string | null): Scope {
     return value === "backlog" || value === "all" ? value : "active";
 }
+
+void import("@/features/issues/components/issue-view");

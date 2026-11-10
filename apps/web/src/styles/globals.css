@@ -419,3 +419,18 @@ html[data-theme*="dark"] .chart-accent {
 .tiptap-editor.issue-reply-composer { min-height: 0; }
 .issue-reply-composer .ProseMirror { min-height: 1.75rem; padding: 0.25rem 0; }
 .issue-reply-composer .ProseMirror:focus-visible { outline: none; }
+
+/* Route changes cross-fade. An issue's identifier and title share a name, so those morph instead. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 180ms;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
+}

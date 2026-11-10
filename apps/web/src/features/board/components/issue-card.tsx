@@ -11,6 +11,7 @@ import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
 import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
 import { useIssueSelection } from "@/features/issues/selection";
+import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 type Status = { id: string; name: string; color: string | null };
@@ -28,6 +29,8 @@ interface IssueCardContentProps {
     onUpdate?: (input: UpdateIssueInput) => void;
     /** Whether the issue sits in a closed state, where a past due date is no longer late. */
     closed?: boolean;
+    /** The drag overlay is a second copy, so only the card on the board keeps the shared transition name. */
+    shareTransition?: boolean;
 }
 
 function firstIssueImage(document: Issue["descriptionJson"]): string | null {
@@ -86,6 +89,7 @@ export const IssueCardContent = ({
     labels = [],
     onUpdate = () => {},
     closed = false,
+    shareTransition = true,
 }: IssueCardContentProps) => {
     const imagePreview = firstIssueImage(issue.descriptionJson);
     const estimate = (
@@ -128,12 +132,22 @@ export const IssueCardContent = ({
         <>
             {imagePreview && <IssuePreviewImage key={imagePreview} src={imagePreview} />}
             <div className="flex h-5 items-center justify-between gap-2">
-                <span className="text-[11px] font-medium tracking-wide text-tertiary">{issue.identifier}</span>
+                <span
+                    className="text-[11px] font-medium tracking-wide text-tertiary"
+                    style={shareTransition ? issueViewTransitionStyle(issue.identifier, "id") : undefined}
+                >
+                    {issue.identifier}
+                </span>
                 <AssigneeMenu value={assignee} people={people} onChange={(assigneeId) => onUpdate({ assigneeId })} />
             </div>
             <div className="mt-1 flex items-start gap-1">
                 <StatusMenu value={status} statuses={statuses} onChange={(columnId) => onUpdate({ columnId })} className="text-tertiary" />
-                <p className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary">{issue.title}</p>
+                <p
+                    className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary"
+                    style={shareTransition ? issueViewTransitionStyle(issue.identifier, "title") : undefined}
+                >
+                    {issue.title}
+                </p>
             </div>
             <div className="mt-2 flex min-w-0 flex-wrap items-center gap-1 text-tertiary">
                 <PriorityMenu value={issue.priority} onChange={(priority) => onUpdate({ priority })} />
@@ -170,6 +184,7 @@ const CardContent = memo(
         prev.labels === next.labels &&
         prev.closed === next.closed &&
         prev.onUpdate === next.onUpdate &&
+        prev.shareTransition === next.shareTransition &&
         sameLabels(prev.categories, next.categories),
 );
 

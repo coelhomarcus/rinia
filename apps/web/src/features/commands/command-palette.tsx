@@ -15,6 +15,7 @@ import { useCurrentProject } from "@/features/projects/hooks/use-current-project
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { urls } from "@/lib/urls";
+import { issueNavigation } from "@/lib/view-transition";
 import { useTheme } from "@/providers/theme-provider";
 import { cx } from "@/utils/cx";
 import { requestIssueMenu, type IssueMenuRequest } from "./issue-menu-requests";
@@ -115,7 +116,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
             { id: "shortcuts", group: "actions", title: t("commands.showShortcuts"), keywords: "keyboard teclado help ajuda", icon: <Keyboard className={icon} />, shortcut: shortcutKeys("help"), run: close(onShowShortcuts) },
         );
 
-        const go = (path: string) => close(() => navigate(path));
+        const go = (path: string, title?: string) => close(() => navigate(path, issueNavigation(title)));
         list.push(
             { id: "inbox", group: "navigation", title: t("commands.goInbox"), icon: <AppIcons.Inbox className={icon} />, shortcut: shortcutKeys("inbox"), run: go(urls.inbox()) },
             { id: "my-issues", group: "navigation", title: t("commands.goMyIssues"), icon: <AppIcons.MyIssues className={icon} />, shortcut: shortcutKeys("my-issues"), run: go(urls.myIssues()) },
@@ -136,7 +137,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
         }
         for (const issue of issues ?? []) {
             if (issue.identifier === currentIssue?.identifier) continue;
-            list.push({ id: `issue-${issue.id}`, group: "issues", title: issue.title, tag: issue.identifier, icon: <span className="flex size-4 shrink-0 items-center justify-center rounded border border-subtle text-[9px] text-placeholder">#</span>, run: go(urls.issue(issue.identifier, issue.title)) });
+            list.push({ id: `issue-${issue.id}`, group: "issues", title: issue.title, tag: issue.identifier, icon: <span className="flex size-4 shrink-0 items-center justify-center rounded border border-subtle text-[9px] text-placeholder">#</span>, run: go(urls.issue(issue.identifier, issue.title), issue.title) });
         }
         if (activeProject) {
             for (const document of documents ?? []) {

@@ -14,6 +14,7 @@ import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from 
 import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
 import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
 import { urls } from "@/lib/urls";
+import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 export function IssueListRow({
@@ -114,16 +115,25 @@ export function IssueListRow({
                 <span aria-hidden="true" className="size-5 shrink-0" />
             )}
             <Link
+                viewTransition
                 to={urls.issue(issue.identifier, issue.title)}
+                state={{ issueTitle: issue.title }}
                 onFocus={onSelect}
                 onClick={rangeClick}
                 className="shrink-0 truncate font-mono text-xs text-tertiary"
-                style={{ width: `${identifierWidth}ch` }}
+                style={{ width: `${identifierWidth}ch`, ...issueViewTransitionStyle(issue.identifier, "id") }}
             >
                 {issue.identifier}
             </Link>
             <StatusMenu value={column} statuses={columns} onChange={(columnId) => onUpdate({ columnId })} />
-            <Link to={urls.issue(issue.identifier, issue.title)} onClick={rangeClick} className="min-w-0 flex-1 truncate text-secondary">
+            <Link
+                viewTransition
+                to={urls.issue(issue.identifier, issue.title)}
+                state={{ issueTitle: issue.title }}
+                onClick={rangeClick}
+                className="min-w-0 flex-1 truncate text-secondary"
+                style={issueViewTransitionStyle(issue.identifier, "title")}
+            >
                 {issue.title}
             </Link>
             {categories.length > 0 && (
