@@ -88,7 +88,7 @@ export const ProjectMembersPage = () => {
                                 {isProjectOwner && (
                                     <td className="rounded-r-md px-2 py-3">
                                         {member.role !== "owner" && (
-                                            <div className="opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">
+                                            <div className="opacity-100 can-hover:opacity-0 can-hover:group-focus-within:opacity-100 can-hover:group-hover:opacity-100">
                                                 <ConfirmDialog
                                                     trigger={<ButtonUtility icon={UserRoundMinus} size="sm" color="tertiary" tooltip={`${t("settings.removeMember")} ${member.name}`} isDisabled={removeMember.isPending} />}
                                                     title={t("settings.removeMember")}

@@ -305,7 +305,7 @@ function NewProjectButton() {
                     <button
                         type="button"
                         aria-label={t("nav.newProject")}
-                        className="flex size-6 shrink-0 items-center justify-center rounded-md text-tertiary opacity-0 transition-opacity duration-150 group-hover/label:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100 data-[popup-open]:opacity-100"
+                        className="flex size-6 shrink-0 items-center justify-center rounded-md text-tertiary can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/label:opacity-100 can-hover:group-focus-within/label:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100 data-[popup-open]:opacity-100"
                     >
                         <Plus className="size-3.5" />
                     </button>
@@ -447,7 +447,7 @@ function FavoriteRow({ favorite, leaving, animateIn }: { favorite: Favorite; lea
                         aria-label={`${t("nav.removeFavorite")}: ${label}`}
                         disabled={remove.isPending || leaving}
                         onClick={() => remove.mutate(favorite.id)}
-                        className="absolute top-1/2 right-1 grid size-5 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/favorite:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100"
+                        className="absolute top-1/2 right-1 grid size-5 -translate-y-1/2 place-items-center rounded text-tertiary can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/favorite:opacity-100 can-hover:group-focus-within/favorite:opacity-100 hover:bg-layer-transparent-hover hover:text-primary focus-visible:opacity-100"
                     >
                         <X className="size-3.5" />
                     </button>

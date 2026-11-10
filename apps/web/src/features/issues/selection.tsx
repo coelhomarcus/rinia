@@ -50,7 +50,7 @@ export function IssueCheckbox({ issueId, className }: { issueId: string; classNa
             }}
             className={cx(
                 "grid size-5 shrink-0 place-items-center rounded outline-none transition-opacity duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-accent-strong",
-                checked || selection.selected.size > 0 ? "opacity-100" : "opacity-0",
+                checked || selection.selected.size > 0 ? "opacity-100" : "can-hover:opacity-0",
                 className,
             )}
         >

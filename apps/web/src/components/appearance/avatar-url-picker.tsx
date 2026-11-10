@@ -65,7 +65,7 @@ export function AvatarPhotoPicker({ hasPhoto, disabled, onUpdated, children }: {
                 {children}
                 <span
                     aria-hidden="true"
-                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity duration-150 group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100 group-data-[popup-open]/avatar:opacity-100 group-disabled/avatar:opacity-0"
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100 group-data-[popup-open]/avatar:opacity-100 group-disabled/avatar:opacity-0"
                 >
                     <Camera className="size-4" />
                 </span>

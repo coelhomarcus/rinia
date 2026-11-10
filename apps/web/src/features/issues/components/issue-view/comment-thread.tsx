@@ -149,7 +149,7 @@ function CommentItem({ entry, replyCount, currentUserId, onReact, mentionItems, 
                     </time>
                 </Tooltip>
                 {!editing && !entry.pending && (
-                    <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/comment:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100">
+                    <div className="ml-auto flex items-center gap-0.5 transition-opacity duration-150 can-hover:opacity-0 can-hover:group-hover/comment:opacity-100 focus-within:opacity-100 has-[[data-popup-open]]:opacity-100">
                         <ReactionPicker onPick={(emoji) => onReact(entry.id, emoji, !entry.reactions.find((group) => group.emoji === emoji)?.users.some((user) => user.id === currentUserId))} />
                         {mine && <>
                         <ButtonUtility icon={Pencil} size="xs" color="tertiary" tooltip={t("common.edit")} onClick={() => { setDraft(entry.contentJson); setEditing(true); }} />

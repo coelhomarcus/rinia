@@ -24,7 +24,7 @@ export function SortableIssueListRow({ sortable, ...props }: Omit<ComponentProps
             {...listeners}
             aria-label={t("issue.dragToReorder")}
             className={cx(
-                "flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-placeholder opacity-0 group-hover/issue:opacity-100 hover:bg-layer-1-hover focus-visible:opacity-100 active:cursor-grabbing",
+                "flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-placeholder can-hover:opacity-0 can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100 hover:bg-layer-1-hover focus-visible:opacity-100 active:cursor-grabbing",
                 dragSurfaceClass,
             )}
         >

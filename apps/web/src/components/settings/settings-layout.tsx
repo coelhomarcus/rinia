@@ -132,7 +132,7 @@ export function SettingsItemRow({ leading, title, description, dense = false, ch
 
 /** Hover-revealed actions for a SettingsItemRow. */
 export function SettingsRowActions({ children }: { children: ReactNode }) {
-    return <div className="flex items-center gap-1 opacity-100 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100 md:opacity-0">{children}</div>;
+    return <div className="flex items-center gap-1 opacity-100 transition-opacity duration-150 can-hover:opacity-0 can-hover:group-focus-within:opacity-100 can-hover:group-hover:opacity-100">{children}</div>;
 }
 
 /** The square an icon sits on at the start of a row. */

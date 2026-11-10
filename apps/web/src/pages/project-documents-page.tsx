@@ -94,7 +94,7 @@ function DocumentList({ projectId, projectKey }: { projectId: string; projectKey
                                 </Link>
                                 <ContextMenuButton
                                     entity={{ type: "document", projectId, documentId: page.id, title: page.title, authorId: page.createdBy }}
-                                    className="mr-2 opacity-100 md:opacity-0 md:group-hover/page:opacity-100 md:group-focus-within/page:opacity-100"
+                                    className="mr-2 md:flex can-hover:opacity-0 can-hover:group-hover/page:opacity-100 can-hover:group-focus-within/page:opacity-100"
                                 />
                             </div>
                         ))}

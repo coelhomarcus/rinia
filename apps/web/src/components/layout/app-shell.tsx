@@ -174,7 +174,7 @@ function SidebarResizeHandle({
                 <span
                     aria-hidden="true"
                     className={`absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-[opacity,color] duration-150 ${
-                        resizing ? "text-accent-primary opacity-100" : "text-[var(--border-strong-1)] opacity-0 group-hover:opacity-100 group-focus-visible:text-accent-primary group-focus-visible:opacity-100"
+                        resizing ? "text-accent-primary opacity-100" : "text-[var(--border-strong-1)] can-hover:opacity-0 can-hover:group-hover:opacity-100 group-focus-visible:text-accent-primary group-focus-visible:opacity-100"
                     }`}
                     // Fades in and out at both ends so the highlight blends into the panel's rounded corners.
                     style={{ background: "linear-gradient(to bottom, transparent, currentColor 18%, currentColor 82%, transparent)" }}

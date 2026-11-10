@@ -102,7 +102,7 @@ export function IssueListRow({
             data-issue-identifier={issue.identifier}
             data-issue-title={issue.title}
         >
-            <IssueCheckbox issueId={issue.id} className="group-hover/issue:opacity-100" />
+            <IssueCheckbox issueId={issue.id} className="can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100" />
             {drag ? drag.handle : <span aria-hidden="true" className="size-5 shrink-0" />}
             <Link
                 viewTransition
@@ -135,7 +135,7 @@ export function IssueListRow({
             <PriorityMenu
                 value={issue.priority}
                 onChange={(priority) => onUpdate({ priority })}
-                className="opacity-0 group-hover/issue:opacity-100 focus-visible:opacity-100"
+                className="can-hover:opacity-0 can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100 focus-visible:opacity-100"
             />
             <AssigneeMenu value={member} people={members} onChange={(assigneeId) => onUpdate({ assigneeId })} />
             <span className="w-14 shrink-0 text-right text-xs text-tertiary">{date}</span>

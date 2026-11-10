@@ -86,6 +86,12 @@ html[data-density="compact"] {
 
 @custom-variant label (& [data-label]);
 @custom-variant focus-input-within (&:has(input:focus));
+/* Hide-until-hover utilities. Touch and coarse pointers never match, so the same class stays visible. */
+@custom-variant can-hover {
+    @media (hover: hover) and (pointer: fine) {
+        @slot;
+    }
+}
 
 /* iOS PWA with viewport-fit=cover: env() is the notch, home indicator and landscape corners, and 0 in a normal tab. */
 @utility p-safe {

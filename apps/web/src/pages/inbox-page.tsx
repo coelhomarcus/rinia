@@ -196,7 +196,7 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                     type="button"
                     aria-label={unread ? t("inbox.markRead") : t("inbox.markUnread")}
                     onClick={() => onRead(!unread)}
-                    className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary opacity-0 transition-opacity duration-150 group-hover/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
+                    className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/notification:opacity-100 can-hover:group-focus-within/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
                 >
                     {unread ? <MailOpen className="size-3.5" /> : <MailCheck className="size-3.5" />}
                 </button>

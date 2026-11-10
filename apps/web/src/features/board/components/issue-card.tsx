@@ -72,7 +72,7 @@ function IssuePreviewImage({ src }: { src: string }) {
 }
 
 // Unset estimate and label icons only show while the card is hovered or focused, or their menu is open.
-const revealOnHover = "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 data-popup-open:opacity-100";
+const revealOnHover = "can-hover:opacity-0 can-hover:group-hover/card:opacity-100 can-hover:group-focus-within/card:opacity-100 data-popup-open:opacity-100";
 
 /**
  * Shared with the drag overlay so picking up an issue preserves its geometry. Laid out like Linear's cards: the ID

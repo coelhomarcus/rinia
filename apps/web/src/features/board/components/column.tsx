@@ -342,7 +342,7 @@ export const Column = memo(function Column({
                 <button
                     type="button"
                     onClick={() => onCreateIssue(column.id)}
-                    className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-100 transition-opacity duration-150 hover:bg-layer-1-hover hover:text-secondary motion-reduce:transition-none md:opacity-0 md:group-hover/column:opacity-100 md:focus-visible:opacity-100"
+                    className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-100 transition-opacity duration-150 hover:bg-layer-1-hover hover:text-secondary motion-reduce:transition-none can-hover:opacity-0 can-hover:group-hover/column:opacity-100 can-hover:group-focus-within/column:opacity-100 can-hover:focus-visible:opacity-100"
                 >
                     <Plus className="size-3.5" />
                     {t("issue.newIssue")}

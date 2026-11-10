@@ -93,7 +93,7 @@ function RelationsPanel({
                                 <span className="shrink-0 text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
                                 <span className="truncate text-primary" style={issueViewTransitionStyle(identifier, "title")}>{relation.target.title}</span>
                             </Link>
-                            <span className="opacity-0 transition-opacity group-hover/relation:opacity-100 focus-within:opacity-100">
+                            <span className="transition-opacity can-hover:opacity-0 can-hover:group-hover/relation:opacity-100 focus-within:opacity-100">
                                 <ButtonUtility icon={Trash2} size="xs" color="tertiary" tooltip={t("issue.removeRelation")} onClick={() => onDelete(relation.id)} isDisabled={isPending} />
                             </span>
                         </li>
