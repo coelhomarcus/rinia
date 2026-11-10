@@ -17,7 +17,7 @@ const AdminProjectSettingsPage = lazy(() => import("@/pages/admin-project-settin
 const ProfileSettingsPage = lazy(() => import("@/pages/profile-settings-page").then((module) => ({ default: module.ProfileSettingsPage })));
 const DesignSystemPage = lazy(() => import("@/pages/design-system-page").then((module) => ({ default: module.default })));
 
-const IssueView = lazy(() => import("@/features/issues/components/issue-view").then((module) => ({ default: module.IssueView })));
+const IssueView = lazy(() => import("@/features/issues/components/issue-view/issue-view").then((module) => ({ default: module.IssueView })));
 const InboxPage = lazy(() => import("@/pages/inbox-page").then((module) => ({ default: module.InboxPage })));
 const LoginPage = lazy(() => import("@/pages/login-page").then((module) => ({ default: module.LoginPage })));
 const MyIssuesPage = lazy(() => import("@/pages/my-issues-page").then((module) => ({ default: module.MyIssuesPage })));

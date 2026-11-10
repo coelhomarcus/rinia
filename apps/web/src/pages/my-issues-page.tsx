@@ -441,4 +441,4 @@ function readGroup(value: string | null): GroupBy {
     return value === "none" || value === "project" ? value : "status";
 }
 
-void import("@/features/issues/components/issue-view");
+void import("@/features/issues/components/issue-view/issue-view");

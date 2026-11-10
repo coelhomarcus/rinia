@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { memo, useRef, useState, type ChangeEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { File, FileArchive, FileText, Paperclip, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -43,7 +43,7 @@ function Attachment({ file, removing, onRemove }: { file: StoredFile; removing: 
 }
 
 /** Files attached to the issue. An image only appears here when the upload was made for this issue. */
-export function IssueFiles({ projectId, issueId }: { projectId: string; issueId: string }) {
+export const IssueFiles = memo(function IssueFiles({ projectId, issueId }: { projectId: string; issueId: string }) {
     const { t } = useTranslation();
     const client = useQueryClient();
     const query = useQuery({ queryKey: issueFilesKey(projectId, issueId), queryFn: () => listIssueFiles(projectId, issueId) });
@@ -96,4 +96,4 @@ export function IssueFiles({ projectId, issueId }: { projectId: string; issueId:
             {error && <p role="alert" className="mt-2 text-xs text-danger-primary">{error}</p>}
         </section>
     );
-}
+});

@@ -757,4 +757,4 @@ function readSavedScope(value: string | null): Scope {
     return value === "backlog" || value === "all" ? value : "active";
 }
 
-void import("@/features/issues/components/issue-view");
+void import("@/features/issues/components/issue-view/issue-view");

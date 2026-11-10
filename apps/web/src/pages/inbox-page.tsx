@@ -226,7 +226,7 @@ function formatAge(value: string, locale: string) {
     return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(value));
 }
 
-void import("@/features/issues/components/issue-view");
+void import("@/features/issues/components/issue-view/issue-view");
 
 function InboxSkeleton() {
     const { t } = useTranslation();
