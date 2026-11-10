@@ -134,8 +134,19 @@ export function listMyIssues(query: MyIssuesQuery): Promise<MyIssue[]> {
     return apiClient.get<{ issues: MyIssue[] }>(`/my-issues?${new URLSearchParams(query).toString()}`).then((res) => res.issues);
 }
 
+export interface IssueListPage {
+    issues: Issue[];
+    nextCursor: string | null;
+    total: number;
+}
+
+/** One page. Without `limit`, the server returns every matching issue and a null cursor. */
+export function listIssuePage(projectId: string, query: IssueListQuery = { orderBy: "position" }): Promise<IssueListPage> {
+    return apiClient.get<IssueListPage>(`/projects/${projectId}/issues${queryString(query)}`);
+}
+
 export function listIssues(projectId: string, query: IssueListQuery = { orderBy: "position" }): Promise<Issue[]> {
-    return apiClient.get<{ issues: Issue[] }>(`/projects/${projectId}/issues${queryString(query)}`).then((res) => res.issues);
+    return listIssuePage(projectId, query).then((page) => page.issues);
 }
 
 export function createIssue(projectId: string, input: CreateIssueInput): Promise<Issue> {

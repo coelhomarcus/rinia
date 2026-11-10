@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyOptimisticIssueList, isIssueDetailKey, isIssueListKey } from "../src/features/issues/lib/patch-cached-issue";
+import { applyOptimisticIssueList, flattenCachedIssues, isIssueDetailKey, isIssueListKey, mapCachedIssues } from "../src/features/issues/lib/patch-cached-issue";
 
 const list = [
     { id: "a", identifier: "RIN-1", columnId: "todo", position: 1000, number: 1, title: "Stay" },
@@ -27,5 +27,13 @@ describe("cached issue patches", () => {
         expect(moved?.columnId).toBe("todo");
         expect(moved?.position).toBeLessThan(1000);
         expect(next?.find((issue) => issue.identifier === "RIN-1")?.position).toBe(1000);
+    });
+
+    test("a paged window keeps its cursor when a row that is not mounted changes", () => {
+        const window = { pages: [{ issues: list, nextCursor: "cursor" }], pageParams: [undefined] };
+        const next = mapCachedIssues(window, (issues) => applyOptimisticIssueList(issues, "RIN-1", { title: "Renamed" }) ?? issues) as typeof window;
+        expect(next.pages[0]?.nextCursor).toBe("cursor");
+        expect(flattenCachedIssues<{ title: string }>(next).find((issue) => issue.title === "Renamed")).toBeTruthy();
+        expect(isIssueListKey(["projects", "p", "issues", { orderBy: "position" }, "page"])).toBe(true);
     });
 });

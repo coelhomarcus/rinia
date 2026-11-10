@@ -10,6 +10,7 @@ import { requireUndoWindow } from "../../lib/soft-delete";
 import { mentionedUserIds, newMentions, recordIssueChange } from "../notifications/notifications.service";
 import { attachReferencedFiles } from "../files/files.service";
 import { publishChange } from "../realtime/realtime.service";
+import { encodeIssueCursor, issueCursorFilter } from "./issue-cursor";
 
 const EMPTY_DOCUMENT = { type: "doc" as const, content: [] };
 const PERSON = { id: true, name: true, username: true, avatarUrl: true } as const;
@@ -180,19 +181,70 @@ async function nextIssueNumber(projectId: string, tx: any = db): Promise<{ issue
     return { issueKey: updated.issueKey, number: updated.number - 1 };
 }
 
-export async function listIssues(projectId: string, query: IssueListQuery) {
+/** Closed and cancelled columns, matched the same way the board groups them. */
+function closedColumnIds(projectId: string) {
+    return db
+        .select({ id: boardColumns.id })
+        .from(boardColumns)
+        .where(
+            and(
+                eq(boardColumns.projectId, projectId),
+                sql`lower(${boardColumns.name}) like '%done%' or lower(${boardColumns.name}) like '%cancel%' or lower(${boardColumns.name}) like '%duplicate%' or lower(${boardColumns.name}) like '%conclu%'`,
+            ),
+        );
+}
+
+export interface IssueListPage<T> {
+    issues: T[];
+    nextCursor: string | null;
+    total: number;
+}
+
+/** One page of a project's issues, in `orderBy` order. Without `limit`, every matching issue. */
+export async function listIssuePage(projectId: string, query: IssueListQuery) {
     const filters = [eq(issues.projectId, projectId), isNull(issues.deletedAt)];
     if (query.columnId) filters.push(eq(issues.columnId, query.columnId));
     if (query.priority) filters.push(eq(issues.priority, query.priority));
     if (query.assigneeId) filters.push(eq(issues.assigneeId, query.assigneeId));
     // Several labels match issues that have any of them.
     if (query.categoryIds?.length) filters.push(inArray(issues.id, db.select({ id: issueLabels.issueId }).from(issueLabels).where(inArray(issueLabels.categoryId, query.categoryIds))));
+    const closed = query.closed ?? "include";
+    if (closed === "exclude") filters.push(notInArray(issues.columnId, closedColumnIds(projectId)));
+    if (closed === "only") filters.push(inArray(issues.columnId, closedColumnIds(projectId)));
+    const where = and(...filters);
+    const pageWhere = query.cursor ? and(where, issueCursorFilter(query.orderBy, query.cursor)) : where;
+
+    const limited = query.limit !== undefined;
+    if (limited && query.limit === 0) {
+        const [counted] = await db.select({ value: count() }).from(issues).where(where);
+        const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { issueKey: true } });
+        if (!project) throw new HttpError(404, "Project not found");
+        return { issues: [], nextCursor: null, total: counted?.value ?? 0 };
+    }
 
     // The number breaks ties, so issues that share a position (or a priority, for that order) keep a stable order.
-    const rows = (await db.query.issues.findMany({ where: and(...filters), orderBy: [issueOrder(query.orderBy), asc(issues.number)], with: { labels: LABELS_WITH } })).map(withLabels);
+    // One extra row tells us whether another page exists without a second query.
+    const rows = await db.query.issues.findMany({
+        where: pageWhere,
+        orderBy: [issueOrder(query.orderBy), asc(issues.number)],
+        ...(limited ? { limit: query.limit! + 1 } : {}),
+        with: { labels: LABELS_WITH },
+    });
     const project = await db.query.projects.findFirst({ where: eq(projects.id, projectId), columns: { issueKey: true } });
     if (!project) throw new HttpError(404, "Project not found");
-    return rows.map((issue) => ({ ...issue, identifier: `${project.issueKey}-${issue.number}` }));
+
+    const hasMore = limited && rows.length > query.limit!;
+    const pageRows = hasMore ? rows.slice(0, query.limit) : rows;
+    const nextCursor = hasMore ? encodeIssueCursor(query.orderBy, pageRows[pageRows.length - 1]!) : null;
+    const issuesPage = pageRows.map(withLabels).map((issue) => ({ ...issue, identifier: `${project.issueKey}-${issue.number}` }));
+    if (!limited) return { issues: issuesPage, nextCursor, total: issuesPage.length };
+    const [counted] = await db.select({ value: count() }).from(issues).where(where);
+    return { issues: issuesPage, nextCursor, total: counted?.value ?? issuesPage.length };
+}
+
+/** Every matching issue. Callers that page use `listIssuePage`. */
+export async function listIssues(projectId: string, query: IssueListQuery) {
+    return (await listIssuePage(projectId, query)).issues;
 }
 
 /** What `searchIssues` filters by. `assigneeId: null` asks for unassigned issues; an empty list of states matches nothing. */

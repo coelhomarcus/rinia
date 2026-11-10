@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import type { TFunction } from "i18next";
 import { MailCheck, MailOpen } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
@@ -34,6 +35,14 @@ export const InboxPage = () => {
         [notifications, readHere, unreadOnly],
     );
     const rows = usePresence(visible, (notification) => notification.id);
+    const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+    const virtualizer = useVirtualizer({
+        count: rows.length,
+        getScrollElement: () => scrollElement,
+        estimateSize: () => 72,
+        overscan: 8,
+        getItemKey: (index) => rows[index]?.key ?? index,
+    });
 
     function show(next: "all" | "unread") {
         setReadHere(new Set());
@@ -69,19 +78,28 @@ export const InboxPage = () => {
                     {unreadCount > 0 && <span className="text-tertiary">{unreadCount}</span>}
                 </button>
             </div>
-            <main className="min-h-0 flex-1 overflow-y-auto">
+            <main ref={setScrollElement} className="min-h-0 flex-1 overflow-y-auto">
                 {isLoading && <InboxSkeleton />}
                 {isError && <ErrorMessage message={t("inbox.couldNotLoad")} />}
-                {visible && (
-                    <ul className="flex flex-col">
-                        {rows.map((row) => (
-                            <li key={row.key}>
-                                <Presence leaving={row.leaving} entering={row.entering}>
-                                    <NotificationRow notification={row.item} onRead={(read) => markRead(row.item, read)} />
-                                </Presence>
-                            </li>
-                        ))}
-                    </ul>
+                {visible && rows.length > 0 && (
+                    <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                        {virtualizer.getVirtualItems().map((virtual) => {
+                            const row = rows[virtual.index];
+                            if (!row) return null;
+                            return (
+                                <div
+                                    key={virtual.key}
+                                    data-index={virtual.index}
+                                    ref={virtualizer.measureElement}
+                                    style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
+                                >
+                                    <Presence leaving={row.leaving} entering={row.entering}>
+                                        <NotificationRow notification={row.item} onRead={(read) => markRead(row.item, read)} />
+                                    </Presence>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
                 {visible?.length === 0 &&
                     (unreadOnly && notifications?.length ? (

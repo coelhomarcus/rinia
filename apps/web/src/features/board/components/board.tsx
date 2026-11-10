@@ -26,9 +26,9 @@ import { DragLift, useDragTilt } from "@/features/issues/components/drag-feedbac
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
 import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
-import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
+import { useIssueWindow, useUpdateIssue } from "@/features/issues/hooks/use-issues";
 import { signalLongPress, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
-import { filterIssues, readIssueOrder } from "@/features/issues/lib/issue-filters";
+import { filterIssues } from "@/features/issues/lib/issue-filters";
 import { useRegisterVisibleIssues } from "@/features/issues/selection";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useRouteProject } from "@/features/projects/route-project";
@@ -37,7 +37,7 @@ import { urls } from "@/lib/urls";
 import { issueNavigation } from "@/lib/view-transition";
 import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
-import { Column } from "./column";
+import { Column, type ColumnProps } from "./column";
 import { IssueCardContent } from "./issue-card";
 
 /**
@@ -77,8 +77,18 @@ export const Board = ({
     const navigate = useNavigate();
     const { projectKey } = useRouteProject();
     const { data: columns, isLoading: columnsLoading, isError: columnsError } = useColumns(projectId);
-    const orderBy = readIssueOrder(filters.get("order"));
-    const { data: issues, isLoading: issuesLoading, isError: issuesError } = useIssues(projectId, { orderBy });
+    const [loadedByColumn, setLoadedByColumn] = useState<Map<string, Issue[]>>(new Map());
+    const onLoaded = useCallback((columnId: string, next: Issue[]) => {
+        setLoadedByColumn((current) => {
+            const previous = current.get(columnId);
+            if (previous === next) return current;
+            if (previous && previous.length === next.length && previous.every((issue, index) => issue === next[index])) return current;
+            const updated = new Map(current);
+            updated.set(columnId, next);
+            return updated;
+        });
+    }, []);
+    const issues = useMemo(() => [...loadedByColumn.values()].flat(), [loadedByColumn]);
     // The columns on screen: the scope's states, minus the ones the person hid.
     const shownColumns = useMemo(
         () => (columns ?? []).filter((column) => !hidden.has(column.id) && (scope === "all" || columnBucket(column.name) === scope)),
@@ -105,20 +115,24 @@ export const Board = ({
 
     // J and K move the focus through the cards, column by column; Enter opens the focused card and X selects it.
     const boardRef = useRef<HTMLDivElement>(null);
+    const visibleIdsRef = useRef<string[]>([]);
+    const focusIssueRef = useRef<string | null>(null);
+    const [focusIssueId, setFocusIssueId] = useState<string | null>(null);
     const dragging = activeIssue !== null;
     useEffect(() => {
         function onKeyDown(event: KeyboardEvent) {
             const key = event.key.toLowerCase();
             if ((key !== "j" && key !== "k") || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
             if (dragging || isTypingTarget(event.target) || !boardRef.current) return;
-            const cards = [...boardRef.current.querySelectorAll<HTMLElement>("[data-issue-id] > [data-issue-context]")];
-            if (cards.length === 0) return;
+            const ids = visibleIdsRef.current;
+            if (ids.length === 0) return;
             event.preventDefault();
             const step = key === "j" ? 1 : -1;
-            const current = cards.findIndex((card) => card.contains(document.activeElement));
-            const next = cards[current < 0 ? (step === 1 ? 0 : cards.length - 1) : Math.min(Math.max(current + step, 0), cards.length - 1)]!;
-            next.focus();
-            next.scrollIntoView({ block: "nearest", inline: "nearest" });
+            const activeId = ids.find((id) => document.querySelector(`[data-issue-id="${id}"]`)?.contains(document.activeElement));
+            const current = ids.indexOf(focusIssueRef.current && ids.includes(focusIssueRef.current) ? focusIssueRef.current : (activeId ?? ""));
+            const next = ids[current < 0 ? (step === 1 ? 0 : ids.length - 1) : Math.min(Math.max(current + step, 0), ids.length - 1)]!;
+            focusIssueRef.current = next;
+            setFocusIssueId(next);
         }
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
@@ -148,6 +162,7 @@ export const Board = ({
         () => shownColumns.flatMap((column) => board.filter((issue) => issue.columnId === column.id).map((issue) => issue.id)),
         [board, shownColumns],
     );
+    visibleIdsRef.current = visibleIds;
     useRegisterVisibleIssues(visibleIds);
 
     // The column callbacks read the latest props through a ref, so they stay stable and memoized columns can skip renders.
@@ -311,11 +326,11 @@ export const Board = ({
         setDragIssues(null);
     }
 
-    if (columnsLoading || issuesLoading) {
+    if (columnsLoading) {
         return <BoardSkeleton />;
     }
 
-    if (columnsError || issuesError) {
+    if (columnsError) {
         return <ErrorMessage message={t("errors.requestFailed")} />;
     }
 
@@ -344,7 +359,7 @@ export const Board = ({
                         <div ref={boardRef} className="flex h-full min-w-0 gap-3">
                             <div className="flex h-full min-w-0 flex-1 items-start gap-3 overflow-x-auto">
                                 {shownColumns.map((column) => (
-                                    <Column
+                                    <ColumnWindow
                                         key={column.id}
                                         column={column}
                                         statuses={columns ?? NONE}
@@ -361,6 +376,8 @@ export const Board = ({
                                         onCreateIssue={setCreateColumnId}
                                         onHide={hideColumnWithUndo}
                                         onManageStates={manageStates}
+                                        onLoaded={onLoaded}
+                                        focusIssueId={focusIssueId}
                                     />
                                 ))}
                             </div>
@@ -393,6 +410,46 @@ export const Board = ({
         </>
     );
 };
+
+const EMPTY_COLUMN_ISSUES: Issue[] = [];
+
+/** Loads one column's cards a page at a time. Closed columns stay counted until they are opened or a card is dragged onto them. */
+function ColumnWindow({ column, issues, lit, onLoaded, projectId, ...rest }: ColumnProps & { onLoaded: (columnId: string, next: Issue[]) => void }) {
+    const closed = columnBucket(column.name) === "closed";
+    const [revealed, setRevealed] = useState(!closed);
+    const query = useMemo(() => ({ columnId: column.id, orderBy: "position" as const, limit: 40, closed: "include" as const }), [column.id]);
+    const countQuery = useMemo(() => ({ columnId: column.id, orderBy: "position" as const, limit: 0, closed: "include" as const }), [column.id]);
+    const window = useIssueWindow(projectId, query, { enabled: revealed });
+    const count = useIssueWindow(projectId, countQuery, { enabled: closed && !revealed });
+    const loadMore = useCallback(() => void window.fetchNextPage(), [window.fetchNextPage]);
+    const showCompleted = useCallback(() => setRevealed(true), []);
+
+    useEffect(() => {
+        if (lit && closed && !revealed) setRevealed(true);
+    }, [closed, lit, revealed]);
+
+    useEffect(() => {
+        onLoaded(column.id, revealed ? window.issues : EMPTY_COLUMN_ISSUES);
+    }, [column.id, onLoaded, revealed, window.issues]);
+
+    return (
+        <Column
+            {...rest}
+            column={column}
+            issues={issues}
+            projectId={projectId}
+            lit={lit}
+            hasMore={revealed && !!window.hasNextPage}
+            loadingMore={window.isFetchingNextPage}
+            onLoadMore={loadMore}
+            pending={revealed ? window.isLoading : count.isLoading}
+            failed={window.isError || count.isError}
+            total={revealed ? window.total : count.total}
+            hiddenCompleted={!revealed && count.total > 0 ? count.total : null}
+            onShowCompleted={showCompleted}
+        />
+    );
+}
 
 function BoardSkeleton() {
     const { t } = useTranslation();

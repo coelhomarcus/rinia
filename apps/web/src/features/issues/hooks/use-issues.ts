@@ -9,7 +9,8 @@ import type {
     UpdateIssueCommentInput,
     UpdateIssueInput,
 } from "@rinia/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/feedback/toaster";
 import { AUTH_QUERY_KEY, type AuthUser } from "@/features/auth/api";
@@ -30,6 +31,7 @@ import {
     listIssueActivity,
     listIssueComments,
     listIssueRelations,
+    listIssuePage,
     listIssues,
     listMyIssues,
     removeCommentReaction,
@@ -37,7 +39,7 @@ import {
     updateIssue,
     updateIssueComment,
 } from "../api";
-import { applyOptimisticIssueList, isIssueDetailKey, isIssueListKey, placeMovedAtTop } from "../lib/patch-cached-issue";
+import { applyOptimisticIssueList, flattenCachedIssues, isIssueDetailKey, isIssueListKey, mapCachedIssues, placeMovedAtTop } from "../lib/patch-cached-issue";
 
 export const issuesKey = (projectId: string, query: IssueListQuery = { orderBy: "position" }) => ["projects", projectId, "issues", query] as const;
 export const issueKey = (identifier: string) => ["issues", identifier] as const;
@@ -45,6 +47,37 @@ type IssueUpdateField = Exclude<keyof UpdateIssueInput, "expectedDescriptionRevi
 
 export function useIssues(projectId: string, query: IssueListQuery = { orderBy: "position" }) {
     return useQuery({ queryKey: issuesKey(projectId, query), queryFn: () => listIssues(projectId, query), enabled: !!projectId });
+}
+
+const NO_ISSUES: Issue[] = [];
+
+/**
+ * A cursor window of a project's issues. The flattened `issues` stay in the cache, including the ones no row has
+ * mounted, so a realtime refresh still updates them. When the first page's cursor moves (an insert at the top),
+ * later pages are dropped and loaded again instead of skipping a row.
+ */
+export function useIssueWindow(projectId: string, query: IssueListQuery, options?: { enabled?: boolean }) {
+    const queryClient = useQueryClient();
+    const queryKey = useMemo(() => [...issuesKey(projectId, query), "page"] as const, [projectId, query]);
+    const result = useInfiniteQuery({
+        queryKey,
+        queryFn: ({ pageParam }) => listIssuePage(projectId, pageParam ? { ...query, cursor: pageParam } : query),
+        initialPageParam: undefined as string | undefined,
+        getNextPageParam: (page) => page.nextCursor ?? undefined,
+        enabled: !!projectId && (options?.enabled ?? true),
+    });
+    const issues = useMemo(() => result.data?.pages.flatMap((page) => page.issues) ?? NO_ISSUES, [result.data]);
+    const total = result.data?.pages[0]?.total ?? 0;
+    const firstCursor = result.data?.pages[0]?.nextCursor;
+    const pageCount = result.data?.pages.length ?? 0;
+    const secondParam = result.data?.pageParams[1];
+    useEffect(() => {
+        if (pageCount < 2 || firstCursor === secondParam) return;
+        queryClient.setQueryData(queryKey, (current: { pages: unknown[]; pageParams: unknown[] } | undefined) =>
+            current ? { pages: current.pages.slice(0, 1), pageParams: current.pageParams.slice(0, 1) } : current,
+        );
+    }, [firstCursor, pageCount, queryClient, queryKey, secondParam]);
+    return { ...result, issues, total };
 }
 
 export const MY_ISSUES_QUERY_KEY = ["my-issues"] as const;
@@ -65,10 +98,10 @@ export function useUpdateMyIssue() {
                 queryClient.cancelQueries({ predicate: (query) => isIssueListKey(query.queryKey) }),
                 queryClient.cancelQueries({ queryKey: issueKey(issue.identifier) }),
             ]);
-            const previous = queryClient.getQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) });
+            const previous = queryClient.getQueriesData<unknown>({ predicate: (query) => isIssueListKey(query.queryKey) });
             const previousDetail = queryClient.getQueryData<IssueDetail>(issueKey(issue.identifier));
-            queryClient.setQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
-                applyOptimisticIssueList(current, issue.identifier, input),
+            queryClient.setQueriesData({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
+                mapCachedIssues<Issue>(current, (list) => applyOptimisticIssueList(list, issue.identifier, input) ?? list),
             );
             queryClient.setQueryData<IssueDetail>(issueKey(issue.identifier), (current) => (current ? { ...current, ...input } : current));
             return { previous, previousDetail };
@@ -111,13 +144,13 @@ export function useUpdateIssue(projectId: string) {
                 queryClient.cancelQueries({ predicate: (query) => isIssueListKey(query.queryKey) }),
                 queryClient.cancelQueries({ queryKey: issueKey(identifier) }),
             ]);
-            const previous = queryClient.getQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) });
+            const previous = queryClient.getQueriesData<unknown>({ predicate: (query) => isIssueListKey(query.queryKey) });
             const previousDetail = queryClient.getQueryData<IssueDetail>(issueKey(identifier));
 
             // Moved to another column without a place picked, the card goes to the top, as the server puts it.
             const placesAtTop = !!input.columnId && input.position === undefined;
-            queryClient.setQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
-                applyOptimisticIssueList(current, identifier, input),
+            queryClient.setQueriesData({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
+                mapCachedIssues<Issue>(current, (list) => applyOptimisticIssueList(list, identifier, input) ?? list),
             );
             const parent = parentFromLists(previous, input.parentIssueId);
             queryClient.setQueryData<IssueDetail>(issueKey(identifier), (current) => {
@@ -130,23 +163,26 @@ export function useUpdateIssue(projectId: string) {
         onError: (_error, variables, context) => {
             if (!context) return;
             const fields = Object.keys(context.optimisticValues) as IssueUpdateField[];
-            context.previous.forEach(([queryKey, previousIssues]) => {
-                queryClient.setQueryData<Issue[]>(queryKey, (current) => {
-                    if (!current || !previousIssues) return current;
-                    return current.map((issue) => {
-                        if (issue.identifier !== variables.identifier) return issue;
-                        const previousIssue = previousIssues.find((entry) => entry.identifier === variables.identifier);
-                        if (!previousIssue) return issue;
-                        const rollback: Partial<Pick<Issue, IssueUpdateField>> = {};
-                        for (const field of fields) {
-                            if (Object.is(issue[field], context.optimisticValues[field])) {
-                                (rollback as Record<string, unknown>)[field] = previousIssue[field as keyof Issue];
+            context.previous.forEach(([queryKey, previousData]) => {
+                queryClient.setQueryData(queryKey, (current) => {
+                    if (!current || !previousData) return current;
+                    const previousIssues = flattenCachedIssues<Issue>(previousData);
+                    return mapCachedIssues<Issue>(current, (issues) =>
+                        issues.map((issue) => {
+                            if (issue.identifier !== variables.identifier) return issue;
+                            const previousIssue = previousIssues.find((entry) => entry.identifier === variables.identifier);
+                            if (!previousIssue) return issue;
+                            const rollback: Partial<Pick<Issue, IssueUpdateField>> = {};
+                            for (const field of fields) {
+                                if (Object.is(issue[field], context.optimisticValues[field])) {
+                                    (rollback as Record<string, unknown>)[field] = previousIssue[field as keyof Issue];
+                                }
                             }
-                        }
-                        // The position was not part of the request, so it is not among the fields above.
-                        if (context.placesAtTop) rollback.position = previousIssue.position;
-                        return { ...issue, ...rollback };
-                    });
+                            // The position was not part of the request, so it is not among the fields above.
+                            if (context.placesAtTop) rollback.position = previousIssue.position;
+                            return { ...issue, ...rollback };
+                        }),
+                    );
                 });
             });
             const previousDetail = context.previousDetail;
@@ -364,11 +400,11 @@ export function applyBulkPatch<T extends { categoryIds: string[] }>(issue: T, pa
 }
 
 /** The parent row the issue page shows, taken from a list already in the cache. `undefined` leaves the current parent. */
-function parentFromLists(lists: Array<[unknown, Issue[] | undefined]>, parentIssueId: string | null | undefined): IssueDetail["parent"] | undefined {
+function parentFromLists(lists: Array<[unknown, unknown]>, parentIssueId: string | null | undefined): IssueDetail["parent"] | undefined {
     if (parentIssueId === undefined) return undefined;
     if (parentIssueId === null) return null;
-    for (const [, list] of lists) {
-        const found = list?.find((issue) => issue.id === parentIssueId);
+    for (const [, data] of lists) {
+        const found = flattenCachedIssues<Issue>(data).find((issue) => issue.id === parentIssueId);
         if (found) return { id: found.id, number: found.number, title: found.title };
     }
     return undefined;
@@ -384,13 +420,15 @@ export function useBulkUpdateIssues(projectId: string) {
         mutationFn: ({ issueIds, patch }: { issueIds: string[]; patch: BulkIssuePatch }) => bulkUpdateIssues(projectId, issueIds, patch),
         onMutate: async ({ issueIds, patch }) => {
             await queryClient.cancelQueries({ predicate: (query) => isIssueListKey(query.queryKey) || isIssueDetailKey(query.queryKey) });
-            const previous = queryClient.getQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) });
+            const previous = queryClient.getQueriesData<unknown>({ predicate: (query) => isIssueListKey(query.queryKey) });
             const previousDetails = queryClient.getQueriesData<IssueDetail>({ predicate: (query) => isIssueDetailKey(query.queryKey) });
             const ids = new Set(issueIds);
-            queryClient.setQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) => {
-                const placed = patch.columnId && current ? placeMovedAtTop(current, (issue) => ids.has(issue.id), patch.columnId) : current;
-                return placed?.map((issue) => (ids.has(issue.id) ? applyBulkPatch(issue, patch) : issue));
-            });
+            queryClient.setQueriesData({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
+                mapCachedIssues<Issue>(current, (list) => {
+                    const placed = patch.columnId ? placeMovedAtTop(list, (issue) => ids.has(issue.id), patch.columnId) : list;
+                    return placed.map((issue) => (ids.has(issue.id) ? applyBulkPatch(issue, patch) : issue));
+                }),
+            );
             for (const [queryKey, detail] of previousDetails) {
                 if (detail && ids.has(detail.id)) queryClient.setQueryData(queryKey, applyBulkPatch(detail, patch));
             }
@@ -417,10 +455,10 @@ export function useBulkDeleteIssues(projectId: string) {
         mutationFn: (issueIds: string[]) => bulkDeleteIssues(projectId, issueIds),
         onMutate: async (issueIds) => {
             await queryClient.cancelQueries({ predicate: (query) => isIssueListKey(query.queryKey) });
-            const previous = queryClient.getQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) });
+            const previous = queryClient.getQueriesData<unknown>({ predicate: (query) => isIssueListKey(query.queryKey) });
             const ids = new Set(issueIds);
-            queryClient.setQueriesData<Issue[]>({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
-                current?.filter((issue) => !ids.has(issue.id)),
+            queryClient.setQueriesData({ predicate: (query) => isIssueListKey(query.queryKey) }, (current) =>
+                mapCachedIssues<Issue>(current, (list) => list.filter((issue) => !ids.has(issue.id))),
             );
             return { previous };
         },

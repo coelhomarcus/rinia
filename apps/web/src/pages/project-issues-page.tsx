@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
-import type { IssueOrder, SavedViewFilters } from "@rinia/shared";
+import type { IssueListQuery, IssueOrder, SavedViewFilters } from "@rinia/shared";
 import { Layers, Plus, Users, X } from "lucide-react";
-import { AnimatePresence, LayoutGroup } from "motion/react";
+import { LayoutGroup } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
@@ -27,7 +28,7 @@ import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-
 import { IssueFilterRow, IssueToolbar, pillTab } from "@/features/issues/components/issue-toolbar";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useIssueView } from "@/features/issues/hooks/use-issue-view";
-import { useIssues, useUpdateIssue } from "@/features/issues/hooks/use-issues";
+import { useIssueWindow, useUpdateIssue } from "@/features/issues/hooks/use-issues";
 import { type ListGroupBy, listGroupKey, useListReorder } from "@/features/issues/hooks/use-list-reorder";
 import { matchesDueFilter } from "@/features/issues/lib/due-date";
 import { matchesLabels, readLabels } from "@/features/issues/lib/issue-filters";
@@ -95,7 +96,18 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const startingView = !!(useLocation().state as { newView?: boolean } | null)?.newView;
     const viewActions = useViewActions({ projectId: projectId!, projectKey, filters: screenFilters, savedView });
     const { data: savedViews } = useViews(projectId!);
-    const { data: issues, isLoading, isError } = useIssues(projectId!, { orderBy });
+    const listQuery = useMemo<IssueListQuery>(
+        () => ({
+            orderBy,
+            limit: 80,
+            closed: "exclude",
+            ...(status ? { columnId: status } : {}),
+            ...(priority ? { priority: priority as IssueListQuery["priority"] } : {}),
+            ...(assignee ? { assigneeId: assignee } : {}),
+            ...(labelFilter.length ? { categoryIds: labelFilter } : {}),
+        }),
+        [assignee, labelFilter, orderBy, priority, status],
+    );
     const updateIssue = useUpdateIssue(projectId!);
     const { data: columns } = useColumns(projectId!);
     const { hidden: hiddenColumns, hideColumn, showColumn, showAllColumns } = useHiddenColumns(projectId!);
@@ -105,6 +117,8 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const [creatingColumnId, setCreatingColumnId] = useState<string | null>(null);
     const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
     const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+    const [showClosed, setShowClosed] = useState(false);
+    const [listScroll, setListScroll] = useState<HTMLElement | null>(null);
 
     const columnById = useMemo(() => new Map((columns ?? []).map((column) => [column.id, column])), [columns]);
     // The backlog scope only lists issues in a "Backlog" or "Fila" column; without one it would always be empty,
@@ -112,9 +126,20 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const showBacklog = scope === "backlog" || (columns ?? []).some((column) => columnBucket(column.name) === "backlog");
     const memberById = useMemo(() => new Map((members ?? []).map((member) => [member.id, member])), [members]);
     const categoryById = useMemo(() => new Map((categories ?? []).map((item) => [item.id, item])), [categories]);
+    const filteringClosed = !!status && columnBucket(columnById.get(status)?.name ?? "") === "closed";
+    const listView = view === "list";
+    const openWindow = useIssueWindow(projectId!, listQuery, { enabled: listView && !filteringClosed });
+    const completedQuery = useMemo(() => ({ ...listQuery, closed: "only" as const, limit: 120 }), [listQuery]);
+    const closedCountQuery = useMemo(() => ({ ...completedQuery, limit: 0 }), [completedQuery]);
+    const completedWindow = useIssueWindow(projectId!, completedQuery, { enabled: listView && (showClosed || filteringClosed) });
+    const closedCount = useIssueWindow(projectId!, closedCountQuery, { enabled: listView && !showClosed && !filteringClosed });
+    const showingClosed = showClosed || filteringClosed;
+    const issues = useMemo(() => [...openWindow.issues, ...(showingClosed ? completedWindow.issues : [])], [completedWindow.issues, openWindow.issues, showingClosed]);
+    const isLoading = filteringClosed ? completedWindow.isLoading : openWindow.isLoading;
+    const isError = openWindow.isError || completedWindow.isError;
     const filteredIssues = useMemo(
         () =>
-            (issues ?? []).filter((issue) => {
+            issues.filter((issue) => {
                 const textMatch = !search || `${issue.identifier} ${issue.title}`.toLowerCase().includes(search.toLowerCase());
                 const bucket = columnBucket(columnById.get(issue.columnId)?.name ?? "");
                 const scopeMatch = scope === "all" || bucket === scope;
@@ -187,6 +212,45 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
         if (selectedIssueId && !orderedIssues.some((issue) => issue.id === selectedIssueId)) setSelectedIssueId(null);
     }, [orderedIssues, selectedIssueId]);
 
+    const rows = useMemo(() => {
+        const flat: Array<{ type: "header"; group: (typeof groups)[number] } | { type: "issue"; issue: Issue }> = [];
+        for (const group of groups) {
+            if (group.label) flat.push({ type: "header", group });
+            if (!collapsedGroups.has(group.key)) for (const issue of group.issues) flat.push({ type: "issue", issue });
+        }
+        return flat;
+    }, [collapsedGroups, groups]);
+    const rowIndexById = useMemo(() => {
+        const index = new Map<string, number>();
+        rows.forEach((row, position) => {
+            if (row.type === "issue") index.set(row.issue.id, position);
+        });
+        return index;
+    }, [rows]);
+    const virtualizer = useVirtualizer({
+        count: rows.length,
+        getScrollElement: () => listScroll,
+        estimateSize: () => 36,
+        overscan: 12,
+        getItemKey: (index) => {
+            const row = rows[index];
+            if (!row) return index;
+            return row.type === "issue" ? row.issue.id : `header:${row.group.key}`;
+        },
+    });
+    useEffect(() => {
+        if (view !== "list" || !listScroll) return;
+        const load = () => {
+            const nearEnd = listScroll.scrollHeight <= listScroll.clientHeight + 8 || listScroll.scrollTop + listScroll.clientHeight >= listScroll.scrollHeight - 480;
+            if (!nearEnd) return;
+            if (!filteringClosed && openWindow.hasNextPage && !openWindow.isFetchingNextPage) void openWindow.fetchNextPage();
+            else if (showingClosed && completedWindow.hasNextPage && !completedWindow.isFetchingNextPage) void completedWindow.fetchNextPage();
+        };
+        load();
+        listScroll.addEventListener("scroll", load, { passive: true });
+        return () => listScroll.removeEventListener("scroll", load);
+    }, [completedWindow.fetchNextPage, completedWindow.hasNextPage, completedWindow.isFetchingNextPage, filteringClosed, listScroll, openWindow.fetchNextPage, openWindow.hasNextPage, openWindow.isFetchingNextPage, rows.length, showingClosed, view]);
+
     useEffect(() => {
         if (view !== "list") return;
 
@@ -207,7 +271,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                         : (currentIndex + direction + orderedIssues.length) % orderedIssues.length;
                 const nextIssue = orderedIssues[nextIndex];
                 setSelectedIssueId(nextIssue.id);
-                document.querySelector<HTMLElement>(`[data-issue-id="${nextIssue.id}"]`)?.scrollIntoView({ block: "nearest" });
+                const rowIndex = rowIndexById.get(nextIssue.id);
+                if (rowIndex !== undefined) virtualizer.scrollToIndex(rowIndex, { align: "auto" });
+                requestAnimationFrame(() => requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-issue-id="${nextIssue.id}"]`)?.scrollIntoView({ block: "nearest" })));
             }
             if (event.key === "Enter" && currentIndex >= 0) {
                 event.preventDefault();
@@ -221,18 +287,26 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                     ? ROW_MENU_KEYS[event.key.toLowerCase()]
                     : undefined;
             if (property && !target?.closest("[role='menu'], [role='dialog'], [role='listbox']")) {
-                const trigger = document.querySelector<HTMLElement>(`[data-issue-id="${orderedIssues[currentIndex].id}"] [data-property="${property}"]`);
-                if (trigger) {
-                    event.preventDefault();
+                event.preventDefault();
+                const issueId = orderedIssues[currentIndex].id;
+                const openMenu = () => {
+                    const trigger = document.querySelector<HTMLElement>(`[data-issue-id="${issueId}"] [data-property="${property}"]`);
+                    if (!trigger) return false;
                     trigger.focus();
                     trigger.click();
+                    return true;
+                };
+                if (!openMenu()) {
+                    const rowIndex = rowIndexById.get(issueId);
+                    if (rowIndex !== undefined) virtualizer.scrollToIndex(rowIndex, { align: "auto" });
+                    requestAnimationFrame(() => requestAnimationFrame(openMenu));
                 }
             }
         }
 
         window.addEventListener("keydown", handleListKeyDown);
         return () => window.removeEventListener("keydown", handleListKeyDown);
-    }, [orderedIssues, reorder.activeIssue, selectedIssueId, view]);
+    }, [orderedIssues, reorder.activeIssue, rowIndexById, selectedIssueId, view, virtualizer]);
 
     function clearFilters() {
         setSearchParams(
@@ -439,7 +513,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 </div>
             )}
             {view === "list" && (
-                <main key="list" className="animate-enter min-h-0 w-full flex-1 overflow-y-auto">
+                <main key="list" ref={setListScroll} className="animate-enter min-h-0 w-full flex-1 overflow-y-auto">
                     <div className="flex min-h-full flex-col">
                         {isLoading && <IssueListSkeleton />}
                         {isError && <ErrorMessage message={t("issue.couldNotLoadIssues")} />}
@@ -447,86 +521,101 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                             <LayoutGroup>
                                 <IssueMotionRoster ids={visibleIds}>
                                     <DndContext {...reorder.dndProps}>
-                                        {groups.map((group) => {
-                                            const column = columnById.get(group.key);
-                                            return (
-                                                <section
-                                                    key={group.key}
-                                                    aria-label={group.label ?? t("issue.allIssues")}
-                                                    className={cx(reorder.overGroupKey === group.key && "bg-accent-subtle/40")}
-                                                >
-                                                    {group.label && (
-                                                        <h2 className="bg-layer-transparent-hover">
-                                                            <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
-                                                                <button
-                                                                    type="button"
-                                                                    aria-expanded={!collapsedGroups.has(group.key)}
-                                                                    onClick={() =>
-                                                                        setCollapsedGroups((current) => {
-                                                                            const next = new Set(current);
-                                                                            if (next.has(group.key)) next.delete(group.key);
-                                                                            else next.add(group.key);
-                                                                            return next;
-                                                                        })
-                                                                    }
-                                                                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                                                                >
-                                                                    <ChevronDownOutline
-                                                                        className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(group.key) ? "-rotate-90" : ""}`}
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                    {groupBy === "status" && (
-                                                                        <StateIcon name={column?.name ?? group.label} color={column?.color} />
-                                                                    )}
-                                                                    <span>
-                                                                        {group.label === "Unknown status"
-                                                                            ? t("issue.unknownStatus")
-                                                                            : translateStatusName(group.label, t)}
-                                                                    </span>
-                                                                    <span className="text-tertiary">{group.issues.length}</span>
-                                                                </button>
-                                                                {groupBy === "status" && (
-                                                                    <button
-                                                                        type="button"
-                                                                        aria-label={t("issue.newIssue")}
-                                                                        className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover hover:text-primary"
-                                                                        onClick={() => startCreating(group.key)}
-                                                                    >
-                                                                        <Plus className="size-3.5" />
-                                                                    </button>
-                                                                )}
+                                        <SortableContext items={visibleIds} strategy={verticalListSortingStrategy}>
+                                            <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                                                {virtualizer.getVirtualItems().map((virtual) => {
+                                                    const row = rows[virtual.index];
+                                                    if (!row) return null;
+                                                    if (row.type === "header") {
+                                                        const column = columnById.get(row.group.key);
+                                                        return (
+                                                            <div
+                                                                key={virtual.key}
+                                                                data-index={virtual.index}
+                                                                ref={virtualizer.measureElement}
+                                                                style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
+                                                            >
+                                                                <h2 className={cx("bg-layer-transparent-hover", reorder.overGroupKey === row.group.key && "bg-accent-subtle/40")}>
+                                                                    <div className="flex h-9 items-center gap-2 px-3 text-[13px] text-secondary">
+                                                                        <button
+                                                                            type="button"
+                                                                            aria-expanded={!collapsedGroups.has(row.group.key)}
+                                                                            onClick={() =>
+                                                                                setCollapsedGroups((current) => {
+                                                                                    const next = new Set(current);
+                                                                                    if (next.has(row.group.key)) next.delete(row.group.key);
+                                                                                    else next.add(row.group.key);
+                                                                                    return next;
+                                                                                })
+                                                                            }
+                                                                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                                                                        >
+                                                                            <ChevronDownOutline
+                                                                                className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(row.group.key) ? "-rotate-90" : ""}`}
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                            {groupBy === "status" && <StateIcon name={column?.name ?? row.group.label ?? ""} color={column?.color} />}
+                                                                            <span>
+                                                                                {row.group.label === "Unknown status" ? t("issue.unknownStatus") : translateStatusName(row.group.label ?? "", t)}
+                                                                            </span>
+                                                                            <span className="text-tertiary">{row.group.issues.length}</span>
+                                                                        </button>
+                                                                        {groupBy === "status" && (
+                                                                            <button
+                                                                                type="button"
+                                                                                aria-label={t("issue.newIssue")}
+                                                                                className="flex size-6 items-center justify-center rounded text-tertiary hover:bg-layer-1-hover hover:text-primary"
+                                                                                onClick={() => startCreating(row.group.key)}
+                                                                            >
+                                                                                <Plus className="size-3.5" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </h2>
                                                             </div>
-                                                        </h2>
-                                                    )}
-                                                    {!collapsedGroups.has(group.key) && (
-                                                        <SortableContext items={group.issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
-                                                            <AnimatePresence initial={false} mode="popLayout">
-                                                                {group.issues.map((issue) => (
-                                                                    <IssueListRow
-                                                                        key={issue.id}
-                                                                        issue={issue}
-                                                                        projectId={projectId!}
-                                                                        identifierWidth={identifierWidth}
-                                                                        sortable={manualOrder}
-                                                                        suspendLayout={reorder.suspendLayout}
-                                                                        animatePresence
-                                                                        column={columnById.get(issue.columnId)}
-                                                                        columns={columns ?? []}
-                                                                        member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
-                                                                        members={members ?? []}
-                                                                        categories={resolveLabels(issue.categoryIds, categoryById)}
-                                                                        labels={categories ?? []}
-                                                                        selected={selectedIssueId === issue.id}
-                                                                        onSelect={() => setSelectedIssueId(issue.id)}
-                                                                        onUpdate={(input) => updateIssue.mutate({ identifier: issue.identifier, input })}
-                                                                    />
-                                                                ))}
-                                                            </AnimatePresence>
-                                                        </SortableContext>
-                                                    )}
-                                                </section>
-                                            );
-                                        })}
+                                                        );
+                                                    }
+                                                    const issue = row.issue;
+                                                    return (
+                                                        <div
+                                                            key={virtual.key}
+                                                            data-index={virtual.index}
+                                                            ref={virtualizer.measureElement}
+                                                            style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)` }}
+                                                        >
+                                                            <IssueListRow
+                                                                issue={issue}
+                                                                projectId={projectId!}
+                                                                identifierWidth={identifierWidth}
+                                                                sortable={manualOrder}
+                                                                suspendLayout={reorder.suspendLayout}
+                                                                column={columnById.get(issue.columnId)}
+                                                                columns={columns ?? []}
+                                                                member={issue.assigneeId ? memberById.get(issue.assigneeId) : undefined}
+                                                                members={members ?? []}
+                                                                categories={resolveLabels(issue.categoryIds, categoryById)}
+                                                                labels={categories ?? []}
+                                                                selected={selectedIssueId === issue.id}
+                                                                onSelect={() => setSelectedIssueId(issue.id)}
+                                                                onUpdate={(input) => updateIssue.mutate({ identifier: issue.identifier, input })}
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </SortableContext>
+                                        {(openWindow.isFetchingNextPage || completedWindow.isFetchingNextPage) && (
+                                            <p className="py-3 text-center text-xs text-tertiary">{t("common.loading")}</p>
+                                        )}
+                                        {!showingClosed && !openWindow.hasNextPage && closedCount.total > 0 && scope === "all" && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowClosed(true)}
+                                                className="flex h-11 w-full items-center justify-center text-[13px] text-secondary hover:bg-layer-transparent-hover hover:text-primary"
+                                            >
+                                                {t("issue.showCompleted", { count: closedCount.total })}
+                                            </button>
+                                        )}
                                         {filteredIssues.length === 0 && <EmptyState framed={false} className="flex-1 py-16" {...listEmptyState()} />}
                                         {filteredIssues.length > 0 && hiddenByFilters > 0 && (
                                             <div className="animate-enter flex items-center justify-center gap-3 py-4 text-[13px]">

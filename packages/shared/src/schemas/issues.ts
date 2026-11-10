@@ -119,6 +119,12 @@ export const issueListQuerySchema = z.object({
         .pipe(z.array(z.string().uuid()).max(MAX_ISSUE_LABELS).optional()),
     groupBy: z.enum(["status", "assignee"]).optional(),
     orderBy: z.enum(issueOrderValues).default("position"),
+    /** Page size. Omit it to return every matching issue. `0` returns the count only. */
+    limit: z.coerce.number().int().min(0).max(200).optional(),
+    /** Keyset cursor from the previous page, for the active `orderBy`. */
+    cursor: z.string().min(1).max(512).optional(),
+    /** `exclude` leaves closed and cancelled issues out; `only` returns just those. */
+    closed: z.enum(["include", "exclude", "only"]).optional(),
 });
 export type IssueListQuery = z.infer<typeof issueListQuerySchema>;
 

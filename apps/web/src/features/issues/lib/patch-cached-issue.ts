@@ -1,8 +1,36 @@
 import { positionsAtTop } from "@rinia/shared";
 
-/** A project issue list or My issues. The issue detail is `["issues", identifier]` and is not a list. */
+/** A project issue list, a paged window of one, or My issues. The issue detail is `["issues", identifier]` and is not a list. */
 export function isIssueListKey(key: readonly unknown[]): boolean {
     return (key[0] === "projects" && key[2] === "issues") || key[0] === "my-issues";
+}
+
+interface PagedIssues<T> {
+    pages: Array<{ issues: T[] }>;
+}
+
+function isPagedIssues<T>(value: object): value is PagedIssues<T> {
+    return "pages" in value && Array.isArray(value.pages);
+}
+
+/** Issues in a list cache, whether it is one array or a cursor window of pages. */
+export function flattenCachedIssues<T>(current: unknown): T[] {
+    if (Array.isArray(current)) return current as T[];
+    if (current && typeof current === "object" && isPagedIssues<T>(current)) return current.pages.flatMap((page) => page.issues ?? []);
+    return [];
+}
+
+/**
+ * Applies `map` to every issue in the cache entry. A window keeps its cursors: each page is mapped on its own,
+ * so an edit lands on a row that is not mounted without reshuffling the pages.
+ */
+export function mapCachedIssues<T>(current: unknown, map: (issues: T[]) => T[]): unknown {
+    if (current == null) return current;
+    if (Array.isArray(current)) return map(current as T[]);
+    if (typeof current === "object" && isPagedIssues<T>(current)) {
+        return { ...current, pages: current.pages.map((page) => ({ ...page, issues: map(page.issues ?? []) })) };
+    }
+    return current;
 }
 
 /** The issue itself, not its comments, activity, or relations. */

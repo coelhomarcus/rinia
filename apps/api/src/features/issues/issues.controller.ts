@@ -17,7 +17,7 @@ import {
     listIssueActivity,
     listIssueComments,
     listIssueRelations,
-    listIssues,
+    listIssuePage,
     removeCommentReaction,
     restoreIssue,
     restoreIssueComment,
@@ -30,7 +30,7 @@ import {
 
 export const list = asyncHandler<{ projectId: string }>(async (req, res) => {
     const query = issueListQuerySchema.parse(req.query);
-    res.json({ issues: await listIssues(req.params.projectId, query) });
+    res.json(await listIssuePage(req.params.projectId, query));
 });
 
 export const create = asyncHandler<{ projectId: string }>(async (req, res) => {

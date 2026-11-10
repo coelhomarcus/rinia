@@ -1,13 +1,14 @@
 import { memo, useEffect, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Menu } from "@base-ui/react/menu";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AddOutline } from "@makeplane/propel/icons";
 import type { UpdateIssueInput } from "@rinia/shared";
 import { EyeOff, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
-import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
+import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Input } from "@/components/base/input/input";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -25,7 +26,7 @@ import { StateIcon } from "./issue-property-icons";
 const columnMenuItem =
     "flex h-8 cursor-pointer items-center gap-2.5 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary";
 
-interface ColumnProps {
+export interface ColumnProps {
     column: BoardColumn;
     /** Every status, for the status menu on each card. */
     statuses: BoardColumn[];
@@ -45,6 +46,19 @@ interface ColumnProps {
     lit?: boolean;
     /** True while a card is being dragged, so the layout glide does not fight dnd-kit. */
     suspendLayout: boolean;
+    /** Another page of this column is available. */
+    hasMore?: boolean;
+    loadingMore?: boolean;
+    onLoadMore?: () => void;
+    pending?: boolean;
+    failed?: boolean;
+    /** How many issues the column has, including pages that are not loaded yet. */
+    total?: number;
+    /** Closed issues kept off the board until the person asks for them. */
+    hiddenCompleted?: number | null;
+    onShowCompleted?: () => void;
+    /** The card keyboard navigation wants on screen, including one the window has not mounted. */
+    focusIssueId?: string | null;
 }
 
 /** Memoized: while a card is dragged, only the columns it leaves and enters get new props. */
@@ -64,9 +78,54 @@ export const Column = memo(function Column({
     onManageStates,
     lit = false,
     suspendLayout,
+    hasMore = false,
+    loadingMore = false,
+    onLoadMore,
+    pending = false,
+    failed = false,
+    total,
+    hiddenCompleted = null,
+    onShowCompleted,
+    focusIssueId,
 }: ColumnProps) {
     const { t } = useTranslation();
-    const { setNodeRef: setDropRef, isOver } = useDroppable({ id: column.id });
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    const { setNodeRef, isOver } = useDroppable({ id: column.id });
+    const setDropRef = (node: HTMLDivElement | null) => {
+        scrollRef.current = node;
+        setNodeRef(node);
+    };
+    const loadMoreRef = useRef(onLoadMore);
+    loadMoreRef.current = hasMore && !loadingMore ? onLoadMore : undefined;
+    const virtualizer = useVirtualizer({
+        count: hiddenCompleted == null ? issues.length : 0,
+        getScrollElement: () => scrollRef.current,
+        estimateSize: () => 104,
+        overscan: 6,
+        getItemKey: (index) => issues[index]?.id ?? index,
+    });
+    useEffect(() => {
+        const element = scrollRef.current;
+        if (!element || hiddenCompleted != null) return;
+        const load = () => {
+            if (element.scrollHeight <= element.clientHeight + 8 || element.scrollTop + element.clientHeight >= element.scrollHeight - 240) loadMoreRef.current?.();
+        };
+        load();
+        element.addEventListener("scroll", load, { passive: true });
+        return () => element.removeEventListener("scroll", load);
+    }, [hasMore, hiddenCompleted, issues.length, loadingMore]);
+    const issuesRef = useRef(issues);
+    issuesRef.current = issues;
+    useEffect(() => {
+        if (!focusIssueId) return;
+        const index = issuesRef.current.findIndex((issue) => issue.id === focusIssueId);
+        if (index < 0) return;
+        virtualizer.scrollToIndex(index, { align: "auto" });
+        const frame = requestAnimationFrame(() => requestAnimationFrame(() => scrollRef.current?.querySelector<HTMLElement>(`[data-issue-id="${focusIssueId}"] [data-issue-context]`)?.focus()));
+        return () => cancelAnimationFrame(frame);
+        // The virtualizer instance is stable; the list is read from the ref so a refresh does not steal focus.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusIssueId]);
 
     const updateColumn = useUpdateColumn(projectId);
     const deleteColumn = useDeleteColumn(projectId);
@@ -148,7 +207,7 @@ export const Column = memo(function Column({
                     </button>
                 )}
 
-                <span className="text-xs text-tertiary">{issues.length}</span>
+                <span className="text-xs text-tertiary">{Math.max(issues.length, total ?? 0)}</span>
                 <div className="ml-auto flex shrink-0 items-center">
                     <Menu.Root>
                         <Menu.Trigger
@@ -207,27 +266,60 @@ export const Column = memo(function Column({
             {error && <p className="px-3 pb-2 text-xs text-danger-primary">{error}</p>}
 
             <div ref={setDropRef} className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
-                <SortableContext items={issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
-                    <AnimatePresence initial={false} mode="popLayout">
-                        {issues.map((issue) => (
-                            <IssueCard
-                                key={issue.id}
-                                issue={issue}
-                                status={column}
-                                statuses={statuses}
-                                projectId={projectId}
-                                categories={resolveLabels(issue.categoryIds, categoriesById)}
-                                assignee={issue.assigneeId ? membersById.get(issue.assigneeId) : undefined}
-                                people={people}
-                                labels={labels}
-                                closed={columnBucket(column.name) === "closed"}
-                                suspendLayout={suspendLayout}
-                                onUpdateIssue={onUpdateIssue}
-                                onClick={() => onOpenIssue(issue.identifier)}
-                            />
-                        ))}
-                    </AnimatePresence>
-                </SortableContext>
+                {failed && <p className="px-1 text-xs text-danger-primary">{t("issue.couldNotLoadIssues")}</p>}
+                {pending && issues.length === 0 && hiddenCompleted == null && (
+                    <div className="space-y-2" aria-label={t("common.loading")} role="status">
+                        <Skeleton className="h-24 w-full rounded-md" />
+                        <Skeleton className="h-20 w-full rounded-md" />
+                    </div>
+                )}
+                {hiddenCompleted != null && (
+                    <button
+                        type="button"
+                        onClick={onShowCompleted}
+                        className="flex h-11 items-center justify-center rounded-md px-2 text-[13px] text-secondary hover:bg-layer-1-hover hover:text-primary"
+                    >
+                        {t("issue.showCompleted", { count: hiddenCompleted })}
+                    </button>
+                )}
+                {hiddenCompleted == null && (
+                    <SortableContext items={issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
+                        <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                            {virtualizer.getVirtualItems().map((virtual) => {
+                                const issue = issues[virtual.index];
+                                if (!issue) return null;
+                                return (
+                                    <div
+                                        key={virtual.key}
+                                        data-index={virtual.index}
+                                        ref={virtualizer.measureElement}
+                                        style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${virtual.start}px)`, paddingBottom: 8 }}
+                                    >
+                                        <IssueCard
+                                            issue={issue}
+                                            status={column}
+                                            statuses={statuses}
+                                            projectId={projectId}
+                                            categories={resolveLabels(issue.categoryIds, categoriesById)}
+                                            assignee={issue.assigneeId ? membersById.get(issue.assigneeId) : undefined}
+                                            people={people}
+                                            labels={labels}
+                                            closed={columnBucket(column.name) === "closed"}
+                                            suspendLayout={suspendLayout}
+                                            onUpdateIssue={onUpdateIssue}
+                                            onClick={() => onOpenIssue(issue.identifier)}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </SortableContext>
+                )}
+                {hasMore && hiddenCompleted == null && (
+                    <button type="button" onClick={onLoadMore} className="flex h-7 shrink-0 items-center justify-center text-xs text-tertiary hover:text-secondary">
+                        {loadingMore ? t("common.loading") : t("issue.loadMoreIssues")}
+                    </button>
+                )}
                 {/* Only the hovered (or keyboard-focused) column offers it, so the board stays quiet. */}
                 <button
                     type="button"
