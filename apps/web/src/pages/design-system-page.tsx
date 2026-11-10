@@ -21,6 +21,7 @@ export default function DesignSystemPage() {
                         <p className="text-xs font-medium text-tertiary">{t("designSystem.internal")}</p>
                         <h1 className="mt-1 text-xl font-medium">{t("designSystem.title")}</h1>
                         <p className="mt-1 text-sm text-tertiary">{t("designSystem.reference")}</p>
+                        <p className="mt-2 max-w-xl text-sm text-tertiary">{t("designSystem.scope")}</p>
                     </div>
                     <Link to="/" aria-label={t("designSystem.closeCatalog")}>
                         <ButtonUtility icon={AppIcons.Close} tooltip={t("designSystem.closeCatalog")} />

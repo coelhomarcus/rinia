@@ -20,6 +20,10 @@
     "db:migrate": "bun run --cwd apps/api db:migrate",
     "db:check": "bun run --cwd apps/api db:check",
     "db:seed": "bun run --cwd apps/api db:seed",
-    "db:reset": "bun run --cwd apps/api db:reset"
+    "db:reset": "bun run --cwd apps/api db:reset",
+    "knip": "knip --include files,dependencies"
+  },
+  "devDependencies": {
+    "knip": "^6.44.2"
   }
 }

@@ -15,7 +15,7 @@ All new UI must keep the existing dark semantic color tokens and visible focus r
 
 ## Composition patterns
 
-- Use `Field`, `FieldLabel`, `FieldDescription`, and `FieldError` for grouped form controls. Keep the field stack at `gap-2` and field groups at `gap-4`.
+- Group a label and its control with `gap-2`, and stack fields with `gap-4`. Input, Select, Checkbox, and Textarea render their own label, description, and error.
 - Use `ToggleGroupRoot` and `ToggleGroupItem` for mutually related formatting or filter controls instead of styling independent buttons as a group.
 - Keep overlays and menus on the Base UI primitives so focus management, Escape, portals, and keyboard navigation remain consistent.
 - Use `Sheet` for controlled side panels such as Issue Peek. It owns the backdrop, viewport, dialog title, focus handling, and mobile full-screen behavior.
@@ -26,3 +26,9 @@ All new UI must keep the existing dark semantic color tokens and visible focus r
 `RichTextEditor` is a shared Tiptap composition. Editable instances use a sticky top toolbar, a selection BubbleMenu, and `/` commands. Documents, descriptions, and comments opt into the `document`, `description`, or `comment` variant. Read-only instances do not mount editing controls and must keep task list controls inert.
 
 Project icon selection is a searchable, keyboard-navigable palette. Persist semantic project icon keys, not Lucide component names, so the visual catalog can evolve without invalidating stored projects.
+
+## What belongs here
+
+The building blocks are the components the app imports and the ones shown on `/__design-system`: buttons, inputs, select, checkbox, badges, tooltips, sheets, and the layout around them.
+
+Payment icons, social icons, marketing navigation, carousels, device mockups, rating badges, and the other UntitledUI leftovers are not part of this system.
