@@ -59,7 +59,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { pathname } = useLocation();
-    const { preference, setPreference } = useTheme();
+    const { resolved: resolvedTheme, setPreference } = useTheme();
     const { copy } = useClipboard();
     const showToast = useToast();
     const [query, setQuery] = useState("");
@@ -109,7 +109,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
                 run: close(onCreateIssue),
             });
         }
-        const toLight = preference === "dark";
+        const toLight = resolvedTheme === "dark";
         list.push(
             { id: "theme", group: "actions", title: toLight ? t("commands.themeLight") : t("commands.themeDark"), keywords: "theme tema", icon: toLight ? <Sun className={icon} /> : <Moon className={icon} />, run: close(() => setPreference(toLight ? "light" : "dark")) },
             { id: "shortcuts", group: "actions", title: t("commands.showShortcuts"), keywords: "keyboard teclado help ajuda", icon: <Keyboard className={icon} />, shortcut: shortcutKeys("help"), run: close(onShowShortcuts) },
@@ -144,7 +144,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
             }
         }
         return list;
-    }, [activeProject, copy, currentIssue, documents, issueIdentifier, issues, navigate, onClose, onCreateIssue, onShowShortcuts, preference, projects, setPreference, showToast, t]);
+    }, [activeProject, copy, currentIssue, documents, issueIdentifier, issues, navigate, onClose, onCreateIssue, onShowShortcuts, projects, resolvedTheme, setPreference, showToast, t]);
 
     const groups = useMemo(() => {
         const limits = query.trim() ? QUERY_LIMITS : IDLE_LIMITS;
