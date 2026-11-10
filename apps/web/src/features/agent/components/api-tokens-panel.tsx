@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DeleteOutline, KeyOutline } from "@makeplane/propel/icons";
+import { KeyRound, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
@@ -91,7 +91,7 @@ function ApiTokenRow({ token, isRevoking, onRevoke }: { token: ApiToken; isRevok
         : t("agent.allProjects");
     return (
         <SettingsItemRow
-            leading={<SettingsRowIcon icon={KeyOutline} />}
+            leading={<SettingsRowIcon icon={KeyRound} />}
             title={token.name}
             description={
                 <>
@@ -119,7 +119,7 @@ function ApiTokenRow({ token, isRevoking, onRevoke }: { token: ApiToken; isRevok
             }
         >
             <ConfirmDialog
-                trigger={<ButtonUtility icon={DeleteOutline} size="sm" color="tertiary" tooltip={t("agent.revokeTokenNamed", { name: token.name })} isDisabled={isRevoking} />}
+                trigger={<ButtonUtility icon={Trash2} size="sm" color="tertiary" tooltip={t("agent.revokeTokenNamed", { name: token.name })} isDisabled={isRevoking} />}
                 title={t("agent.revokeToken")}
                 description={t("agent.revokeTokenDescription", { name: token.name })}
                 confirmLabel={t("agent.revokeToken")}

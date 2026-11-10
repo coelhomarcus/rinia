@@ -4,7 +4,7 @@ import { ImagePlus, Smile, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { ImageCrop } from "@/components/appearance/image-crop";
-import { uploadProjectFile } from "@/features/editor/file-upload";
+import { uploadProjectFile } from "@/features/editor/file-api";
 import { ProjectIconPicker } from "@/features/projects/components/project-icon-picker";
 import { DEFAULT_PROJECT_ICON, ProjectIcon } from "@/features/projects/components/project-icon";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";

@@ -2,9 +2,8 @@ import { type ReactNode, useRef, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
-import { AssigneeOutline, LabelsOutline, PriorityOutline } from "@makeplane/propel/icons";
 import type { IssuePriority, TiptapDocument } from "@rinia/shared";
-import { AlertCircle, CalendarDays, ChevronRight, Maximize2, Minimize2, X } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronRight, Maximize2, Minimize2, SignalHigh, Tag, UserRound, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
@@ -205,7 +204,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                                 trigger={
                                     priority === "none" ? (
                                         <>
-                                            <PriorityOutline className="size-3.5" />
+                                            <SignalHigh className="size-3.5" />
                                             {t("issue.priority")}
                                         </>
                                     ) : (
@@ -234,7 +233,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                                         </>
                                     ) : (
                                         <>
-                                            <AssigneeOutline className="size-3.5" />
+                                            <UserRound className="size-3.5" />
                                             {t("issue.assignee")}
                                         </>
                                     )
@@ -261,7 +260,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                             >
                                 {chosenLabels.length === 0 ? (
                                     <>
-                                        <LabelsOutline className="size-3.5" />
+                                        <Tag className="size-3.5" />
                                         {t("issue.labels")}
                                     </>
                                 ) : (

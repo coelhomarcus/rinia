@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AddOutline as Plus, SearchOutline as Search, UserMinusOutline as UserRoundMinus } from "@makeplane/propel/icons";
+import { Plus, Search, UserRoundMinus } from "lucide-react";
 import { type AddProjectMemberInput, addProjectMemberSchema } from "@rinia/shared";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";

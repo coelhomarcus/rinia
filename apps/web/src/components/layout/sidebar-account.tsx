@@ -8,7 +8,7 @@ import { cx } from "@/utils/cx";
 import { AUTH_QUERY_KEY, logout } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useInstallPrompt } from "@/features/pwa/install-prompt";
-import { clearDocumentDrafts } from "@/features/documents/sessions";
+import { clearDocumentDrafts } from "@/features/documents/session-registry";
 import { issueDescriptionDrafts } from "@/features/issues/lib/issue-description-drafts";
 import { useTranslation } from "react-i18next";
 

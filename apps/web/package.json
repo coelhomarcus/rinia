@@ -11,7 +11,8 @@
         "lint": "eslint .",
         "test:unit": "bun test tests/",
         "check:ui-scale": "bun scripts/check-ui-scale.mjs",
-        "check:design-system": "bun scripts/check-design-system.mjs"
+        "check:design-system": "bun scripts/check-design-system.mjs",
+        "check:bundle-size": "bun scripts/check-bundle-size.mjs"
     },
     "dependencies": {
         "@base-ui/react": "^1.8.0",
@@ -22,7 +23,6 @@
         "@fontsource-variable/inter": "5.2.8",
         "@fontsource/ibm-plex-mono": "5.2.7",
         "@hookform/resolvers": "^5.9.1",
-        "@makeplane/propel": "0.3.0",
         "@rinia/shared": "workspace:*",
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.2.2",

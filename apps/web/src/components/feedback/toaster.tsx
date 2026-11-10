@@ -1,6 +1,6 @@
 import { type ReactNode, type PointerEvent as ReactPointerEvent, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Copy, X, XCircle } from "lucide-react";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useTranslation } from "react-i18next";
 import { UNMOUNT_AFTER } from "@/components/base/motion";
 import { useEntered } from "@/components/base/presence";
@@ -177,7 +177,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 function ToastCard({ toast, depth, expanded, held, onDismiss }: { toast: ToastEntry; depth: number; expanded: boolean; held: boolean; onDismiss: () => void }) {
     const { t } = useTranslation();
-    const reducedMotion = useReducedMotion() === true;
+    const reducedMotion = useReducedMotion();
     const entered = useEntered(true);
     const visible = entered && !toast.leaving;
     const Icon = toast.tone === "error" ? XCircle : toast.tone === "copy" ? Copy : CheckCircle2;

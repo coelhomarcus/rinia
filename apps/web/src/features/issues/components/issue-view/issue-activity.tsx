@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useColumns } from "@/features/board/hooks/use-board";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useCategories } from "@/features/categories/hooks/use-categories";
-import { issueFilesKey } from "@/features/editor/file-upload";
+import { issueFilesKey } from "@/features/editor/file-api";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import { useIssueActivity, useIssueComments, useIssues } from "../../hooks/use-issues";
 import { IssueTimeline } from "./issue-timeline";

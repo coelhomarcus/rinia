@@ -2,7 +2,7 @@ import type { UpdateProjectInput, UpdateProjectPageInput } from "@rinia/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { clearDocumentDrafts } from "@/features/documents/sessions";
+import { clearDocumentDrafts } from "@/features/documents/session-registry";
 import { type Project, type ProjectCardSummary, createProject, deleteProject, listProjects, updateProject, updateProjectPage } from "../api";
 import { projectQueryKey } from "./use-project";
 

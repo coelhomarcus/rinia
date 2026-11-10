@@ -1,19 +1,9 @@
 import { type FC, type ReactElement, type ReactNode, useMemo } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { Popover } from "@base-ui/react/popover";
-import {
-    AssigneeOutline,
-    DisplayOutline,
-    FilterOutline,
-    HistoryOutline,
-    LabelsOutline,
-    ListOutline,
-    PriorityOutline,
-    StateOutline,
-} from "@makeplane/propel/icons";
 import type { IssueView } from "@rinia/shared";
 import type { TFunction } from "i18next";
-import { CalendarClock, CalendarDays, CalendarX2, Check, ChevronRight, Hash, Minus, Plus, Search, X } from "lucide-react";
+import { CalendarClock, CalendarDays, CalendarX2, Check, ChevronRight, CircleDashed, Hash, History, List, ListFilter, Minus, Plus, Search, SignalHigh, SlidersHorizontal, Tag, UserRound, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { AutoWidth } from "@/components/base/auto-width";
@@ -80,7 +70,7 @@ export function useIssueFilters(projectId = "", customFilters?: IssueFilter[]) {
         {
             key: "status",
             label: t("issue.status"),
-            icon: StateOutline,
+            icon: CircleDashed,
             items: (columns ?? []).map((item) => ({
                 id: item.id,
                 name: translateStatusName(item.name, t),
@@ -90,13 +80,13 @@ export function useIssueFilters(projectId = "", customFilters?: IssueFilter[]) {
         {
             key: "priority",
             label: t("issue.priority"),
-            icon: PriorityOutline,
+            icon: SignalHigh,
             items: PRIORITY_OPTIONS.map((id) => ({ id, name: t(priorityLabelKey(id)), icon: <PriorityIcon priority={id} /> })),
         },
         {
             key: "assignee",
             label: t("issue.assignee"),
-            icon: AssigneeOutline,
+            icon: UserRound,
             items: (members ?? []).map((member) => ({
                 id: member.id,
                 name: member.name,
@@ -107,12 +97,12 @@ export function useIssueFilters(projectId = "", customFilters?: IssueFilter[]) {
         {
             key: "label",
             label: t("issue.label"),
-            icon: LabelsOutline,
+            icon: Tag,
             multiple: true,
             items: (categories ?? []).map((item) => ({
                 id: item.id,
                 name: item.name,
-                icon: <LabelsOutline className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} />,
+                icon: <Tag className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} />,
             })),
         },
         dueFilter(t),
@@ -181,7 +171,7 @@ export function IssueToolbar({
                             size="xs"
                             color="secondary"
                             className={roundIconButton}
-                            iconLeading={FilterOutline}
+                            iconLeading={ListFilter}
                         />
                     </Tooltip>
                 }
@@ -196,7 +186,7 @@ export function IssueToolbar({
                                     size="xs"
                                     color="secondary"
                                     className={roundIconButton}
-                                    iconLeading={DisplayOutline}
+                                    iconLeading={SlidersHorizontal}
                                 />
                             }
                         />
@@ -241,9 +231,9 @@ export function IssueToolbar({
                                     onSelectionChange={(value) => set("order", value === defaultOrder ? "" : String(value ?? ""))}
                                     items={
                                         orders ?? [
-                                            { id: "position", label: t("issue.manualOrder"), icon: ListOutline },
-                                            { id: "priority", label: t("issue.priority"), icon: PriorityOutline },
-                                            { id: "updated", label: t("issue.recentlyUpdated"), icon: HistoryOutline },
+                                            { id: "position", label: t("issue.manualOrder"), icon: List },
+                                            { id: "priority", label: t("issue.priority"), icon: SignalHigh },
+                                            { id: "updated", label: t("issue.recentlyUpdated"), icon: History },
                                             { id: "number", label: t("issue.issueNumber"), icon: Hash },
                                             { id: "due", label: t("issue.dueDate"), icon: CalendarDays },
                                         ]
@@ -266,8 +256,8 @@ export function IssueToolbar({
                                         items={
                                             groups ?? [
                                                 { id: "none", label: t("issue.noGrouping"), icon: Minus },
-                                                { id: "status", label: t("issue.status"), icon: StateOutline },
-                                                { id: "assignee", label: t("issue.assignee"), icon: AssigneeOutline },
+                                                { id: "status", label: t("issue.status"), icon: CircleDashed },
+                                                { id: "assignee", label: t("issue.assignee"), icon: UserRound },
                                             ]
                                         }
                                     >
@@ -309,7 +299,7 @@ function FilterMenu({ filters, query, set, trigger, align = "start" }: FilterCon
                     <Menu.Popup className={cx("w-56", overlayChrome.menu)}>
                         <div className="px-2 py-1 text-[11px] text-placeholder">{t("issue.addFilter")}</div>
                         {filters.map((filter) => {
-                            const Icon = filter.icon ?? FilterOutline;
+                            const Icon = filter.icon ?? ListFilter;
                             const count = readLabels(query.get(filter.key)).length;
                             return (
                                 <Menu.SubmenuRoot key={filter.key}>
@@ -395,7 +385,7 @@ export function IssueFilterRow({
                 return {
                     key: filter.key,
                     label: filter.label,
-                    icon: filter.icon ?? FilterOutline,
+                    icon: filter.icon ?? ListFilter,
                     values: chosen.map((item) => item.name).join(", ") || t("issue.selected"),
                     multiple: ids.length > 1,
                     valueIcon: chosen[0]?.icon,

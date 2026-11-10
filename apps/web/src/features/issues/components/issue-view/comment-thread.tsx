@@ -8,7 +8,7 @@ import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { IssueAvatar, IssueAvatarGroup, sourceLabel } from "@/features/board/components/issue-property-icons";
 import { RichTextView } from "@/features/editor/rich-text-view";
-import type { FileUploadTarget } from "@/features/editor/file-upload";
+import type { FileUploadTarget } from "@/features/editor/file-api";
 import { cx } from "@/utils/cx";
 import type { ReactionGroup } from "../../api";
 import { errorMessage } from "../../lib/error-message";

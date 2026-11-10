@@ -1,7 +1,7 @@
 import { type CSSProperties, type ReactNode, useCallback, useRef, useState } from "react";
 import { type DragMoveEvent, type DropAnimation, defaultDropAnimationSideEffects } from "@dnd-kit/core";
 import { CSS, type Transform } from "@dnd-kit/utilities";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cx } from "@/utils/cx";
 import { touchLiftClass } from "../lib/drag-sensors";
 

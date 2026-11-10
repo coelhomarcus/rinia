@@ -3,7 +3,7 @@ import { ArrowUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
-import type { FileUploadTarget } from "@/features/editor/file-upload";
+import type { FileUploadTarget } from "@/features/editor/file-api";
 import { cx } from "@/utils/cx";
 import { hasMeaningfulTiptapContent } from "../../lib/tiptap-content";
 import { RichTextEditor, type MentionItem } from "../rich-text-editor";

@@ -1,4 +1,4 @@
-import { AddOutline, ArrowNarrowRightOutline, SearchOutline, SettingsOutline } from "@makeplane/propel/icons";
+import { ArrowRight, Plus, Search, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Badge } from "@/components/base/badges/badges";
@@ -31,20 +31,20 @@ export default function DesignSystemPage() {
                     <h2 className="text-sm font-medium">{t("designSystem.actions")}</h2>
                     <div className="flex flex-wrap items-center gap-3">
                         {(["primary", "secondary", "tertiary"] as const).map((color) => (
-                            <Button key={color} color={color} iconLeading={AddOutline}>
+                            <Button key={color} color={color} iconLeading={Plus}>
                                 {variantLabels[color]}
                             </Button>
                         ))}
                         <Button isLoading>{t("designSystem.loading")}</Button>
                         <Button isDisabled>{t("designSystem.disabled")}</Button>
-                        <ButtonUtility icon={SettingsOutline} tooltip={t("nav.settings")} />
-                        <ButtonUtility icon={SearchOutline} tooltip={t("common.search")} />
+                        <ButtonUtility icon={Settings} tooltip={t("nav.settings")} />
+                        <ButtonUtility icon={Search} tooltip={t("common.search")} />
                     </div>
                 </section>
                 <section className="space-y-3">
                     <h2 className="text-sm font-medium">{t("designSystem.properties")}</h2>
                     <div className="grid max-w-xl gap-4 sm:grid-cols-2">
-                        <Input label={t("designSystem.searchIssues")} placeholder={t("common.search")} icon={SearchOutline} />
+                        <Input label={t("designSystem.searchIssues")} placeholder={t("common.search")} icon={Search} />
                         <Input label={t("designSystem.invalidField")} placeholder={t("designSystem.enterValue")} isInvalid />
                         <Select
                             label={t("designSystem.status")}
@@ -85,7 +85,7 @@ export default function DesignSystemPage() {
                                 </span>
                                 <span className="text-xs text-tertiary">2</span>
                                 <span className="ml-auto">
-                                    <ButtonUtility icon={ArrowNarrowRightOutline} tooltip={t("designSystem.columnActions")} size="xs" />
+                                    <ButtonUtility icon={ArrowRight} tooltip={t("designSystem.columnActions")} size="xs" />
                                 </span>
                             </header>
                             <article className="rounded-md border border-subtle bg-surface-1 px-3 py-3">

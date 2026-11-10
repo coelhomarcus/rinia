@@ -4,7 +4,7 @@ import { File, FileArchive, FileText, Paperclip, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
-import { deleteProjectFile, issueFilesKey, listIssueFiles, uploadProjectFile, type StoredFile } from "@/features/editor/file-upload";
+import { deleteProjectFile, issueFilesKey, listIssueFiles, uploadProjectFile, type StoredFile } from "@/features/editor/file-api";
 
 function formatBytes(bytes: number) {
     const units = ["B", "KB", "MB"];

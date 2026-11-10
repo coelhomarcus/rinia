@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/base/buttons/button";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { issueFilesKey } from "@/features/editor/file-upload";
+import { issueFilesKey } from "@/features/editor/file-api";
 import { useProjectMembers } from "@/features/projects/hooks/use-project-members";
 import type { IssueDetail } from "../../api";
 import { DescriptionHistorySheet } from "../description-history";

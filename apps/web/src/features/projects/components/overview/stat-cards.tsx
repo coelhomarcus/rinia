@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProjectStats } from "@rinia/shared";
-import { useReducedMotion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useTranslation } from "react-i18next";
 import { cx } from "@/utils/cx";
 import { countToward } from "./count-up";

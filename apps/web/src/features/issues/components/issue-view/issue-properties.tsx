@@ -1,6 +1,5 @@
 import { memo, type ReactNode } from "react";
-import { EstimateOutline, LabelsOutline, ParentOutline } from "@makeplane/propel/icons";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ListTree, Tag, Triangle } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { OverflowTooltip, Tooltip } from "@/components/base/tooltip/tooltip";
@@ -84,7 +83,7 @@ export const IssueProperties = memo(function IssueProperties({
     const menu = (id: PropertyMenuId) => ({ open: openMenu === id, onOpenChange: (open: boolean) => onOpenMenuChange(open ? id : null), disabled: isPending });
     const avatar = (person: { name: string; avatarUrl: string | null }) => <IssueAvatar name={person.name} avatarUrl={person.avatarUrl} className="size-4 text-[9px]" />;
     const created = new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(issue.createdAt));
-    const parentIcon = <ParentOutline className="size-4 text-tertiary" />;
+    const parentIcon = <ListTree className="size-4 text-tertiary" />;
     // A long searchable list: only Backspace clears, so digits stay free for searching "RIN-12".
     const parentOptions: PropertyOption<string>[] = [
         { key: "none", value: "", label: t("issue.noParent"), icon: parentIcon, clears: true },
@@ -141,7 +140,7 @@ export const IssueProperties = memo(function IssueProperties({
                     mode="value"
                     onSelect={(estimate) => save({ estimate })}
                 >
-                    <PropertyIcon><EstimateOutline className="size-3.5 text-tertiary" /></PropertyIcon>
+                    <PropertyIcon><Triangle className="size-3.5 text-tertiary" /></PropertyIcon>
                     <span className={cx("truncate", issue.estimate == null && "text-tertiary")}>{issue.estimate != null ? t("projects.points", { count: issue.estimate }) : t("issue.estimateAction")}</span>
                 </PropertyMenu>
                 <DueDatePopover
@@ -167,7 +166,7 @@ export const IssueProperties = memo(function IssueProperties({
                     mode="none"
                     onSelect={(value) => save({ parentIssueId: value || null })}
                 >
-                    <PropertyIcon><ParentOutline className="size-3.5 text-tertiary" /></PropertyIcon>
+                    <PropertyIcon><ListTree className="size-3.5 text-tertiary" /></PropertyIcon>
                     <span className={cx("truncate", !issue.parent && "text-tertiary")}>{parent ? <><span className="text-tertiary">{parent.identifier}</span> {parent.title}</> : issue.parent ? issue.parent.title : t("issue.addParentIssue")}</span>
                 </PropertyMenu>
             </PropertyGroup>
@@ -186,7 +185,7 @@ export const IssueProperties = memo(function IssueProperties({
                         issueLabels.map((label) => <LabelChip key={label.id} label={label} className="h-6 max-w-full px-2 text-[12px]" />)
                     ) : (
                         <>
-                            <PropertyIcon><LabelsOutline className="size-3.5 text-tertiary" /></PropertyIcon>
+                            <PropertyIcon><Tag className="size-3.5 text-tertiary" /></PropertyIcon>
                             <span className="truncate text-tertiary">{t("issue.addLabel")}</span>
                         </>
                     )}

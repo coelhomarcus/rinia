@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { AddOutline, ChevronDownOutline } from "@makeplane/propel/icons";
 import type { IssueListQuery, IssueOrder, SavedViewFilters } from "@rinia/shared";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Layers, Plus, Users, X } from "lucide-react";
+import { ChevronDown, Layers, Plus, Users, X } from "lucide-react";
 import { LayoutGroup } from "motion/react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
@@ -22,9 +21,9 @@ import { listStep } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
 import { BulkActionBar } from "@/features/issues/components/bulk-action-bar";
 import { DragLift } from "@/features/issues/components/drag-feedback";
-import { IssueListRow } from "@/features/issues/components/issue-list-row";
+import { SortableIssueListRow } from "@/features/issues/components/sortable-issue-list-row";
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
-import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
+import { IssueQuickCreateModal } from "@/features/issues/components/lazy-issue-quick-create-modal";
 import { IssueFilterRow, IssueToolbar, pillTab } from "@/features/issues/components/issue-toolbar";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useIssueView } from "@/features/issues/hooks/use-issue-view";
@@ -46,6 +45,7 @@ import { urls } from "@/lib/urls";
 import { issueNavigation } from "@/lib/view-transition";
 import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
+import { preloadWhenIdle } from "@/lib/preload";
 
 type OrderBy = IssueOrder;
 type GroupBy = ListGroupBy;
@@ -351,7 +351,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 title: t("issue.noIssues"),
                 description: t("issue.createFirstIssue"),
                 action: (
-                    <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(defaultIssueColumn(columns)?.id ?? null)}>
+                    <Button size="sm" iconLeading={Plus} onClick={() => startCreating(defaultIssueColumn(columns)?.id ?? null)}>
                         {t("issue.newIssue")}
                     </Button>
                 ),
@@ -399,7 +399,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                 title: t("issue.emptyBacklogTitle"),
                 description: t("issue.emptyBacklog", { states: statesWhere((bucket) => bucket === "backlog") }),
                 action: (
-                    <Button size="sm" iconLeading={AddOutline} onClick={() => startCreating(backlogColumn?.id ?? null)}>
+                    <Button size="sm" iconLeading={Plus} onClick={() => startCreating(backlogColumn?.id ?? null)}>
                         {t("issue.newIssue")}
                     </Button>
                 ),
@@ -588,7 +588,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                             }
                                                                             className="flex min-w-0 flex-1 items-center gap-2 text-left"
                                                                         >
-                                                                            <ChevronDownOutline
+                                                                            <ChevronDown
                                                                                 className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsedGroups.has(row.group.key) ? "-rotate-90" : ""}`}
                                                                                 aria-hidden="true"
                                                                             />
@@ -631,7 +631,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                                                 transform: `translateY(${virtual.start}px)`,
                                                             }}
                                                         >
-                                                            <IssueListRow
+                                                            <SortableIssueListRow
                                                                 issue={issue}
                                                                 projectId={projectId!}
                                                                 identifierWidth={identifierWidth}
@@ -757,4 +757,4 @@ function readSavedScope(value: string | null): Scope {
     return value === "backlog" || value === "all" ? value : "active";
 }
 
-void import("@/features/issues/components/issue-view/issue-view");
+preloadWhenIdle(() => import("@/features/issues/components/issue-view/issue-view"));

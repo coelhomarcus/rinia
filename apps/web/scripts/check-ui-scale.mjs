@@ -3,7 +3,9 @@ import { join, relative } from "node:path";
 
 const root = new URL("../src/", import.meta.url).pathname;
 const roots = ["pages", "features", "components/base", "components/layout", "components/overlay", "components/settings", "components/appearance"];
-const allowedSpacing = new Set(["components/base/textarea/textarea.tsx", "features/board/components/issue-card.tsx", "features/issues/components/issue-view.tsx"]);
+const allowedSpacing = new Set(["components/base/textarea/textarea.tsx", "features/board/components/issue-card.tsx"]);
+// The issue page, split into files in this folder, keeps the denser spacing it had as one file.
+const allowedSpacingFolders = ["features/issues/components/issue-view/"];
 const files = [];
 
 async function collect(directory) {
@@ -26,7 +28,7 @@ for (const path of files) {
     }
     if (/<(?:select|datalist)(?:\s|>)/.test(source)) violations.push(`${displayPath}: native select/datalist`);
     // Keep the other exceptions blocked until a reference component demonstrates them.
-    if (!allowedSpacing.has(path) && /(?:gap-1\.5|py-2\.5|rounded-\[10px\])/.test(source)) {
+    if (!allowedSpacing.has(path) && !allowedSpacingFolders.some((folder) => path.startsWith(folder)) && /(?:gap-1\.5|py-2\.5|rounded-\[10px\])/.test(source)) {
         violations.push(`${displayPath}: non-standard spacing/radius; use control-scale or 4px spacing`);
     }
 }

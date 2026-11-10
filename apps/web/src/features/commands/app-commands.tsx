@@ -3,7 +3,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useNavigate, useSearchParams } from "react-router";
 import { defaultIssueColumn } from "@/features/board/column-bucket";
 import { useColumns } from "@/features/board/hooks/use-board";
-import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
+import { IssueQuickCreateModal } from "@/features/issues/components/lazy-issue-quick-create-modal";
 import { useCurrentProject } from "@/features/projects/hooks/use-current-project";
 import { useProjects } from "@/features/projects/hooks/use-projects";
 import { readOpenProjectId } from "@/features/projects/lib/last-project";

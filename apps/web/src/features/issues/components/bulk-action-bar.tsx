@@ -1,9 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { EstimateOutline, LabelsOutline } from "@makeplane/propel/icons";
 import { issueEstimateValues, type BulkIssuePatch } from "@rinia/shared";
-import { Trash2, X } from "lucide-react";
+import { Tag, Trash2, Triangle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { motionTiming } from "@/components/base/motion";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
@@ -217,17 +216,17 @@ export function BulkActionBar({
                     triggerLabel={t("issue.labels")}
                     triggerClassName={barButton}
                 >
-                    <LabelsOutline className="size-4 text-tertiary" />
+                    <Tag className="size-4 text-tertiary" />
                     <span className="hidden sm:inline">{t("issue.labels")}</span>
                 </LabelsPicker>
-                <BarMenu icon={<EstimateOutline className="size-4 text-tertiary" />} label={t("issue.estimate")}>
+                <BarMenu icon={<Triangle className="size-4 text-tertiary" />} label={t("issue.estimate")}>
                     <Menu.Item className={menuItem} onClick={() => void apply({ estimate: null })}>
-                        <EstimateOutline className="size-4 text-placeholder" />
+                        <Triangle className="size-4 text-placeholder" />
                         {t("issue.noEstimate")}
                     </Menu.Item>
                     {issueEstimateValues.map((points) => (
                         <Menu.Item key={points} className={menuItem} onClick={() => void apply({ estimate: points })}>
-                            <EstimateOutline className="size-4 text-tertiary" />
+                            <Triangle className="size-4 text-tertiary" />
                             {t("projects.points", { count: points })}
                         </Menu.Item>
                     ))}

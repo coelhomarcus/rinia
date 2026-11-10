@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { WarningTriangleOutline as AlertTriangle } from "@makeplane/propel/icons";
+import { TriangleAlert as AlertTriangle } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
 import { Input } from "@/components/base/input/input";

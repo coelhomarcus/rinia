@@ -2,10 +2,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { AddOutline } from "@makeplane/propel/icons";
 import type { UpdateIssueInput } from "@rinia/shared";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { EyeOff, MoreHorizontal, Settings2, Trash2 } from "lucide-react";
+import { EyeOff, MoreHorizontal, Plus, Settings2, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Skeleton } from "@/components/base/feedback/skeleton";
@@ -253,7 +252,7 @@ export const Column = memo(function Column({
                         </Menu.Portal>
                     </Menu.Root>
                     <ButtonUtility
-                        icon={AddOutline}
+                        icon={Plus}
                         size="xs"
                         color="tertiary"
                         tooltip={`${t("issue.newIssue")} · ${label}`}
@@ -345,7 +344,7 @@ export const Column = memo(function Column({
                     onClick={() => onCreateIssue(column.id)}
                     className="flex h-7 shrink-0 items-center gap-1 rounded px-1 text-left text-xs text-tertiary opacity-100 transition-opacity duration-150 hover:bg-layer-1-hover hover:text-secondary motion-reduce:transition-none md:opacity-0 md:group-hover/column:opacity-100 md:focus-visible:opacity-100"
                 >
-                    <AddOutline className="size-3.5" />
+                    <Plus className="size-3.5" />
                     {t("issue.newIssue")}
                 </button>
             </div>

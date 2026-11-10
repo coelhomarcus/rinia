@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AddOutline as Plus } from "@makeplane/propel/icons";
-import { ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { urls } from "@/lib/urls";
 import { repositoryHost } from "@/features/projects/lib/repository";

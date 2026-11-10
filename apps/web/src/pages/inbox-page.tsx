@@ -20,6 +20,7 @@ import { urls } from "@/lib/urls";
 import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
+import { preloadWhenIdle } from "@/lib/preload";
 
 export const InboxPage = () => {
     const { t } = useTranslation();
@@ -226,7 +227,7 @@ function formatAge(value: string, locale: string) {
     return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(value));
 }
 
-void import("@/features/issues/components/issue-view/issue-view");
+preloadWhenIdle(() => import("@/features/issues/components/issue-view/issue-view"));
 
 function InboxSkeleton() {
     const { t } = useTranslation();

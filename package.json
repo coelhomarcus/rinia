@@ -15,6 +15,7 @@
     "dev:web": "bun run --cwd apps/web dev",
     "build": "bun run --cwd apps/web build && bun run --cwd apps/api build",
     "typecheck": "bun run --filter '*' typecheck",
+    "check:bundle-size": "bun run --cwd apps/web check:bundle-size",
     "lint": "bun run --cwd packages/shared lint && bun run --cwd apps/api lint && bun run --cwd apps/web lint",
     "test": "bun run --cwd apps/api test:unit && bun run --cwd apps/web test:unit",
     "test:db": "bun run --cwd apps/api test:db",

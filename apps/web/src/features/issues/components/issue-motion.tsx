@@ -1,5 +1,6 @@
 import { createContext, type ComponentProps, type ReactNode, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { LazyMotion, m } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { getInitials } from "@/components/base/avatar/utils";
 import { issueMotionEnabled, issuePresenceMotion, remoteIssueChanges, type RemoteIssueChange } from "@/features/realtime/remote-issue-changes";
@@ -9,6 +10,12 @@ const NO_PEOPLE: Array<{ id: string; name: string; avatarUrl: string | null }> =
 const NO_IDS: ReadonlySet<string> = new Set();
 /** Instant, so a card that only changed column does not linger and crossfade with the one that glides. */
 const HANDOFF_EXIT = { opacity: 1, transition: { duration: 0 } } as const;
+
+/**
+ * The animation engine (layout glides) arrives after the first paint, in a chunk of its own: the cards render at once and
+ * start gliding when it is there. Only this file may use `m` components, so the engine is not needed to render a list.
+ */
+const loadMotionFeatures = () => import("./motion-features").then((module) => module.default);
 
 const CurrentRosterContext = createContext<ReadonlySet<string>>(NO_IDS);
 const PreviousRosterContext = createContext<ReadonlySet<string>>(NO_IDS);
@@ -25,9 +32,11 @@ export function IssueMotionRoster({ ids, children }: { ids: readonly string[]; c
         previousRef.current = current;
     }, [current]);
     return (
-        <CurrentRosterContext.Provider value={current}>
-            <PreviousRosterContext.Provider value={previous}>{children}</PreviousRosterContext.Provider>
-        </CurrentRosterContext.Provider>
+        <LazyMotion features={loadMotionFeatures}>
+            <CurrentRosterContext.Provider value={current}>
+                <PreviousRosterContext.Provider value={previous}>{children}</PreviousRosterContext.Provider>
+            </CurrentRosterContext.Provider>
+        </LazyMotion>
     );
 }
 
@@ -70,8 +79,8 @@ export function IssueMotionFrame({
     placement?: "card" | "row";
     nodeRef: (element: HTMLElement | null) => void;
     children: ReactNode;
-} & Omit<ComponentProps<typeof motion.div>, "layout" | "layoutId" | "initial" | "animate" | "exit" | "transition">) {
-    const reduced = useReducedMotion() === true;
+} & Omit<ComponentProps<typeof m.div>, "layout" | "layoutId" | "initial" | "animate" | "exit" | "transition">) {
+    const reduced = useReducedMotion();
     const motionOn = issueMotionEnabled({ suspend: suspendLayout || !layoutAnimation, reducedMotion: reduced });
     const roster = useContext(CurrentRosterContext);
     const previousRoster = useContext(PreviousRosterContext);
@@ -85,7 +94,7 @@ export function IssueMotionFrame({
     const actor = change?.actorId ? people.find((person) => person.id === change.actorId) : undefined;
 
     return (
-        <motion.div
+        <m.div
             ref={nodeRef}
             layout={motionOn ? "position" : false}
             layoutId={motionOn ? issueId : undefined}
@@ -109,6 +118,6 @@ export function IssueMotionFrame({
                     <Avatar src={actor.avatarUrl} alt="" initials={getInitials(actor.name)} size="xs" className="size-5 ring-2 ring-[var(--bg-surface-1)]" />
                 </span>
             )}
-        </motion.div>
+        </m.div>
     );
 }

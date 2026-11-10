@@ -18,6 +18,8 @@ jobs:
       - run: bun run lint
       - run: bun run typecheck
       - run: bun run build
+      # Fails when a route, the stylesheet or the number of chunks goes over apps/web/bundle-budget.json.
+      - run: bun run check:bundle-size
 
   knip:
     name: No unused files or dependencies

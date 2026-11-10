@@ -1,0 +1,14 @@
+{
+  "description": "Gzip KB of what a cold load downloads before the page can render: the entry chunk and its static imports, plus the route's own chunk and its static imports. Lower a number when a change makes a route lighter; raise it only on purpose, in the pull request that adds the weight.",
+  "routes": {
+    "login": { "chunk": "login-page", "maxKb": 355 },
+    "my-issues": { "chunk": "my-issues-page", "maxKb": 390 },
+    "project-issues": { "chunk": "project-issues-page", "maxKb": 440 },
+    "inbox": { "chunk": "inbox-page", "maxKb": 370 },
+    "issue": { "chunk": "issue-view", "maxKb": 610 },
+    "documents": { "chunk": "project-documents-page", "maxKb": 595 }
+  },
+  "entryMaxKb": 350,
+  "cssMaxKb": 32,
+  "jsFilesMax": 130
+}

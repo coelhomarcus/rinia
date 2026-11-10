@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { EditOutline as Pencil, AddOutline as Plus, DeleteOutline as Trash2 } from "@makeplane/propel/icons";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";

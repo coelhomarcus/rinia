@@ -1,6 +1,6 @@
 import { useState, type ReactNode, type SyntheticEvent } from "react";
 import { Menu } from "@base-ui/react/menu";
-import { LabelsOutline } from "@makeplane/propel/icons";
+import { Tag } from "lucide-react";
 import type { IssuePriority } from "@rinia/shared";
 import { useTranslation } from "react-i18next";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -91,7 +91,7 @@ function PropertyMenu<V>({ property, label, triggerLabel, trigger, className, op
 }
 
 function LabelIcon({ color, muted = false }: { color?: string | null; muted?: boolean }) {
-    return <LabelsOutline className={cx(propertyIcon, "shrink-0", muted && "text-placeholder")} style={muted ? undefined : { color: color ?? "#7a5af8" }} />;
+    return <Tag className={cx(propertyIcon, "shrink-0", muted && "text-placeholder")} style={muted ? undefined : { color: color ?? "#7a5af8" }} />;
 }
 
 export function StatusMenu({ value, statuses, onChange, className }: { value?: Status; statuses: Status[]; onChange: (columnId: string) => void; className?: string }) {

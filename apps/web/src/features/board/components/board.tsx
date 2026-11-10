@@ -24,7 +24,7 @@ import { isTypingTarget } from "@/features/commands/shortcuts";
 import type { Issue } from "@/features/issues/api";
 import { DragLift, useDragTilt } from "@/features/issues/components/drag-feedback";
 import { IssueMotionRoster } from "@/features/issues/components/issue-motion";
-import { IssueQuickCreateModal } from "@/features/issues/components/issue-quick-create-modal";
+import { IssueQuickCreateModal } from "@/features/issues/components/lazy-issue-quick-create-modal";
 import { resolveLabels } from "@/features/issues/components/labels-picker";
 import { useIssueWindow, useUpdateIssue } from "@/features/issues/hooks/use-issues";
 import { signalLongPress, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";

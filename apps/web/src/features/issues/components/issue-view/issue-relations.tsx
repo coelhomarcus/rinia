@@ -1,6 +1,5 @@
 import { memo, useState } from "react";
-import { ParentOutline } from "@makeplane/propel/icons";
-import { Ban, Copy, Link2, Plus, ShieldOff, Trash2 } from "lucide-react";
+import { Ban, Copy, Link2, ListTree, Plus, ShieldOff, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/base/buttons/button";
@@ -115,7 +114,7 @@ function RelationsPanel({
                     </Select>
                     <ComboBox
                         className="min-w-0 flex-1"
-                        items={projectIssues.filter((projectIssue) => projectIssue.id !== issueId).map((projectIssue) => ({ id: projectIssue.identifier, label: `${projectIssue.identifier} · ${projectIssue.title}`, icon: ParentOutline }))}
+                        items={projectIssues.filter((projectIssue) => projectIssue.id !== issueId).map((projectIssue) => ({ id: projectIssue.identifier, label: `${projectIssue.identifier} · ${projectIssue.title}`, icon: ListTree }))}
                         selectedKey={targetIssueIdentifier || null}
                         onSelectionChange={(next) => setTargetIssueIdentifier(String(next ?? ""))}
                         placeholder={t("issue.issueIdentifier")}

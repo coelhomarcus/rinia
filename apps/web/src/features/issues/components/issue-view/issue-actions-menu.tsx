@@ -1,6 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
-import { MoreHorizontalOutline, ParentOutline } from "@makeplane/propel/icons";
-import { Copy, GitBranch, History, Link2, Sparkles, Trash2 } from "lucide-react";
+import { Copy, Ellipsis, GitBranch, History, Link2, ListTree, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -20,7 +19,7 @@ export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPro
     return (
         <Menu.Root>
             <Menu.Trigger aria-label={t("issue.issueActions")} className="grid size-6 shrink-0 place-items-center rounded text-tertiary outline-none hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover data-[popup-open]:bg-layer-transparent-hover">
-                <MoreHorizontalOutline className="size-4" />
+                <Ellipsis className="size-4" />
             </Menu.Trigger>
             <Menu.Portal>
                 <Menu.Positioner sideOffset={6} align="start" className="z-50">
@@ -31,7 +30,7 @@ export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPro
                         <Menu.Item className={menuItemClass} disabled={isCopying} onClick={onCopyPrompt}><Sparkles className="size-4 text-tertiary" />{t("issue.copyWithPrompt")}</Menu.Item>
                         <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
                         <Menu.Item className={menuItemClass} onClick={onAddRelation}><Link2 className="size-4 text-tertiary" />{t("issue.addRelation")}</Menu.Item>
-                        <Menu.Item className={menuItemClass} onClick={onSetParent}><ParentOutline className="size-4 text-tertiary" />{t("issue.addParent")}</Menu.Item>
+                        <Menu.Item className={menuItemClass} onClick={onSetParent}><ListTree className="size-4 text-tertiary" />{t("issue.addParent")}</Menu.Item>
                         <Menu.Item className={menuItemClass} onClick={onOpenHistory}><History className="size-4 text-tertiary" />{t("issue.descriptionHistory")}</Menu.Item>
                         <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
                         <Menu.Item className={cx(menuItemClass, "text-danger-primary data-highlighted:text-danger-primary")} onClick={onDelete}><Trash2 className="size-4" />{t("issue.deleteIssue")}</Menu.Item>

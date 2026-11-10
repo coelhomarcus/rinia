@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AssigneeOutline, ChevronDownOutline, HistoryOutline, LabelsOutline, PriorityOutline, ProjectsOutline, StateOutline } from "@makeplane/propel/icons";
 import { type IssueOrder, type MyIssuesFilter, myIssuesFilterValues } from "@rinia/shared";
-import { CalendarDays, Hash, Minus } from "lucide-react";
+import { CalendarDays, ChevronDown, CircleDashed, FolderKanban, Hash, History, Minus, SignalHigh, Tag, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
@@ -31,6 +30,7 @@ import { useRealtimeChannels } from "@/features/realtime/use-realtime";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
 import { issueNavigation } from "@/lib/view-transition";
+import { preloadWhenIdle } from "@/lib/preload";
 
 type OrderBy = Exclude<IssueOrder, "position">;
 type GroupBy = "status" | "project" | "none";
@@ -154,7 +154,7 @@ export const MyIssuesPage = () => {
         {
             key: "status",
             label: t("issue.status"),
-            icon: StateOutline,
+            icon: CircleDashed,
             items: options.statuses.map((column) => ({
                 id: nameKey(column.name),
                 name: translateStatusName(column.name, t),
@@ -164,13 +164,13 @@ export const MyIssuesPage = () => {
         {
             key: "priority",
             label: t("issue.priority"),
-            icon: PriorityOutline,
+            icon: SignalHigh,
             items: PRIORITY_OPTIONS.map((id) => ({ id, name: t(priorityLabelKey(id)), icon: <PriorityIcon priority={id} /> })),
         },
         {
             key: "assignee",
             label: t("issue.assignee"),
-            icon: AssigneeOutline,
+            icon: UserRound,
             items: options.assignees.map((person) => ({
                 id: person.id,
                 name: person.name,
@@ -181,18 +181,18 @@ export const MyIssuesPage = () => {
         {
             key: "label",
             label: t("issue.label"),
-            icon: LabelsOutline,
+            icon: Tag,
             multiple: true,
             items: options.labels.map((item) => ({
                 id: nameKey(item.name),
                 name: item.name,
-                icon: <LabelsOutline className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} />,
+                icon: <Tag className="size-3.5" style={{ color: item.color ?? "#7a5af8" }} />,
             })),
         },
         {
             key: "project",
             label: t("myIssues.project"),
-            icon: ProjectsOutline,
+            icon: FolderKanban,
             items: options.projects.map((item) => ({
                 id: item.id,
                 name: item.name,
@@ -276,15 +276,15 @@ export const MyIssuesPage = () => {
                         filters={toolbarFilters}
                         defaultOrder="updated"
                         orders={[
-                            { id: "updated", label: t("issue.recentlyUpdated"), icon: HistoryOutline },
-                            { id: "priority", label: t("issue.priority"), icon: PriorityOutline },
+                            { id: "updated", label: t("issue.recentlyUpdated"), icon: History },
+                            { id: "priority", label: t("issue.priority"), icon: SignalHigh },
                             { id: "number", label: t("issue.issueNumber"), icon: Hash },
                             { id: "due", label: t("issue.dueDate"), icon: CalendarDays },
                         ]}
                         groups={[
                             { id: "none", label: t("issue.noGrouping"), icon: Minus },
-                            { id: "status", label: t("issue.status"), icon: StateOutline },
-                            { id: "project", label: t("myIssues.project"), icon: ProjectsOutline },
+                            { id: "status", label: t("issue.status"), icon: CircleDashed },
+                            { id: "project", label: t("myIssues.project"), icon: FolderKanban },
                         ]}
                     />
                 </div>
@@ -315,7 +315,7 @@ export const MyIssuesPage = () => {
                                                 }
                                                 className="flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] px-3 text-left text-[13px] text-secondary"
                                             >
-                                                <ChevronDownOutline
+                                                <ChevronDown
                                                     className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
                                                     aria-hidden="true"
                                                 />
@@ -378,7 +378,6 @@ function MyIssueRow({
             projectId={issue.projectId}
             identifierWidth={identifierWidth}
             layoutAnimation={false}
-            sortable={false}
             column={column}
             columns={columns ?? [issue.column]}
             member={member}
@@ -441,4 +440,4 @@ function readGroup(value: string | null): GroupBy {
     return value === "none" || value === "project" ? value : "status";
 }
 
-void import("@/features/issues/components/issue-view/issue-view");
+preloadWhenIdle(() => import("@/features/issues/components/issue-view/issue-view"));

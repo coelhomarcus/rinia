@@ -1,15 +1,11 @@
 import type { ComponentType, SVGProps } from "react";
-import {
-    ArrowNarrowLeftOutline, BoardOutline, ChevronDownOutline, CloseOutline,
-    GeneralOutline, InboxOutline, UserOutline, ListOutline, LogOutOutline, NewTabArrowOutline, OverviewOutline, PagesOutline,
-    ProjectsOutline, SearchOutline, SettingsOutline, LeftSidePaneOutline,
-} from "@makeplane/propel/icons";
+import { ArrowLeft, ChevronDown as ChevronDownIcon, ExternalLink as ExternalLinkIcon, FileText, FolderKanban, Inbox as InboxIcon, LayoutDashboard, List, LogOut, PanelLeft, Search as SearchIcon, Settings as SettingsIcon, Settings2, SquareKanban, User, X } from "lucide-react";
 
 export type AppIcon = ComponentType<SVGProps<SVGSVGElement>>;
 export const AppIcons = {
-    ChevronDown: ChevronDownOutline, Close: CloseOutline, Back: ArrowNarrowLeftOutline,
-    Board: BoardOutline, Documents: PagesOutline, ExternalLink: NewTabArrowOutline,
-    Issues: ListOutline, Menu: LeftSidePaneOutline, Overview: OverviewOutline,
-    Projects: ProjectsOutline, Search: SearchOutline, Settings: SettingsOutline,
-    SignOut: LogOutOutline, General: GeneralOutline, Inbox: InboxOutline, MyIssues: UserOutline,
+    ChevronDown: ChevronDownIcon, Close: X, Back: ArrowLeft,
+    Board: SquareKanban, Documents: FileText, ExternalLink: ExternalLinkIcon,
+    Issues: List, Menu: PanelLeft, Overview: LayoutDashboard,
+    Projects: FolderKanban, Search: SearchIcon, Settings: SettingsIcon,
+    SignOut: LogOut, General: Settings2, Inbox: InboxIcon, MyIssues: User,
 } satisfies Record<string, AppIcon>;

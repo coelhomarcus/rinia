@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { Github, Gitlab } from "@makeplane/propel/icons";
+import { Github, Gitlab } from "@/components/foundations/brand-icons";
 import { AppIcons } from "@/components/foundations/icons";
 
 export interface RepositoryHost {

@@ -1,5 +1,6 @@
 @import "tailwindcss";
-@import "@makeplane/propel/styles";
+@import "./tokens.css";
+@import "./animations.css";
 @import "@fontsource-variable/inter";
 @import "@fontsource/ibm-plex-mono";
 @import "./theme.css";

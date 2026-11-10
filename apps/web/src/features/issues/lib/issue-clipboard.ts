@@ -4,7 +4,7 @@ import { listCategories } from "@/features/categories/api";
 import { listProjectMembers } from "@/features/projects/api";
 import i18n from "@/i18n/i18n";
 import { getIssue, listIssueActivity, listIssueComments, listIssueRelations } from "../api";
-import { buildIssuePrompt, type IssuePromptLookups } from "./issue-prompt";
+import type { IssuePromptLookups } from "./issue-prompt";
 
 type IssueContentOverrides = {
     title?: string;
@@ -16,6 +16,8 @@ type IssueContentOverrides = {
  * Lookups already on the page are reused; otherwise the project names needed to explain the history are loaded.
  */
 export async function fetchIssueClipboardContent(identifier: string, overrides?: IssueContentOverrides, locale = i18n.language, lookups?: IssuePromptLookups): Promise<string> {
+    // The prompt builder carries the Markdown converter, which only copying needs: it loads while the issue does.
+    const promptModule = import("./issue-prompt");
     const [issue, comments, activity, relations] = await Promise.all([
         getIssue(identifier),
         listIssueComments(identifier),
@@ -26,6 +28,7 @@ export async function fetchIssueClipboardContent(identifier: string, overrides?:
         ? [lookups.columns, lookups.members, lookups.categories]
         : await Promise.all([listColumns(issue.project.id), listProjectMembers(issue.project.id), listCategories(issue.project.id)]);
 
+    const { buildIssuePrompt } = await promptModule;
     return buildIssuePrompt({
         issue,
         comments,

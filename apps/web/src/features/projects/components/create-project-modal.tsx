@@ -13,7 +13,7 @@ import { ControlledInput } from "@/components/form/controlled-input";
 import { ControlledTextarea } from "@/components/form/controlled-textarea";
 import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { AppearancePicker, appearancePopupClass } from "@/components/appearance/appearance-picker";
-import { uploadProjectFile } from "@/features/editor/file-upload";
+import { uploadProjectFile } from "@/features/editor/file-api";
 import { ApiError } from "@/lib/api-client";
 import { updateProject, type Project } from "../api";
 import { PROJECTS_QUERY_KEY, useCreateProject } from "../hooks/use-projects";

@@ -6,7 +6,8 @@ import { type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from "@tip
 import { ImageIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
-import { uploadProjectFile, uploadTargetOf } from "@/features/editor/file-upload";
+import { uploadProjectFile } from "@/features/editor/file-api";
+import { uploadTargetOf } from "@/features/editor/file-upload";
 import { useTranslation } from "react-i18next";
 
 function ImageBlock({ node, updateAttributes, selected, editor, getPos }: NodeViewProps) {

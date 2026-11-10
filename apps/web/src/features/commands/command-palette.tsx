@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AssigneeOutline, LabelsOutline, PriorityOutline, StateOutline } from "@makeplane/propel/icons";
-import { FileText, Hash, Keyboard, Link2, Moon, SquarePen, Sun } from "lucide-react";
+import { CircleDashed, FileText, Hash, Keyboard, Link2, Moon, SignalHigh, SquarePen, Sun, Tag, UserRound } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
@@ -90,10 +89,10 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
         if (issueIdentifier) {
             const identifier = currentIssue?.identifier ?? issueIdentifier;
             list.push(
-                { id: "state", group: "issue", title: t("commands.changeState"), keywords: "status", icon: <StateOutline className={icon} />, shortcut: shortcutKeys("state"), run: openMenu("state") },
-                { id: "priority", group: "issue", title: t("commands.changePriority"), icon: <PriorityOutline className={icon} />, shortcut: shortcutKeys("priority"), run: openMenu("priority") },
-                { id: "assignee", group: "issue", title: t("commands.changeAssignee"), icon: <AssigneeOutline className={icon} />, shortcut: shortcutKeys("assignee"), run: openMenu("assignee") },
-                { id: "labels", group: "issue", title: t("commands.changeLabels"), keywords: "label tag", icon: <LabelsOutline className={icon} />, shortcut: shortcutKeys("labels"), run: openMenu("label") },
+                { id: "state", group: "issue", title: t("commands.changeState"), keywords: "status", icon: <CircleDashed className={icon} />, shortcut: shortcutKeys("state"), run: openMenu("state") },
+                { id: "priority", group: "issue", title: t("commands.changePriority"), icon: <SignalHigh className={icon} />, shortcut: shortcutKeys("priority"), run: openMenu("priority") },
+                { id: "assignee", group: "issue", title: t("commands.changeAssignee"), icon: <UserRound className={icon} />, shortcut: shortcutKeys("assignee"), run: openMenu("assignee") },
+                { id: "labels", group: "issue", title: t("commands.changeLabels"), keywords: "label tag", icon: <Tag className={icon} />, shortcut: shortcutKeys("labels"), run: openMenu("label") },
                 { id: "copy-link", group: "issue", title: t("commands.copyIssueLink"), keywords: "url", icon: <Link2 className={icon} />, run: copyText(`${window.location.origin}${urls.issue(identifier, currentIssue?.title)}`, t("issue.linkCopied")) },
                 { id: "copy-id", group: "issue", title: t("commands.copyIssueId"), tag: identifier, icon: <Hash className={icon} />, run: copyText(identifier, t("issue.idCopied", { id: identifier })) },
             );

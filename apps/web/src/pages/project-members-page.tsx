@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { AddOutline as Plus, UserMinusOutline as UserRoundMinus } from "@makeplane/propel/icons";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, UserRoundMinus } from "lucide-react";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";

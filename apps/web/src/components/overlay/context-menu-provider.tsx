@@ -7,7 +7,7 @@ import { Button } from "@/components/base/buttons/button";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { deleteDocument, getDocument, restoreDocument } from "@/features/documents/api";
-import { pauseDocumentSession } from "@/features/documents/sessions";
+import { pauseDocumentSession } from "@/features/documents/session-registry";
 import { documentKey, documentsKey } from "@/features/documents/hooks/use-documents";
 import { useDeleteIssue } from "@/features/issues/hooks/use-issues";
 import { restoreIssue } from "@/features/issues/api";

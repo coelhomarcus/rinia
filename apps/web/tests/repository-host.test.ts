@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Github, Gitlab } from "@makeplane/propel/icons";
+import { Github, Gitlab } from "../src/components/foundations/brand-icons";
 import { AppIcons } from "../src/components/foundations/icons";
 import { repositoryHost } from "../src/features/projects/lib/repository";
 

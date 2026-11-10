@@ -1,21 +1,28 @@
-import { type MouseEvent, useEffect } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { type CSSProperties, type MouseEvent, type ReactNode, useEffect } from "react";
 import type { UpdateIssueInput } from "@rinia/shared";
-import { GripVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { columnBucket } from "@/features/board/column-bucket";
 import type { Issue } from "@/features/issues/api";
-import { dragSlotClass } from "@/features/issues/components/drag-feedback";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
-import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu, propertyIcon } from "@/features/issues/components/issue-property-menus";
-import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
+import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
 import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
 import { urls } from "@/lib/urls";
 import { issueViewTransitionStyle } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
+
+/** What a row needs to be dragged, from `SortableIssueListRow`. A row without it is not draggable and does not load the drag-and-drop library. */
+export interface IssueRowDrag {
+    setNodeRef: (element: HTMLElement | null) => void;
+    style: CSSProperties;
+    /** Extra classes while the row is the one being dragged. */
+    className?: string;
+    /** The grip that starts the drag. */
+    handle: ReactNode;
+}
+
+const noNodeRef = () => undefined;
 
 export function IssueListRow({
     issue,
@@ -27,7 +34,7 @@ export function IssueListRow({
     categories,
     labels,
     identifierWidth,
-    sortable,
+    drag,
     selected,
     onSelect,
     onUpdate,
@@ -46,8 +53,8 @@ export function IssueListRow({
     labels: Array<{ id: string; name: string; color: string | null }>;
     /** Width of the identifier column in characters: the longest identifier in the list, so every title starts at the same x. */
     identifierWidth: number;
-    /** Whether the grip drags the row. Only the manual order can be rearranged; other orders hide the grip. */
-    sortable: boolean;
+    /** Present when the row can be dragged. Only the manual order can be rearranged; other lists have none and show no grip. */
+    drag?: IssueRowDrag;
     selected: boolean;
     onSelect: () => void;
     onUpdate: (input: UpdateIssueInput) => void;
@@ -58,9 +65,8 @@ export function IssueListRow({
     /** Off where another animation already moves the row. */
     layoutAnimation?: boolean;
 }) {
-    const { t, i18n } = useTranslation();
+    const { i18n } = useTranslation();
     const date = new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric" }).format(new Date(issue.createdAt));
-    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id, disabled: !sortable });
     const selection = useIssueSelection();
     const checked = selection?.isSelected(issue.id) ?? false;
     // The row the arrow keys moved to is the one X selects.
@@ -75,19 +81,19 @@ export function IssueListRow({
     };
     return (
         <IssueMotionFrame
-            nodeRef={setNodeRef}
+            nodeRef={drag?.setNodeRef ?? noNodeRef}
             issueId={issue.id}
             suspendLayout={suspendLayout}
             animatePresence={animatePresence}
             layoutAnimation={layoutAnimation}
             people={members}
             placement="row"
-            style={{ transform: CSS.Translate.toString(transform), transition }}
+            style={drag?.style}
             className={cx(
                 "group/issue relative flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover",
                 selected && "bg-layer-1-selected",
                 checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80",
-                isDragging && cx("z-10 border opacity-50", dragSlotClass),
+                drag?.className,
             )}
             onMouseEnter={() => selection?.setFocused(issue.id)}
             data-issue-id={issue.id}
@@ -97,23 +103,7 @@ export function IssueListRow({
             data-issue-title={issue.title}
         >
             <IssueCheckbox issueId={issue.id} className="group-hover/issue:opacity-100" />
-            {sortable ? (
-                <button
-                    ref={setActivatorNodeRef}
-                    type="button"
-                    {...attributes}
-                    {...listeners}
-                    aria-label={t("issue.dragToReorder")}
-                    className={cx(
-                        "flex size-5 shrink-0 cursor-grab items-center justify-center rounded text-placeholder opacity-0 group-hover/issue:opacity-100 hover:bg-layer-1-hover focus-visible:opacity-100 active:cursor-grabbing",
-                        dragSurfaceClass,
-                    )}
-                >
-                    <GripVertical className={propertyIcon} />
-                </button>
-            ) : (
-                <span aria-hidden="true" className="size-5 shrink-0" />
-            )}
+            {drag ? drag.handle : <span aria-hidden="true" className="size-5 shrink-0" />}
             <Link
                 viewTransition
                 to={urls.issue(issue.identifier, issue.title)}

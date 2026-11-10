@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
-import { EstimateOutline } from "@makeplane/propel/icons";
+import { Triangle } from "lucide-react";
 import { issueEstimateValues, type IssuePriority } from "@rinia/shared";
 import { IssueAvatar, PriorityIcon, StateIcon } from "@/features/board/components/issue-property-icons";
 import { PRIORITY_OPTIONS, priorityLabelKey } from "@/features/issues/lib/priority";
@@ -36,7 +36,7 @@ export function UnassignedIcon() {
 }
 
 export function EstimateIcon({ muted = false }: { muted?: boolean }) {
-    return <EstimateOutline className={cx(propertyIcon, "shrink-0", muted ? "text-placeholder" : "text-tertiary")} />;
+    return <Triangle className={cx(propertyIcon, "shrink-0", muted ? "text-placeholder" : "text-tertiary")} />;
 }
 
 export function statusOptions(statuses: Status[], t: TFunction): PropertyOption<string>[] {

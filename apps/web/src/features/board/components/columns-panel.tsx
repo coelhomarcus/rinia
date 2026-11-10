@@ -2,16 +2,8 @@ import { type ReactNode, useState } from "react";
 import { DndContext, type DragEndEvent, type DragOverEvent, DragOverlay, type DragStartEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-    ArrowDownOutline as ArrowDown,
-    TopArrowOutline as ArrowUp,
-    StateOutline as CircleDashed,
-    EditOutline as Pencil,
-    AddOutline as Plus,
-    DeleteOutline as Trash2,
-} from "@makeplane/propel/icons";
 import { positionAtIndex } from "@rinia/shared";
-import { GripVertical } from "lucide-react";
+import { ArrowDown, ArrowUp, CircleDashed, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Alert } from "@/components/base/feedback/alert";
