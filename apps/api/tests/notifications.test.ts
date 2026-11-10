@@ -5,6 +5,7 @@ import { PgDialect, PgSelectBase } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
+import { stubProjectAccess } from "./fixtures/project-membership";
 import { issueComments, issueSubscriptions, notifications } from "../src/db/schema";
 import { mentionedUserIds, newMentions, planIssueChange, plainTextExcerpt } from "../src/features/notifications/notifications.service";
 
@@ -170,7 +171,8 @@ test("people cannot read or unread someone else's notification", async () => {
 
 test("only project members can follow an issue", async () => {
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ id: issueId, projectId, number: 1, labels: [], project: { id: projectId, name: "Rinia", issueKey: "RIN" } }) as never);
-    const membership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => undefined);
+    let access: Array<{ membership: { id: string } | null }> = [{ membership: null }];
+    stubProjectAccess(() => access);
     const writes = stubInserts();
     spyOn(db, "delete").mockImplementation(() => { throw new Error("Must not delete"); });
 
@@ -179,7 +181,7 @@ test("only project members can follow an issue", async () => {
     assert.equal((await call("GET", `/issues/${issueId}/subscription`, outsider)).status, 403);
     assert.equal(writes.size, 0);
 
-    membership.mockImplementation(async () => ({ id: "membership" }) as never);
+    access = [{ membership: { id: "membership" } }];
     const response = await call("PUT", `/issues/${issueId}/subscription`, ana);
     assert.deepEqual(await response.json(), { subscription: { following: true } });
     assert.deepEqual(writes.get(issueSubscriptions), [{ userId: ana, issueId }]);

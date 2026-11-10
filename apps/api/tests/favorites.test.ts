@@ -4,6 +4,7 @@ import { createFavoriteSchema } from "@rinia/shared";
 import { db } from "../src/db";
 import { addFavorite, listFavorites, removeFavorite } from "../src/features/favorites/favorites.service";
 import { HttpError } from "../src/lib/http-error";
+import { stubProjectAccess } from "./fixtures/project-membership";
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
@@ -25,14 +26,14 @@ test("favorite targets must name the document or issue they point at", () => {
 });
 
 test("non-members cannot favorite something in a project", async () => {
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => undefined);
+    stubProjectAccess([{ membership: null }]);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
     await assert.rejects(addFavorite("user", { kind: "project", projectId }), isHttp(403));
     assert.equal(insert.mock.calls.length, 0);
 });
 
 test("a document from another project cannot be favorited under this one", async () => {
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "member" }) as never);
+    stubProjectAccess([{ membership: { id: "membership", role: "member" } }]);
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => undefined);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
     await assert.rejects(addFavorite("user", { kind: "document", projectId, documentId }), isHttp(404));
@@ -46,6 +47,6 @@ test("favorites in projects the user has left are hidden", async () => {
 });
 
 test("removing someone else's favorite reports it as missing", async () => {
-    spyOn(db, "delete").mockImplementation(() => ({ where: () => ({ returning: async () => [] }) }) as never);
+    spyOn(db, "update").mockImplementation(() => ({ set: () => ({ where: () => ({ returning: async () => [] }) }) }) as never);
     await assert.rejects(removeFavorite("user", "favorite"), isHttp(404));
 });

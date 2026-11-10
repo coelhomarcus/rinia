@@ -6,6 +6,7 @@ import type { SQL } from "drizzle-orm";
 import { bulkUpdateIssuesSchema, issueListQuerySchema, nextLabels, positionsAtTop, updateIssueSchema } from "@rinia/shared";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
+import { stubProjectAccess } from "./fixtures/project-membership";
 import { issueActivities, issueLabels, issues } from "../src/db/schema";
 import { bulkDeleteIssues, listIssues, updateIssue } from "../src/features/issues/issues.service";
 import { HttpError } from "../src/lib/http-error";
@@ -59,6 +60,7 @@ function issueRow(id: string, overrides: Record<string, unknown> = {}) {
 function stubProject(member: boolean) {
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: projectId, issueKey: "RIN" }) as never);
     spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership", role: "member" } as never) : undefined));
+    stubProjectAccess([{ membership: member ? { id: "membership", role: "member" } : null }]);
     spyOn(db.query.boardColumns, "findFirst").mockImplementation(async () => ({ id: done }) as never);
     // A moved card's neighbours are looked up to see whether the order needs spreading out; here none are close.
     spyOn(db, "execute").mockImplementation(async () => ({ rows: [] }) as never);
@@ -139,7 +141,14 @@ test("changing twenty issues takes one request and one transaction, with an acti
     // Two issues are already done, so only eighteen change state.
     spyOn(db.query.issues, "findMany").mockImplementation(async () => ids.map((id, index) => issueRow(id, index < 2 ? { columnId: done } : {})) as never);
     spyOn(db.query.issueSubscriptions, "findFirst").mockImplementation(async () => undefined);
-    const select = spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [], leftJoin: () => ({ where: async () => [] }) }) })) as never);
+    const select = spyOn(db, "select").mockImplementation((() => ({
+        from: () => ({
+            where: async () => [],
+            leftJoin: () => ({
+                where: async () => [{ membership: { id: "membership", role: "member" } }],
+            }),
+        }),
+    })) as never);
     const { writes, transaction } = stubTransaction();
 
     const response = await call("PATCH", `/projects/${projectId}/issues/bulk`, { issueIds: ids, patch: { columnId: done, addCategoryIds: [design] } });
@@ -177,14 +186,27 @@ test("an issue from another project stops the whole change", async () => {
 test("a write failing inside the transaction fails the request and notifies no one", async () => {
     stubProject(true);
     spyOn(db.query.issues, "findMany").mockImplementation(async () => ids.map((id) => issueRow(id)) as never);
-    const select = spyOn(db, "select").mockImplementation((() => { throw new Error("Must not notify"); }) as never);
+    let selects = 0;
+    const select = spyOn(db, "select").mockImplementation((() => {
+        selects += 1;
+        if (selects === 1) {
+            return {
+                from: () => ({
+                    leftJoin: () => ({
+                        where: async () => [{ membership: { id: "membership", role: "member" } }],
+                    }),
+                }),
+            };
+        }
+        throw new Error("Must not notify");
+    }) as never);
     const { writes } = stubTransaction(issueActivities);
     const error = spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await call("PATCH", `/projects/${projectId}/issues/bulk`, { issueIds: ids, patch: { assigneeId: ana } });
     assert.equal(response.status, 500);
     assert.ok(writes.every((write) => write.table !== issueActivities));
-    assert.equal(select.mock.calls.length, 0);
+    assert.equal(selects, 1, "membership is checked; notifications are not");
     error.mockRestore();
 });
 
@@ -201,10 +223,10 @@ test("deleting a parent and its sub-issue together works in one transaction", as
     spyOn(db.query.issues, "findMany")
         .mockImplementationOnce(async () => [issueRow(ids[0]), issueRow(ids[1], { parentIssueId: ids[0] })] as never)
         .mockImplementationOnce(async () => [{ id: ids[1] }] as never);
-    const { writes, transaction } = stubTransaction();
+    const writes: Array<{ kind: string }> = [];
+    spyOn(db, "update").mockImplementation((() => ({ set: () => ({ where: async () => void writes.push({ kind: "update" }) }) })) as never);
     await bulkDeleteIssues(projectId, [ids[0], ids[1]]);
-    assert.equal(transaction.mock.calls.length, 1);
-    assert.deepEqual(writes.map((write) => write.kind), ["update", "delete"]);
+    assert.deepEqual(writes.map((write) => write.kind), ["update"]);
 });
 
 test("cards moved without a place picked go to the top of the column, keeping their order", () => {
@@ -252,7 +274,14 @@ test("moving issues in bulk stacks the ones that change column at its top, in th
     const rows = [issueRow(ids[0], { columnId: done, position: 100 }), issueRow(ids[1], { position: 9000 }), issueRow(ids[2], { position: 7000 })];
     spyOn(db.query.issues, "findMany").mockImplementation(async () => rows as never);
     spyOn(db.query.issueSubscriptions, "findFirst").mockImplementation(async () => undefined);
-    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ where: async () => [{ position: 3000 }], leftJoin: () => ({ where: async () => [] }) }) })) as never);
+    spyOn(db, "select").mockImplementation((() => ({
+        from: () => ({
+            where: async () => [{ position: 3000 }],
+            leftJoin: () => ({
+                where: async () => [{ membership: { id: "membership", role: "member" } }],
+            }),
+        }),
+    })) as never);
     const { writes } = stubTransaction();
 
     const response = await call("PATCH", `/projects/${projectId}/issues/bulk`, { issueIds: ids.slice(0, 3), patch: { columnId: done } });

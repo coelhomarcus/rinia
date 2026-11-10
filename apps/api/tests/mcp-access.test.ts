@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import type { Server } from "node:http";
-import { afterAll, afterEach, beforeAll, mock, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, mock, spyOn, test } from "bun:test";
 import type { SQL } from "drizzle-orm";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
@@ -18,6 +18,7 @@ const { apiTokens, oauthClients, oauthCodes } = await import("../src/db/schema")
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
+beforeEach(() => void stubSessionAccounts());
 
 const ana = { id: "8b2d1f66-0000-4000-8000-000000000001", username: "ana", name: "Ana Souza", isAdmin: false };
 const client = { client_id: "client-1", client_name: "Claude", redirect_uris: ["https://claude.ai/api/mcp/auth_callback"], token_endpoint_auth_method: "none" };

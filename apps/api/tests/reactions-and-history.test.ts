@@ -6,6 +6,7 @@ import type { SQL } from "drizzle-orm";
 import { commentReactionSchema } from "@rinia/shared";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
+import { stubProjectAccess } from "./fixtures/project-membership";
 import { commentReactions, issueDescriptionRevisions } from "../src/db/schema";
 import { DESCRIPTION_REVISION_WINDOW_MS, recordDescriptionRevision, restoreDescriptionRevision } from "../src/features/issues/issues.service";
 import { HttpError } from "../src/lib/http-error";
@@ -55,7 +56,8 @@ function stubIssue(overrides: Record<string, unknown> = {}) {
 }
 
 function stubMembership(member: boolean) {
-    return spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership" } as never) : undefined));
+    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ id: "membership" } as never) : undefined));
+    return stubProjectAccess([{ membership: member ? { id: "membership" } : null }]);
 }
 
 /** Records every `db.insert(table).values(...)`, by table. */

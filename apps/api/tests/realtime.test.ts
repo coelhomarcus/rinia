@@ -5,6 +5,7 @@ import { PRESENCE_TTL_MS, REALTIME_CLIENT_HEADER, REALTIME_PATH, realtimeClientM
 import WebSocket from "ws";
 import { db } from "../src/db";
 import { sessionCookie, stubSessionAccounts } from "./fixtures/sessions";
+import { stubProjectAccess } from "./fixtures/project-membership";
 import { HttpError } from "../src/lib/http-error";
 
 // The app reads its settings on import; give it what it needs without a local .env.
@@ -129,10 +130,11 @@ test("removing someone from a project drops its channels from their sockets", ()
 
 test("a channel is open to project members only, and deleted issues have none", async () => {
     spyOn(db.query.issues, "findFirst").mockImplementation(async () => ({ projectId }) as never);
-    const membership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ id: "membership", role: "member" }) as never);
+    let access = [{ membership: { id: "membership", role: "member" } }];
+    stubProjectAccess(() => access);
     assert.equal(await authorizeChannel(`issue:${issueId}`, { id: ana.id }), projectId);
 
-    membership.mockImplementation(async () => undefined);
+    access = [{ membership: null }];
     await assert.rejects(authorizeChannel(`issue:${issueId}`, { id: bruno.id }), isHttp(403));
 
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => undefined);
@@ -232,7 +234,7 @@ test("over a real socket, another member sees a saved document at once, tagged w
     stubSessionAccounts();
     spyOn(db.query.users, "findFirst").mockImplementation(async () => ({ ...bruno, locale: "en" }) as never);
     spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: projectId }) as never);
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ id: "membership", role: "member" }) as never);
+    stubProjectAccess([{ membership: { id: "membership", role: "member" } }]);
     // Opening the page for editing loads it, and seeds its Yjs state from the saved JSON the first time.
     spyOn(db.query.projectDocuments, "findFirst").mockImplementation(async () => ({ id: documentId, projectId, contentJson: { type: "doc", content: [] }, yjsState: null }) as never);
     spyOn(db, "update").mockImplementation((() => ({ set: () => ({ where: () => ({ returning: async () => [{ id: documentId, projectId, revision: 2 }] }) }) })) as never);

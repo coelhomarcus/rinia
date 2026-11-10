@@ -8,6 +8,7 @@ import { createProject, getProjectByKey, updateProject } from "../src/features/p
 import { isProjectKeyConflict } from "../src/features/projects/project-key";
 import { HttpError } from "../src/lib/http-error";
 import { requireProjectOwner } from "../src/middleware/project-membership.middleware";
+import { stubProjectAccess } from "./fixtures/project-membership";
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
@@ -164,21 +165,21 @@ function authorize(isAdmin: boolean): Promise<number> {
 }
 
 test("project deletion/settings guard rejects members and nonmembers, site admins included", async () => {
-    spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: "project" }));
-    const membership = spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "member" }));
+    let rows = [{ membership: { role: "member" } }];
+    stubProjectAccess(() => rows);
     assert.equal(await authorize(false), 403);
     assert.equal(await authorize(true), 403);
-    membership.mockImplementation(async () => undefined);
+    rows = [{ membership: null }];
     assert.equal(await authorize(false), 403);
     assert.equal(await authorize(true), 403);
 });
 
 test("project deletion/settings guard permits the owner, but not a missing project", async () => {
-    const project = spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: "project" }));
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => ({ role: "owner" }));
+    let rows: Array<{ membership: { role: string } | null }> = [{ membership: { role: "owner" } }];
+    stubProjectAccess(() => rows);
     assert.equal(await authorize(false), 200);
     assert.equal(await authorize(true), 200);
-    project.mockImplementation(async () => undefined);
+    rows = [];
     await assert.rejects(authorize(true), (error: unknown) => error instanceof HttpError && error.statusCode === 404);
 });
 

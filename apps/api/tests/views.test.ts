@@ -5,6 +5,7 @@ import { db } from "../src/db";
 import { addFavorite, listFavorites } from "../src/features/favorites/favorites.service";
 import { deleteView, duplicateView, listViews, restoreView, updateView, type ViewActor } from "../src/features/views/views.service";
 import { HttpError } from "../src/lib/http-error";
+import { stubProjectAccess } from "./fixtures/project-membership";
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
@@ -147,7 +148,7 @@ test("a deleted view can be restored only inside the undo window", async () => {
 });
 
 test("a view can be favorited by anyone who can see it, and only them", async () => {
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation((async () => ({ role: "member" })) as never);
+    stubProjectAccess([{ membership: { id: "membership", role: "member" } }]);
     const insert = spyOn(db, "insert").mockImplementation(() => { throw new Error("Must not insert"); });
     spyOn(db.query.views, "findFirst").mockImplementation((async () => undefined) as never);
     await assert.rejects(addFavorite(memberId, { kind: "view", projectId, viewId }), isHttp(404));

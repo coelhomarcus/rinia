@@ -161,20 +161,39 @@ test("a token cannot list, create or revoke tokens, so a leaked one cannot mint 
     assert.equal(insert.mock.calls.length, 0);
 });
 
-/** Ana belongs to one project only; the other one exists but is not hers. */
-function stubProjects() {
-    const projects = [
+function projectByIdOrKey(id: unknown) {
+    return [
         { id: memberProjectId, issueKey: "RIN", name: "Rinia" },
         { id: otherProjectId, issueKey: "AM", name: "App Mobile" },
-    ];
-    spyOn(db.query.projects, "findFirst").mockImplementation((async (config: { where: SQL }) => {
-        const [value] = params(config.where);
-        return projects.find((project) => project.id === value || project.issueKey === value);
-    }) as never);
+    ].find((project) => project.id === id || project.issueKey === id);
+}
+
+function accessRows(projectId: unknown, memberOf: string[]) {
+    const project = projectByIdOrKey(projectId);
+    if (!project) return [];
+    return [{ issueKey: project.issueKey, membership: memberOf.includes(project.id) ? { id: "membership", projectId: project.id, userId: ana.id, role: "owner" } : null }];
+}
+
+function selectWithAccess(memberOf: string[], rest?: { innerJoin?: unknown; where?: unknown }) {
+    return spyOn(db, "select").mockImplementation((() => ({
+        from: () => ({
+            leftJoin: () => ({
+                where: async (where: SQL) => accessRows(params(where)[0], memberOf),
+            }),
+            innerJoin: rest?.innerJoin ?? (() => ({ where: async () => [] })),
+            where: rest?.where ?? ((condition: SQL) => condition),
+        }),
+    })) as never);
+}
+
+/** Ana belongs to one project only; the other one exists but is not hers. */
+function stubProjects() {
+    spyOn(db.query.projects, "findFirst").mockImplementation((async (config: { where: SQL }) => projectByIdOrKey(params(config.where)[0])) as never);
     spyOn(db.query.projectMembers, "findFirst").mockImplementation((async (config: { where: SQL }) => {
         const [projectId, userId] = params(config.where);
         return projectId === memberProjectId && userId === ana.id ? { id: "membership", projectId, userId, role: "member" } : undefined;
     }) as never);
+    selectWithAccess([memberProjectId]);
 }
 
 test("over REST, a token reaches only the projects its owner is a member of", async () => {
@@ -342,14 +361,7 @@ test("a token can only be limited to projects its owner belongs to", async () =>
 
 /** Ana belongs to both projects, so only a token's scope can keep her out of the second. */
 function stubBothProjects() {
-    const projects = [
-        { id: memberProjectId, issueKey: "RIN", name: "Rinia" },
-        { id: otherProjectId, issueKey: "AM", name: "App Mobile" },
-    ];
-    spyOn(db.query.projects, "findFirst").mockImplementation((async (config: { where: SQL }) => {
-        const [value] = params(config.where);
-        return projects.find((project) => project.id === value || project.issueKey === value);
-    }) as never);
+    spyOn(db.query.projects, "findFirst").mockImplementation((async (config: { where: SQL }) => projectByIdOrKey(params(config.where)[0])) as never);
     spyOn(db.query.projectMembers, "findFirst").mockImplementation((async (config: { where: SQL }) => {
         const [projectId, userId] = params(config.where);
         return userId === ana.id ? { id: "membership", projectId, userId, role: "owner" } : undefined;
@@ -361,7 +373,7 @@ test("over REST, a token scoped to one project cannot reach another, wherever th
     const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
     const auth = { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" };
     spyOn(db.query.boardColumns, "findMany").mockImplementation(async () => []);
-    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) }) })) as never);
+    selectWithAccess([memberProjectId, otherProjectId], { innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) });
     spyOn(db.query.issues, "findFirst").mockImplementation((async () => secretIssue) as never);
     const write = spyOn(db, "insert").mockImplementation(() => {
         throw new Error("Must not insert");
@@ -449,7 +461,7 @@ test("a token scoped to projects that no longer exist reaches nothing, not every
 test("over MCP, a token scoped to one project cannot read or change another, through any tool", async () => {
     stubBothProjects();
     const { secret } = stubTokenStore().add(ana, { projectIds: [memberProjectId] });
-    spyOn(db, "select").mockImplementation((() => ({ from: () => ({ innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) }) })) as never);
+    selectWithAccess([memberProjectId, otherProjectId], { innerJoin: () => ({ where: async () => [{ id: secretIssue.id }] }) });
     spyOn(db.query.issues, "findFirst").mockImplementation((async () => secretIssue) as never);
     const readIssues = spyOn(db.query.issues, "findMany").mockImplementation(() => {
         throw new Error("Must not read issues");
@@ -498,5 +510,6 @@ test("over MCP, the projects a scoped token lists, searches and reads come from 
     // The tool that is allowed still works inside the scope.
     spyOn(db.query.boardColumns, "findMany").mockImplementation(async () => []);
     spyOn(db.query.categories, "findMany").mockImplementation(async () => []);
+    selectWithAccess([memberProjectId, otherProjectId]);
     assert.equal((await callTool(secret, "list_issues", { project: "RIN" })).isError, false);
 });

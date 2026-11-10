@@ -14,6 +14,7 @@ process.env.DATABASE_URL ??= "postgres://localhost/unused";
 process.env.SPECIAL_REGISTRATION_CODE ??= "test-code";
 const { projectsRouter } = await import("../src/features/projects/projects.routes");
 const { requireProjectMember } = await import("../src/middleware/project-membership.middleware");
+const { stubProjectAccess } = await import("./fixtures/project-membership");
 
 // Stub the database boundary: these tests never connect to or mutate a development database.
 afterEach(() => mock.restore());
@@ -172,8 +173,7 @@ test("each member's numbers: open counts only open states, and people who left a
 });
 
 function guard(member: boolean): Promise<number> {
-    spyOn(db.query.projects, "findFirst").mockImplementation(async () => ({ id: "project" }) as never);
-    spyOn(db.query.projectMembers, "findFirst").mockImplementation(async () => (member ? ({ role: "member" } as never) : undefined));
+    stubProjectAccess([{ membership: member ? { id: "membership", role: "member" } : null }]);
     return new Promise((resolve, reject) => {
         let status = 200;
         const response = { status(code: number) { status = code; return this; }, json() { resolve(status); } };
