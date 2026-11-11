@@ -284,7 +284,7 @@ export const Column = memo(function Column({
                     </div>
                 )}
                     <SortableContext items={issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
-                        <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+                        <div className="shrink-0" style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
                             {virtualizer.getVirtualItems().map((virtual) => {
                                 const issue = issues[virtual.index];
                                 if (!issue) return null;
