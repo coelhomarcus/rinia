@@ -81,6 +81,8 @@ The interface answers at once and lets go gently. The tokens live in `globals.cs
 - The checkbox's check draws itself as it scales in. New content in place (alerts, notices, list items) uses `animate-enter`.
 - Buttons and icon buttons do not move when pressed; checkboxes still scale to 0.9, behind `motion-safe:` and never while disabled.
 - Navigation that only switches a list's filter does not run a view transition; the list animates its own rows.
+- Route changes cross-fade. Only the issue being opened or left morphs: rows, cards and the issue page mark their identifier and title with `issueTransitionProps`, and the router names the one on-screen pair for that issue when the transition starts. Never put a fixed `view-transition-name` on list rows or cards: every named element is captured on every navigation, and an issue shown on both pages stretches from one shape into the other.
+- Dragging: the card rises into its lift (`animate-drag-lift`), leans with a spring driven by its sideways speed (`DragTilt`, at most 5°, upright when the pointer stops), and lands in 260ms on the same curve the cards making room use (`sortableTransition`), its lift easing away as it lands.
 - Everything respects `prefers-reduced-motion`.
 
 ## Phones

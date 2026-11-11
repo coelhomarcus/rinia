@@ -9,7 +9,7 @@ import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { AssigneeMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
 import { IssueCheckbox, useIssueSelection } from "@/features/issues/selection";
 import { urls } from "@/lib/urls";
-import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueTransitionProps } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 /** What a row needs to be dragged, from `SortableIssueListRow`. A row without it is not draggable and does not load the drag-and-drop library. */
@@ -114,7 +114,8 @@ export function IssueListRow({
                 onFocus={onSelect}
                 onClick={rangeClick}
                 className="shrink-0 truncate font-mono text-xs text-tertiary max-md:order-5 max-md:ml-8 max-md:w-auto!"
-                style={{ width: `${identifierWidth}ch`, ...issueViewTransitionStyle(issue.identifier, "id") }}
+                style={{ width: `${identifierWidth}ch` }}
+                {...issueTransitionProps(issue.identifier, "id")}
             >
                 {issue.identifier}
             </Link>
@@ -125,7 +126,7 @@ export function IssueListRow({
                 state={{ issueTitle: issue.title }}
                 onClick={rangeClick}
                 className="min-w-0 flex-1 truncate text-secondary max-md:order-2 max-md:line-clamp-2 max-md:text-[15px] max-md:leading-5 max-md:whitespace-normal max-md:text-primary"
-                style={issueViewTransitionStyle(issue.identifier, "title")}
+                {...issueTransitionProps(issue.identifier, "title")}
             >
                 {issue.title}
             </Link>

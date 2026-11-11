@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/base/feedback/skeleton";
-import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueTransitionProps } from "@/lib/view-transition";
 
 /** The first paint of an issue, before its request returns, so the row's identifier and title have somewhere to land. */
 export function IssueArrival({ identifier, title }: { identifier: string; title: string }) {
@@ -13,10 +13,10 @@ export function IssueArrival({ identifier, title }: { identifier: string; title:
                 <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
                 <Skeleton className="h-4 w-14" />
                 <ChevronRight className="size-3 shrink-0 text-placeholder" aria-hidden="true" />
-                <span className="truncate text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
+                <span className="truncate text-tertiary" {...issueTransitionProps(identifier, "id")}>{identifier}</span>
             </header>
             <div className="mx-auto w-full max-w-[48rem] px-6 pt-10 lg:px-12">
-                <h1 className="text-[26px] leading-8 font-semibold tracking-tight text-primary" style={issueViewTransitionStyle(identifier, "title")}>{title}</h1>
+                <h1 className="text-[26px] leading-8 font-semibold tracking-tight text-primary" {...issueTransitionProps(identifier, "title")}>{title}</h1>
                 <div className="mt-6 space-y-5">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-4/5" />

@@ -1,18 +1,21 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, test } from "bun:test";
 import { issuePreviewTitle } from "../src/features/issues/lib/cached-issue-title";
-import { issueNavigation, issueViewTransitionName, shouldUseViewTransition } from "../src/lib/view-transition";
+import { issueNavigation, issueTransitionProps, shouldUseViewTransition, transitionIssue } from "../src/lib/view-transition";
 
 describe("issue view transitions", () => {
-    test("gives the identifier and the title distinct names", () => {
-        expect(issueViewTransitionName("RIN-12", "id")).toBe("issue-id-RIN-12");
-        expect(issueViewTransitionName("RIN-12", "title")).toBe("issue-title-RIN-12");
-        expect(issueViewTransitionName("RIN-12", "id")).not.toBe(issueViewTransitionName("RIN-13", "id"));
+    test("marks an identifier and a title apart, per issue", () => {
+        expect(issueTransitionProps("RIN-12", "id")).toEqual({ "data-issue-transition": "id:RIN-12" });
+        expect(issueTransitionProps("RIN-12", "title")).toEqual({ "data-issue-transition": "title:RIN-12" });
+        expect(issueTransitionProps("RIN-12", "id")).not.toEqual(issueTransitionProps("RIN-13", "id"));
     });
 
-    test("drops a name that is not a css ident", () => {
-        expect(issueViewTransitionName("bad name", "id")).toBeUndefined();
-        expect(issueViewTransitionName("RIN-1;x", "title")).toBeUndefined();
+    test("morphs only the issue being opened or left", () => {
+        expect(transitionIssue("/my-issues", "/issue/RIN-4/ship-it")).toBe("RIN-4");
+        expect(transitionIssue("/issue/RIN-4", "/project/RIN/issues")).toBe("RIN-4");
+        expect(transitionIssue("/issue/RIN-1", "/issue/RIN-2")).toBe("RIN-2");
+        // Between two lists, or a list and the board, nothing morphs: rows and cards only cross-fade.
+        expect(transitionIssue("/my-issues", "/project/RIN/issues")).toBeUndefined();
     });
 
     test("skips the animation for the same path, reduced motion, or a browser without the api", () => {

@@ -5,7 +5,7 @@
     "my-issues": { "chunk": "my-issues-page", "maxKb": 390 },
     "project-issues": { "chunk": "project-issues-page", "maxKb": 440 },
     "inbox": { "chunk": "inbox-page", "maxKb": 370 },
-    "issue": { "chunk": "issue-view", "maxKb": 610 },
+    "issue": { "chunk": "issue-view", "maxKb": 612 },
     "documents": { "chunk": "project-documents-page", "maxKb": 595 }
   },
   "entryMaxKb": 350,

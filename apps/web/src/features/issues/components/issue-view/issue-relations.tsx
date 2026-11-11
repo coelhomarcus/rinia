@@ -9,7 +9,7 @@ import { ComboBox, ComboBoxItem } from "@/components/base/select/combobox";
 import { Select } from "@/components/base/select/select";
 import { ApiError } from "@/lib/api-client";
 import { urls } from "@/lib/urls";
-import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueTransitionProps } from "@/lib/view-transition";
 import { useIssueRelations, useIssues } from "../../hooks/use-issues";
 import { useRelationActions } from "./use-issue-mutations";
 
@@ -90,8 +90,8 @@ function RelationsPanel({
                                 data-issue-identifier={identifier}
                                 data-issue-title={relation.target.title}
                             >
-                                <span className="shrink-0 text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
-                                <span className="truncate text-primary" style={issueViewTransitionStyle(identifier, "title")}>{relation.target.title}</span>
+                                <span className="shrink-0 text-tertiary" {...issueTransitionProps(identifier, "id")}>{identifier}</span>
+                                <span className="truncate text-primary" {...issueTransitionProps(identifier, "title")}>{relation.target.title}</span>
                             </Link>
                             <span className="transition-opacity can-hover:opacity-0 can-hover:group-hover/relation:opacity-100 focus-within:opacity-100">
                                 <ButtonUtility icon={Trash2} size="xs" color="tertiary" tooltip={t("issue.removeRelation")} onClick={() => onDelete(relation.id)} isDisabled={isPending} />

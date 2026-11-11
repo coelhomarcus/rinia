@@ -10,7 +10,7 @@ import { useProject } from "@/features/projects/hooks/use-project";
 import { PresenceAvatars } from "@/features/realtime/components/presence-avatars";
 import { useChannelPresence } from "@/features/realtime/use-realtime";
 import { urls } from "@/lib/urls";
-import { issueNavigation, issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueNavigation, issueTransitionProps } from "@/lib/view-transition";
 import type { IssueDetail } from "../../api";
 import { useIssues } from "../../hooks/use-issues";
 import { IssueActionsMenu, type CopyActions } from "./issue-actions-menu";
@@ -47,7 +47,7 @@ export function IssueHeader({ issue, currentTitle, saving, unsaved, copyActions,
                 <Link viewTransition to={urls.issues(issue.project.issueKey)} className="shrink-0 text-secondary hover:text-primary max-md:hidden">{t("nav.issues")}</Link>
                 <ChevronRight className="size-3 shrink-0 text-placeholder max-md:hidden" aria-hidden="true" />
                 <span className="min-w-0 truncate text-primary">
-                    <span className="text-tertiary max-md:text-secondary" style={issueViewTransitionStyle(issue.identifier, "id")}>{issue.identifier}</span>
+                    <span className="text-tertiary max-md:text-secondary" {...issueTransitionProps(issue.identifier, "id")}>{issue.identifier}</span>
                     <span className="max-md:hidden"> {currentTitle}</span>
                 </span>
                 <FavoriteStar target={{ kind: "issue", projectId: issue.projectId, issueId: issue.id }} />

@@ -18,7 +18,7 @@ import { useMarkAllNotificationsRead, useNotifications, useSetNotificationRead }
 import { ProjectIcon } from "@/features/projects/components/project-icon";
 import { translateStatusName } from "@/i18n/status-label";
 import { urls } from "@/lib/urls";
-import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueTransitionProps } from "@/lib/view-transition";
 import { useDensity } from "@/providers/density";
 import { cx } from "@/utils/cx";
 import { preloadWhenIdle } from "@/lib/preload";
@@ -173,12 +173,12 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex min-w-0 items-center gap-2 text-[13px] max-md:text-[15px]">
                         <ProjectIcon icon={notification.project.iconAppearance ?? notification.project.icon} className="size-3.5 shrink-0" />
-                        <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>
+                        <span className="shrink-0 font-mono text-xs text-tertiary" {...issueTransitionProps(issue.identifier, "id")}>
                             {issue.identifier}
                         </span>
                         <span
                             className={cx("truncate", unread ? "font-medium text-primary" : "text-secondary")}
-                            style={issueViewTransitionStyle(issue.identifier, "title")}
+                            {...issueTransitionProps(issue.identifier, "title")}
                         >
                             {issue.title}
                         </span>

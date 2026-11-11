@@ -1,18 +1,33 @@
-/** A CSS `view-transition-name` is a custom ident: letters, digits, hyphens, and underscores. */
-const CSS_IDENT = /^[A-Za-z_][A-Za-z0-9_-]*$/;
-
 /**
- * One name for the identifier and one for the title, unique per issue, shared by the row and the
- * issue page so the row can expand into the page.
+ * An issue's identifier and title can morph between the row or card that was clicked and the issue page. Elements only
+ * carry a marker; the router names the one pair that stands for the issue being opened or left, at the moment the
+ * transition starts. Naming every row up front made each navigation capture hundreds of elements, and any issue shown
+ * on both pages (a row in My issues and a card on the board) stretched from one shape into the other.
  */
-export function issueViewTransitionName(identifier: string, part: "id" | "title"): string | undefined {
-    const name = `issue-${part}-${identifier}`;
-    return CSS_IDENT.test(name) ? name : undefined;
+export function issueTransitionProps(identifier: string, part: "id" | "title"): { "data-issue-transition": string } {
+    return { "data-issue-transition": `${part}:${identifier}` };
 }
 
-export function issueViewTransitionStyle(identifier: string, part: "id" | "title"): { viewTransitionName: string } | undefined {
-    const viewTransitionName = issueViewTransitionName(identifier, part);
-    return viewTransitionName ? { viewTransitionName } : undefined;
+function onScreen(element: HTMLElement) {
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+}
+
+/**
+ * Gives the first on-screen element marked for `identifier` the shared name for its part (`issue-id`, `issue-title`), so
+ * exactly one element per name takes part in the transition. Returns a function that takes the names away again.
+ */
+export function nameIssueTransition(identifier: string | undefined): () => void {
+    if (!identifier) return () => undefined;
+    const named: HTMLElement[] = [];
+    for (const part of ["id", "title"] as const) {
+        const marker = CSS.escape(`${part}:${identifier}`);
+        const element = [...document.querySelectorAll<HTMLElement>(`[data-issue-transition="${marker}"]`)].find(onScreen);
+        if (!element) continue;
+        element.style.viewTransitionName = `issue-${part}`;
+        named.push(element);
+    }
+    return () => named.forEach((element) => (element.style.viewTransitionName = ""));
 }
 
 /** Passed to `navigate` so the router runs a view transition. The title rides along for the first paint. */
@@ -22,6 +37,11 @@ export function issueNavigation(title?: string): { viewTransition: true; state?:
 
 function issueIdentifier(pathname: string): string | undefined {
     return /^\/issue\/([^/]+)/.exec(pathname)?.[1];
+}
+
+/** The issue a navigation opens or returns from, whose row or card may morph with its page. Others only cross-fade. */
+export function transitionIssue(from: string, to: string): string | undefined {
+    return issueIdentifier(to) ?? issueIdentifier(from);
 }
 
 /**

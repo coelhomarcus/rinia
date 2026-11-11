@@ -5,7 +5,7 @@ import { GripVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
 import { cx } from "@/utils/cx";
-import { dragSlotClass } from "./drag-feedback";
+import { dragSlotClass, sortableTransition } from "./drag-feedback";
 import { IssueListRow } from "./issue-list-row";
 import { propertyIcon } from "./issue-property-menus";
 
@@ -15,7 +15,7 @@ import { propertyIcon } from "./issue-property-menus";
  */
 export function SortableIssueListRow({ sortable, ...props }: Omit<ComponentProps<typeof IssueListRow>, "drag"> & { sortable: boolean }) {
     const { t } = useTranslation();
-    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.issue.id, disabled: !sortable });
+    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.issue.id, disabled: !sortable, transition: sortableTransition });
     const handle = sortable ? (
         <button
             ref={setActivatorNodeRef}

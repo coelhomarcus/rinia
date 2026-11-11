@@ -304,8 +304,9 @@ export const MyIssuesPage = () => {
                         return (
                             <Collapse key={group.key} open={remaining > 0} lazy={false}>
                                 <section aria-label={group.label ?? t("myIssues.title")}>
+                                    {/* The group's header stays at the top while its rows scroll under it, on an opaque base so they do not show through. */}
                                     {group.label && (
-                                        <h2 className="bg-layer-transparent-hover">
+                                        <h2 className="sticky top-0 z-10 bg-surface-1">
                                             <button
                                                 type="button"
                                                 aria-expanded={!collapsed}
@@ -317,7 +318,7 @@ export const MyIssuesPage = () => {
                                                         return next;
                                                     })
                                                 }
-                                                className="flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] px-3 text-left text-[13px] text-secondary"
+                                                className="flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] bg-layer-transparent-hover px-3 text-left text-[13px] text-secondary max-md:px-4"
                                             >
                                                 <ChevronDown
                                                     className={`size-3.5 text-placeholder transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
@@ -422,7 +423,7 @@ function MyIssuesSkeleton() {
     return (
         <div className="divide-y divide-subtle" aria-label={t("common.loading")} role="status">
             {["one", "two", "three", "four", "five"].map((key) => (
-                <div key={key} className="flex h-9 items-center gap-4 px-4">
+                <div key={key} className="flex h-[var(--row-height)] items-center gap-4 px-4 max-md:h-15">
                     <Skeleton className="h-3 w-16 shrink-0" />
                     <Skeleton className="h-3 min-w-0 flex-1" />
                     <Skeleton className="size-4 shrink-0 rounded-full" />

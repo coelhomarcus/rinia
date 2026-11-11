@@ -454,6 +454,12 @@ html[data-theme*="dark"] .chart-accent {
     from { opacity: 0; }
 }
 
+/* A dragged card rises into its lift (scale and shadow) instead of jumping to it. */
+@keyframes rinia-drag-lift {
+    from { scale: 1; box-shadow: var(--elevation-low); }
+}
+.animate-drag-lift { animation: rinia-drag-lift 200ms var(--ease-out-quint); }
+
 /* The same motion for menus that are not built on Base UI, such as the right-click menu. */
 @keyframes rinia-popup-in {
     from { opacity: 0; transform: scale(0.97); }

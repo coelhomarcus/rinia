@@ -13,7 +13,7 @@ import { LoadingState } from "@/components/feedback/loading-state";
 import { ConfirmDialog } from "@/components/overlay/confirm-dialog";
 import { NamedColorForm } from "@/components/settings/named-color-form";
 import { SettingsGroup, SettingsHeading, SettingsItemRow, SettingsRowActions } from "@/components/settings/settings-layout";
-import { DragLift, dragSlotClass, useDragTilt } from "@/features/issues/components/drag-feedback";
+import { DragLift, dragSlotClass, sortableTransition, useDragTilt } from "@/features/issues/components/drag-feedback";
 import { dragSurfaceClass, useIssueDragSensors } from "@/features/issues/lib/drag-sensors";
 import { ApiError } from "@/lib/api-client";
 import { cx } from "@/utils/cx";
@@ -23,7 +23,7 @@ import { COLUMN_COLORS } from "./column-color";
 
 function SortableStateRow({ id, disabled, children }: { id: string; disabled: boolean; children: (handle: ReactNode) => ReactNode }) {
     const { t } = useTranslation();
-    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled });
+    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled, transition: sortableTransition });
     const handle = disabled ? null : (
         <button
             type="button"

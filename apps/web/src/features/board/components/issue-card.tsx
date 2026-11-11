@@ -5,13 +5,13 @@ import type { UpdateIssueInput } from "@rinia/shared";
 import { useLocation } from "react-router";
 import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { Issue, IssuePerson } from "@/features/issues/api";
-import { dragSlotClass } from "@/features/issues/components/drag-feedback";
+import { dragSlotClass, sortableTransition } from "@/features/issues/components/drag-feedback";
 import { DueDateMenu } from "@/features/issues/components/due-date-picker";
 import { IssueMotionFrame } from "@/features/issues/components/issue-motion";
 import { AssigneeMenu, EstimateMenu, LabelMenu, PriorityMenu, StatusMenu } from "@/features/issues/components/issue-property-menus";
 import { dragSurfaceClass } from "@/features/issues/lib/drag-sensors";
 import { useIssueSelection } from "@/features/issues/selection";
-import { issueViewTransitionStyle } from "@/lib/view-transition";
+import { issueTransitionProps } from "@/lib/view-transition";
 import { cx } from "@/utils/cx";
 
 type Status = { id: string; name: string; color: string | null };
@@ -134,7 +134,7 @@ export const IssueCardContent = ({
             <div className="flex h-5 items-center justify-between gap-2">
                 <span
                     className="text-[11px] font-medium tracking-wide text-tertiary"
-                    style={shareTransition ? issueViewTransitionStyle(issue.identifier, "id") : undefined}
+                    {...(shareTransition ? issueTransitionProps(issue.identifier, "id") : {})}
                 >
                     {issue.identifier}
                 </span>
@@ -144,7 +144,7 @@ export const IssueCardContent = ({
                 <StatusMenu value={status} statuses={statuses} onChange={(columnId) => onUpdate({ columnId })} className="text-tertiary" />
                 <p
                     className="line-clamp-2 min-w-0 text-[13px] leading-5 font-medium text-primary"
-                    style={shareTransition ? issueViewTransitionStyle(issue.identifier, "title") : undefined}
+                    {...(shareTransition ? issueTransitionProps(issue.identifier, "title") : {})}
                 >
                     {issue.title}
                 </p>
@@ -203,7 +203,7 @@ export const IssueCard = ({
     suspendLayout = false,
 }: IssueCardProps) => {
     const onUpdate = useCallback((input: UpdateIssueInput) => onUpdateIssue(issue.identifier, input), [issue.identifier, onUpdateIssue]);
-    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id });
+    const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({ id: issue.id, transition: sortableTransition });
 
     const location = useLocation();
     const selected = location.pathname.endsWith(`/issues/${issue.identifier}`);
