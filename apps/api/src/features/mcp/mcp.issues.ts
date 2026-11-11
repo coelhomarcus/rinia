@@ -126,7 +126,7 @@ export function registerIssueTools(context: McpContext) {
             title: "List my issues",
             description: "Lists issues across every project that are assigned to you, that you created, or that you follow, most recently updated first.",
             inputSchema: {
-                filter: z.enum(myIssuesFilterValues).optional().describe('"assigned" (the default), "created" or "following".'),
+                filter: z.enum(myIssuesFilterValues).optional().describe('"assigned" (the default), "created", "following", or "activity" (issues you acted on lately, most recent first).'),
                 includeClosed: z.boolean().optional().describe("Also list issues in closed states, such as Done. Default false."),
                 limit: z.number().int().min(1).max(200).optional().describe("Default 50."),
             },

@@ -45,7 +45,9 @@ export const MyIssuesPage = () => {
     const filter = readFilter(params.filter);
     const [searchParams, setSearchParams] = useSearchParams();
     const orderBy = readOrder(searchParams.get("order"));
-    const groupBy = readGroup(searchParams.get("group"));
+    // Activity reads as a timeline, so it is not grouped unless asked.
+    const defaultGroup: GroupBy = filter === "activity" ? "none" : "status";
+    const groupBy = readGroup(searchParams.get("group"), defaultGroup);
     const search = searchParams.get("q") ?? "";
     const priority = searchParams.get("priority") ?? "";
     const status = searchParams.get("status") ?? "";
@@ -255,6 +257,7 @@ export const MyIssuesPage = () => {
         if (filter === "created") return { illustration: "kanban" as const, title: t("myIssues.emptyCreatedTitle"), description: t("myIssues.emptyCreated") };
         if (filter === "following")
             return { illustration: "mail" as const, title: t("myIssues.emptyFollowingTitle"), description: t("myIssues.emptyFollowing") };
+        if (filter === "activity") return { illustration: "check" as const, title: t("myIssues.emptyActivityTitle"), description: t("myIssues.emptyActivity") };
         return { illustration: "briefcase" as const, title: t("myIssues.emptyAssignedTitle"), description: t("myIssues.emptyAssigned") };
     }
 
@@ -279,6 +282,7 @@ export const MyIssuesPage = () => {
                     <IssueToolbar
                         filters={toolbarFilters}
                         defaultOrder="updated"
+                        defaultGroup={defaultGroup}
                         orders={[
                             { id: "updated", label: t("issue.recentlyUpdated"), icon: History },
                             { id: "priority", label: t("issue.priority"), icon: SignalHigh },
@@ -434,15 +438,15 @@ function MyIssuesSkeleton() {
 }
 
 function readFilter(value: string | undefined): MyIssuesFilter {
-    return value === "created" || value === "following" ? value : "assigned";
+    return value === "created" || value === "following" || value === "activity" ? value : "assigned";
 }
 
 function readOrder(value: string | null): OrderBy {
     return value === "priority" || value === "number" || value === "due" ? value : "updated";
 }
 
-function readGroup(value: string | null): GroupBy {
-    return value === "none" || value === "project" ? value : "status";
+function readGroup(value: string | null, fallback: GroupBy): GroupBy {
+    return value === "none" || value === "project" || value === "status" ? value : fallback;
 }
 
 preloadWhenIdle(() => import("@/features/issues/components/issue-view/issue-view"));

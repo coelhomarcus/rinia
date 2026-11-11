@@ -453,9 +453,13 @@ export const Board = ({
     );
 };
 
-const EMPTY_COLUMN_ISSUES: Issue[] = [];
+/** How many of a closed column's most recent cards show before the rest is asked for. */
+const CLOSED_PREVIEW = 10;
 
-/** Loads one column's cards a page at a time. Closed columns stay counted until they are opened or a card is dragged onto them. */
+/**
+ * Loads one column's cards a page at a time. A closed column (Done, Cancelled) shows only its most recent cards,
+ * newest first, with a button for the rest: the latest finished work stays in view without the whole history.
+ */
 function ColumnWindow({
     column,
     issues,
@@ -466,26 +470,30 @@ function ColumnWindow({
     ...rest
 }: ColumnProps & { onLoaded: (columnId: string, next: Issue[]) => void; onTotal: (columnId: string, total: number) => void }) {
     const closed = columnBucket(column.name) === "closed";
-    const [revealed, setRevealed] = useState(!closed);
-    const query = useMemo(() => ({ columnId: column.id, orderBy: "position" as const, limit: 40, closed: "include" as const }), [column.id]);
-    const countQuery = useMemo(() => ({ columnId: column.id, orderBy: "position" as const, limit: 0, closed: "include" as const }), [column.id]);
-    const window = useIssueWindow(projectId, query, { enabled: revealed });
-    const count = useIssueWindow(projectId, countQuery, { enabled: closed && !revealed });
+    const [expanded, setExpanded] = useState(!closed);
+    const query = useMemo(
+        () =>
+            closed
+                ? { columnId: column.id, orderBy: "updated" as const, limit: CLOSED_PREVIEW, closed: "include" as const }
+                : { columnId: column.id, orderBy: "position" as const, limit: 40, closed: "include" as const },
+        [closed, column.id],
+    );
+    const window = useIssueWindow(projectId, query);
     const loadMore = useCallback(() => void window.fetchNextPage(), [window.fetchNextPage]);
-    const showCompleted = useCallback(() => setRevealed(true), []);
+    const showMore = useCallback(() => {
+        setExpanded(true);
+        void window.fetchNextPage();
+    }, [window.fetchNextPage]);
 
     useEffect(() => {
-        if (lit && closed && !revealed) setRevealed(true);
-    }, [closed, lit, revealed]);
+        onLoaded(column.id, window.issues);
+    }, [column.id, onLoaded, window.issues]);
 
     useEffect(() => {
-        onLoaded(column.id, revealed ? window.issues : EMPTY_COLUMN_ISSUES);
-    }, [column.id, onLoaded, revealed, window.issues]);
+        onTotal(column.id, Math.max(issues.length, window.total));
+    }, [column.id, issues.length, onTotal, window.total]);
 
-    useEffect(() => {
-        onTotal(column.id, Math.max(issues.length, revealed ? window.total : count.total));
-    }, [column.id, count.total, issues.length, onTotal, revealed, window.total]);
-
+    const remaining = window.total - issues.length;
     return (
         <Column
             {...rest}
@@ -493,14 +501,14 @@ function ColumnWindow({
             issues={issues}
             projectId={projectId}
             lit={lit}
-            hasMore={revealed && !!window.hasNextPage}
+            hasMore={expanded && !!window.hasNextPage}
             loadingMore={window.isFetchingNextPage}
             onLoadMore={loadMore}
-            pending={revealed ? window.isLoading : count.isLoading}
-            failed={window.isError || count.isError}
-            total={revealed ? window.total : count.total}
-            hiddenCompleted={!revealed && count.total > 0 ? count.total : null}
-            onShowCompleted={showCompleted}
+            pending={window.isLoading}
+            failed={window.isError}
+            total={window.total}
+            hiddenCompleted={!expanded && remaining > 0 ? remaining : null}
+            onShowCompleted={showMore}
         />
     );
 }

@@ -59,7 +59,7 @@ function LegacyProjectRedirect() {
     else if (section === "issues") {
         const scope = search.get("scope");
         search.delete("scope");
-        // Links from before "all" became the default left the scope out to mean active.
+        // Old links left the scope out to mean active, which is the default again.
         to = urls.issues(key, scope === "backlog" || scope === "all" ? scope : "active");
     } else if (section === "board") {
         search.set("view", "board");

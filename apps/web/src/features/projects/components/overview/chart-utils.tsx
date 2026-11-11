@@ -1,6 +1,5 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { cx } from "@/utils/cx";
-import type { Granularity, PeriodBucket } from "./period-buckets";
 
 /** A YYYY-MM-DD day from the API as a Date at UTC midnight, so formatting never shifts it a day. */
 export function parseDay(day: string): Date {
@@ -10,30 +9,6 @@ export function parseDay(day: string): Date {
 
 export function formatDay(day: string, locale: string, options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }): string {
     return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(parseDay(day));
-}
-
-/** A bucket's name in a tooltip or table: "qua., 29 de out.", "3 – 9 de nov." or "novembro de 2026". */
-export function bucketLabel(bucket: PeriodBucket, granularity: Granularity, locale: string): string {
-    if (granularity === "day") return formatDay(bucket.start, locale, { weekday: "short", day: "numeric", month: "short" });
-    if (granularity === "month") return formatDay(bucket.start, locale, { month: "long", year: "numeric" });
-    const range = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-    return range.formatRange(parseDay(bucket.start), parseDay(bucket.end));
-}
-
-/** Where the x axis starts, with the year once the period is long enough to cross one. */
-export function axisStartLabel(buckets: PeriodBucket[], granularity: Granularity, locale: string): string {
-    const first = buckets[0];
-    if (!first) return "";
-    if (granularity === "day") return formatDay(first.start, locale);
-    return formatDay(first.start, locale, granularity === "month" ? { month: "short", year: "numeric" } : { day: "numeric", month: "short", year: "numeric" });
-}
-
-/** A round top for a count axis: 1, 2, 5, 10, 20, 50… at or above `value`. */
-export function niceMax(value: number): number {
-    if (value <= 1) return 1;
-    const magnitude = 10 ** Math.floor(Math.log10(value));
-    for (const step of [1, 2, 5, 10]) if (step * magnitude >= value) return step * magnitude;
-    return 10 * magnitude;
 }
 
 /** The rendered width of an element, kept current as the layout changes. */
@@ -87,19 +62,6 @@ export function ChartTooltip({ x, y, width, height, title, rows, className }: { 
                     </li>
                 ))}
             </ul>
-        </div>
-    );
-}
-
-/** A heading for a chart: its name, and the period's total as the figure. */
-export function ChartHeader({ title, figure, children }: { title: string; figure: ReactNode; children?: ReactNode }) {
-    return (
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-            <div>
-                <h3 className="text-xs font-medium text-tertiary">{title}</h3>
-                <p className="mt-1 text-lg font-semibold text-primary">{figure}</p>
-            </div>
-            {children}
         </div>
     );
 }

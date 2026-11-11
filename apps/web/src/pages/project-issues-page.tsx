@@ -143,14 +143,17 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
     const listView = view === "list";
     const openWindow = useIssueWindow(projectId!, listQuery, { enabled: listView && !filteringClosed });
     const completedQuery = useMemo(() => ({ ...listQuery, closed: "only" as const, limit: 120 }), [listQuery]);
-    const closedCountQuery = useMemo(() => ({ ...completedQuery, limit: 0 }), [completedQuery]);
+    // Until all of them are asked for, the list shows the ten most recently finished issues, so the latest done work
+    // stays in view without loading the project's whole history.
+    const recentClosedQuery = useMemo(() => ({ ...listQuery, closed: "only" as const, orderBy: "updated" as const, limit: 10 }), [listQuery]);
     const completedWindow = useIssueWindow(projectId!, completedQuery, { enabled: listView && (showClosed || filteringClosed) });
-    const closedCount = useIssueWindow(projectId!, closedCountQuery, { enabled: listView && !showClosed && !filteringClosed });
+    const recentClosed = useIssueWindow(projectId!, recentClosedQuery, { enabled: listView && !showClosed && !filteringClosed && scope === "all" });
     const showingClosed = showClosed || filteringClosed;
     const issues = useMemo(
-        () => [...openWindow.issues, ...(showingClosed ? completedWindow.issues : [])],
-        [completedWindow.issues, openWindow.issues, showingClosed],
+        () => [...openWindow.issues, ...(showingClosed ? completedWindow.issues : scope === "all" ? recentClosed.issues : [])],
+        [completedWindow.issues, openWindow.issues, recentClosed.issues, scope, showingClosed],
     );
+    const moreClosed = recentClosed.total - recentClosed.issues.length;
     const isLoading = filteringClosed ? completedWindow.isLoading : openWindow.isLoading;
     const isError = openWindow.isError || completedWindow.isError;
     const filteredIssues = useMemo(
@@ -485,9 +488,9 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                     <div className="animate-enter scrollbar-hide flex min-w-0 items-center gap-1 overflow-x-auto max-md:pr-4 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)]">
                         {(
                             [
-                                ["all", t("issue.allIssues")],
                                 ["active", t("issue.active")],
                                 ...(showBacklog ? [["backlog", t("issue.backlog")] as const] : []),
+                                ["all", t("issue.allIssues")],
                             ] as const
                         ).map(([value, label]) => (
                             <button
@@ -670,13 +673,13 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                                         {(openWindow.isFetchingNextPage || completedWindow.isFetchingNextPage) && (
                                             <p className="py-3 text-center text-xs text-tertiary">{t("common.loading")}</p>
                                         )}
-                                        {!showingClosed && !openWindow.hasNextPage && closedCount.total > 0 && scope === "all" && (
+                                        {!showingClosed && !openWindow.hasNextPage && moreClosed > 0 && scope === "all" && (
                                             <button
                                                 type="button"
                                                 onClick={() => setShowClosed(true)}
                                                 className="flex h-11 w-full items-center justify-center text-[13px] text-secondary hover:bg-layer-transparent-hover hover:text-primary"
                                             >
-                                                {t("issue.showCompleted", { count: closedCount.total })}
+                                                {t("issue.showMoreCompleted", { count: moreClosed })}
                                             </button>
                                         )}
                                         {filteredIssues.length === 0 && <EmptyState framed={false} className="flex-1 py-16" {...listEmptyState()} />}
@@ -764,7 +767,7 @@ function readGroup(value: string | null): GroupBy {
 
 /** The plain issue list opens on every issue; the scope is only in the address when it narrows the list. */
 function readScope(value: string | null): Scope {
-    return value === "backlog" || value === "active" ? value : "all";
+    return value === "backlog" || value === "all" ? value : "active";
 }
 
 /** Saved views leave the scope out when it is active, so views saved before "all" became the default keep their meaning. */

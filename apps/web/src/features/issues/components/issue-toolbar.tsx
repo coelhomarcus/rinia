@@ -134,6 +134,7 @@ export function IssueToolbar({
     orders,
     groups,
     defaultOrder = "position",
+    defaultGroup = "status",
     layout = "list",
     onLayoutChange,
 }: {
@@ -144,6 +145,8 @@ export function IssueToolbar({
     orders?: DisplayOption[];
     groups?: DisplayOption[];
     defaultOrder?: string;
+    /** The grouping the page uses when the address names none. */
+    defaultGroup?: string;
     layout?: IssueView;
     /** Offers the list and board switch at the top of Display. */
     onLayoutChange?: (layout: IssueView) => void;
@@ -246,8 +249,8 @@ export function IssueToolbar({
                                     <Select
                                         aria-label={t("issue.groupBy")}
                                         size="sm"
-                                        selectedKey={query.get("group") ?? "status"}
-                                        onSelectionChange={(value) => set("group", value === "status" ? "" : String(value ?? ""))}
+                                        selectedKey={query.get("group") ?? defaultGroup}
+                                        onSelectionChange={(value) => set("group", value === defaultGroup ? "" : String(value ?? ""))}
                                         items={
                                             groups ?? [
                                                 { id: "none", label: t("issue.noGrouping"), icon: Minus },

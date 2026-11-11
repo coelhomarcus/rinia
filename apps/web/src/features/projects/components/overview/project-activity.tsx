@@ -1,15 +1,12 @@
-import { useMemo, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { ErrorMessage } from "@/components/feedback/error-message";
 import { useProjectStats } from "../../hooks/use-project-stats";
 import { formatDay } from "./chart-utils";
-import { CompletedAreaChart } from "./completed-area-chart";
-import { bucketPeriod } from "./period-buckets";
 import { PeoplePerformance } from "./people-performance";
 import { useProjectMembers } from "../../hooks/use-project-members";
 import { ContributionHeatmap } from "./contribution-heatmap";
-import { CreatedBarChart } from "./created-bar-chart";
 import { StatCards } from "./stat-cards";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
@@ -19,7 +16,6 @@ export function ProjectActivity({ projectId, accent }: { projectId: string; acce
     const { t, i18n } = useTranslation();
     const { data: stats, isLoading, isError } = useProjectStats(projectId);
     const { data: members } = useProjectMembers(projectId);
-    const series = useMemo(() => (stats ? bucketPeriod(stats.period) : null), [stats]);
 
     return (
         <section className="mt-12" aria-labelledby="project-activity">
@@ -31,7 +27,7 @@ export function ProjectActivity({ projectId, accent }: { projectId: string; acce
             </div>
             {isLoading ? (
                 <ActivitySkeleton />
-            ) : isError || !stats || !series ? (
+            ) : isError || !stats ? (
                 <div className="mt-3">
                     <ErrorMessage message={t("projectStats.loadFailed")} />
                 </div>
@@ -39,8 +35,6 @@ export function ProjectActivity({ projectId, accent }: { projectId: string; acce
                 <div className={`mt-4 flex flex-col gap-10${accent && HEX.test(accent) ? " chart-accent" : ""}`} style={accent && HEX.test(accent) ? ({ "--chart-accent": accent } as CSSProperties) : undefined}>
                     <StatCards stats={stats} />
                     <ContributionHeatmap activity={stats.activity} />
-                    <CompletedAreaChart {...series} />
-                    <CreatedBarChart {...series} />
                     <PeoplePerformance people={stats.people} members={members} />
                 </div>
             )}
@@ -61,8 +55,7 @@ function ActivitySkeleton() {
                 ))}
             </div>
             <Skeleton className="h-[120px] w-full" />
-            <Skeleton className="h-[190px] w-full" />
-            <Skeleton className="h-[190px] w-full" />
+            <Skeleton className="h-32 w-full" />
         </div>
     );
 }

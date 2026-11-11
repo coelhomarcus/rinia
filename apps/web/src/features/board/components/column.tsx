@@ -100,7 +100,7 @@ export const Column = memo(function Column({
     const loadMoreRef = useRef(onLoadMore);
     loadMoreRef.current = hasMore && !loadingMore ? onLoadMore : undefined;
     const virtualizer = useVirtualizer({
-        count: hiddenCompleted == null ? issues.length : 0,
+        count: issues.length,
         getScrollElement: () => scrollRef.current,
         estimateSize: () => 104,
         overscan: 6,
@@ -108,7 +108,7 @@ export const Column = memo(function Column({
     });
     useEffect(() => {
         const element = scrollRef.current;
-        if (!element || hiddenCompleted != null) return;
+        if (!element) return;
         const load = () => {
             if (element.scrollHeight <= element.clientHeight + 8 || element.scrollTop + element.clientHeight >= element.scrollHeight - 240)
                 loadMoreRef.current?.();
@@ -116,7 +116,7 @@ export const Column = memo(function Column({
         load();
         element.addEventListener("scroll", load, { passive: true });
         return () => element.removeEventListener("scroll", load);
-    }, [hasMore, hiddenCompleted, issues.length, loadingMore]);
+    }, [hasMore, issues.length, loadingMore]);
     const issuesRef = useRef(issues);
     issuesRef.current = issues;
     useEffect(() => {
@@ -277,22 +277,12 @@ export const Column = memo(function Column({
 
             <div ref={setDropRef} className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
                 {failed && <p className="px-1 text-xs text-danger-primary">{t("issue.couldNotLoadIssues")}</p>}
-                {pending && issues.length === 0 && hiddenCompleted == null && (
+                {pending && issues.length === 0 && (
                     <div className="space-y-2" aria-label={t("common.loading")} role="status">
                         <Skeleton className="h-24 w-full rounded-md" />
                         <Skeleton className="h-20 w-full rounded-md" />
                     </div>
                 )}
-                {hiddenCompleted != null && (
-                    <button
-                        type="button"
-                        onClick={onShowCompleted}
-                        className="flex h-11 items-center justify-center rounded-md px-2 text-[13px] text-secondary hover:bg-layer-1-hover hover:text-primary"
-                    >
-                        {t("issue.showCompleted", { count: hiddenCompleted })}
-                    </button>
-                )}
-                {hiddenCompleted == null && (
                     <SortableContext items={issues.map((issue) => issue.id)} strategy={verticalListSortingStrategy}>
                         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
                             {virtualizer.getVirtualItems().map((virtual) => {
@@ -331,8 +321,16 @@ export const Column = memo(function Column({
                             })}
                         </div>
                     </SortableContext>
+                {hiddenCompleted != null && (
+                    <button
+                        type="button"
+                        onClick={onShowCompleted}
+                        className="flex h-8 shrink-0 items-center justify-center rounded-md text-xs text-tertiary hover:bg-layer-1-hover hover:text-secondary"
+                    >
+                        {t("issue.showMoreCompleted", { count: hiddenCompleted })}
+                    </button>
                 )}
-                {hasMore && hiddenCompleted == null && (
+                {hasMore && (
                     <button
                         type="button"
                         onClick={onLoadMore}

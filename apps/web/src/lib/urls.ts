@@ -21,7 +21,8 @@ export const urls = {
     inbox: () => "/inbox",
     myIssues: (filter: MyIssuesFilter = "assigned") => (filter === "assigned" ? "/my-issues" : `/my-issues/${filter}`),
     project: appPaths.project,
-    issues: (key: string, scope: IssueScope = "all") => (scope === "all" ? `/project/${key}/issues` : `/project/${key}/issues/${scope}`),
+    /** Active is the default scope, as the issues page opens on work that is not done or parked. */
+    issues: (key: string, scope: IssueScope = "active") => (scope === "active" ? `/project/${key}/issues` : `/project/${key}/issues/${scope}`),
     issue: appPaths.issue,
     documents: (key: string) => `/project/${key}/docs`,
     document: appPaths.document,

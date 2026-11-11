@@ -284,17 +284,56 @@ export async function searchIssues(search: IssueSearch) {
 }
 
 /**
- * Issues from every project the user can see that are assigned to them, created by them, or that they follow,
- * with what the list needs to show them outside their project.
+ * When the user last acted on each issue they touched: created it, changed it, edited its description, commented or
+ * reacted to a comment. The most recent first, at most `limit` issues.
+ */
+async function issuesActedOn(userId: string, limit: number) {
+    const [changed, edited, commented, reacted, created] = await Promise.all([
+        db.select({ issueId: issueActivities.issueId, at: max(issueActivities.createdAt) }).from(issueActivities).where(eq(issueActivities.actorId, userId)).groupBy(issueActivities.issueId),
+        db
+            .select({ issueId: issueDescriptionRevisions.issueId, at: max(issueDescriptionRevisions.updatedAt) })
+            .from(issueDescriptionRevisions)
+            .where(eq(issueDescriptionRevisions.authorId, userId))
+            .groupBy(issueDescriptionRevisions.issueId),
+        db
+            .select({ issueId: issueComments.issueId, at: max(issueComments.createdAt) })
+            .from(issueComments)
+            .where(and(eq(issueComments.authorId, userId), isNull(issueComments.deletedAt)))
+            .groupBy(issueComments.issueId),
+        db
+            .select({ issueId: issueComments.issueId, at: max(commentReactions.createdAt) })
+            .from(commentReactions)
+            .innerJoin(issueComments, eq(issueComments.id, commentReactions.commentId))
+            .where(eq(commentReactions.userId, userId))
+            .groupBy(issueComments.issueId),
+        db.select({ issueId: issues.id, at: issues.createdAt }).from(issues).where(eq(issues.createdBy, userId)),
+    ]);
+    const latest = new Map<string, number>();
+    for (const row of [...changed, ...edited, ...commented, ...reacted, ...created]) {
+        if (!row.at) continue;
+        const time = new Date(row.at).getTime();
+        if (time > (latest.get(row.issueId) ?? 0)) latest.set(row.issueId, time);
+    }
+    return new Map([...latest].sort((left, right) => right[1] - left[1]).slice(0, limit));
+}
+
+/**
+ * Issues from every project the user can see that are assigned to them, created by them, that they follow, or that
+ * they acted on lately, with what the list needs to show them outside their project. Activity lists the most recently
+ * touched first unless another order is asked for.
  */
 export async function listMyIssues(userId: string, query: MyIssuesQuery) {
+    const acted = query.filter === "activity" ? await issuesActedOn(userId, 500) : null;
+    if (acted?.size === 0) return [];
     const filters: SQL[] = [
         isNull(issues.deletedAt),
-        query.filter === "assigned"
-            ? eq(issues.assigneeId, userId)
-            : query.filter === "created"
-              ? eq(issues.createdBy, userId)
-              : inArray(issues.id, db.select({ id: issueSubscriptions.issueId }).from(issueSubscriptions).where(eq(issueSubscriptions.userId, userId))),
+        acted
+            ? inArray(issues.id, [...acted.keys()])
+            : query.filter === "assigned"
+              ? eq(issues.assigneeId, userId)
+              : query.filter === "created"
+                ? eq(issues.createdBy, userId)
+                : inArray(issues.id, db.select({ id: issueSubscriptions.issueId }).from(issueSubscriptions).where(eq(issueSubscriptions.userId, userId))),
     ];
     filters.push(visibleIssues(userId));
 
@@ -309,6 +348,7 @@ export async function listMyIssues(userId: string, query: MyIssuesQuery) {
             assignee: { columns: { id: true, name: true, username: true, avatarUrl: true } },
         },
     });
+    if (acted && query.orderBy === "updated") rows.sort((left, right) => (acted.get(right.id) ?? 0) - (acted.get(left.id) ?? 0));
     return rows.map((issue) => ({ ...withLabels(issue), identifier: issueIdentifier(issue) }));
 }
 
