@@ -84,8 +84,8 @@ export const ComboBox = ({
                     )}
                     <BaseCombobox.InputGroup
                         className={cx(
-                            "shadow-xs relative flex w-full items-center gap-2 rounded-md bg-surface-1 ring-1 ring-strong outline-hidden transition-shadow duration-100 ease-linear ring-inset",
-                            "focus-within:ring-2 focus-within:ring-accent-strong",
+                            "relative flex w-full items-center gap-2 rounded-lg bg-surface-1 ring-1 ring-strong outline-hidden transition-shadow duration-100 ease-linear ring-inset",
+                            "focus-within:ring-1 focus-within:ring-accent-strong",
                             "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
                             sizes[size].root,
                         )}
@@ -117,7 +117,7 @@ export const ComboBox = ({
                         <BaseCombobox.Positioner className="z-50 outline-none" sideOffset={4}>
                             <BaseCombobox.Popup
                                 className={cx(
-                                    "overlay-motion shadow-lg min-w-(--anchor-width) overflow-hidden rounded-md bg-surface-1 p-1 ring-1 ring-secondary_alt outline-none",
+                                    "overlay-motion shadow-overlay-200 min-w-(--anchor-width) overflow-hidden rounded-lg bg-menu p-1 ring-1 ring-subtle outline-none",
                                     popoverClassName,
                                 )}
                             >
@@ -139,7 +139,7 @@ export const ComboBoxItem = ({ item, children }: { item: SelectItemType; childre
         <BaseCombobox.Item
             value={item.id}
             disabled={item.isDisabled}
-            className={(state) => cx("w-full rounded-md outline-none data-[highlighted]:bg-layer-1-hover", state.highlighted && "bg-layer-1-hover")}
+            className={(state) => cx("w-full rounded-md outline-none data-[highlighted]:bg-menu-hover", state.highlighted && "bg-menu-hover")}
         >
             <div className={cx("flex cursor-pointer items-center", sizes[size].root)}>
                 {item.avatarUrl && <Avatar size="xs" src={item.avatarUrl} alt={item.label} />}

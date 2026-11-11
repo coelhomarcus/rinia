@@ -13,7 +13,7 @@ export function ShortcutsDialog({ open, onOpenChange }: { open: boolean; onOpenC
         <ModalOverlay isOpen={open} onOpenChange={onOpenChange} isDismissable>
             <Modal className="max-w-2xl">
                 <Dialog>
-                    <div className="flex max-h-[80vh] w-full flex-col overflow-hidden rounded-lg bg-surface-1 shadow-xl ring-1 ring-subtle">
+                    <div className="flex max-h-[80vh] w-full flex-col overflow-hidden rounded-xl bg-menu shadow-overlay-100 ring-1 ring-subtle">
                         <div className="flex items-start justify-between gap-3 border-b border-subtle p-4">
                             <div>
                                 <BaseDialog.Title className="text-base font-semibold text-primary">{t("commands.shortcutsTitle")}</BaseDialog.Title>

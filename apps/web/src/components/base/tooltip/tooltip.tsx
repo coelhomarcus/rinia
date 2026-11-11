@@ -23,10 +23,10 @@ export const Tooltip = ({ title, description, arrow = false, delay = 300, offset
                 <BaseTooltip.Trigger {...props} render={children} />
                 <BaseTooltip.Portal>
                     <BaseTooltip.Positioner side={side} sideOffset={offset}>
-                        <BaseTooltip.Popup className={cx("overlay-motion z-50 flex max-w-xs flex-col items-start gap-2 rounded-md bg-primary-solid px-3 shadow-lg", description ? "py-3" : "py-2")}>
-                            {arrow && <BaseTooltip.Arrow className="fill-bg-primary-solid" />}
-                            <span className="text-xs font-semibold text-white">{title}</span>
-                            {description && <span className="text-xs font-medium text-tooltip-supporting-text">{description}</span>}
+                        <BaseTooltip.Popup className={cx("overlay-motion z-50 flex max-w-xs flex-col items-start gap-1 rounded-lg border border-subtle bg-menu px-2 shadow-overlay-200", description ? "py-2" : "py-1")}>
+                            {arrow && <BaseTooltip.Arrow className="fill-menu" />}
+                            <span className="text-xs font-medium text-secondary">{title}</span>
+                            {description && <span className="text-xs text-tertiary">{description}</span>}
                         </BaseTooltip.Popup>
                     </BaseTooltip.Positioner>
                 </BaseTooltip.Portal>

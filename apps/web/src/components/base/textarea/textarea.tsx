@@ -21,11 +21,11 @@ export const TextAreaBase = ({ className, size = "md", isInvalid, isDisabled, st
         disabled={isDisabled}
         style={{ ...style, "--resize-handle-bg": getResizeHandleBg("#D5D7DA"), "--resize-handle-bg-dark": getResizeHandleBg("#373A41") } as CSSProperties}
         className={cx(
-            "shadow-xs min-h-24 w-full scroll-py-3 rounded-md bg-surface-1 px-3 py-2.5 text-primary ring-1 ring-strong transition duration-100 ease-linear ring-inset placeholder:text-placeholder focus:outline-hidden",
+            "min-h-24 w-full scroll-py-3 rounded-lg bg-surface-1 px-3 py-2.5 text-primary ring-1 ring-strong transition duration-100 ease-linear ring-inset placeholder:text-placeholder focus:outline-hidden",
             size === "sm" && "text-sm",
             size === "md" && "text-md",
             "[&::-webkit-resizer]:bg-(image:--resize-handle-bg) [&::-webkit-resizer]:bg-contain dark:[&::-webkit-resizer]:bg-(image:--resize-handle-bg-dark)",
-            "focus:ring-2 focus:ring-accent-strong",
+            "focus:ring-1 focus:ring-accent-strong",
             isDisabled && "cursor-not-allowed opacity-50",
             isInvalid && "ring-danger-subtle",
             className,

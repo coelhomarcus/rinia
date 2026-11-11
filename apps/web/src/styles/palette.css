@@ -1,0 +1,304 @@
+/*
+ * The palette. Every theme comes from three inputs in LCH: a base gray, an indigo accent and a contrast level.
+ * Surfaces, borders, text and controls are steps in lightness away from the base, so the two themes keep the same
+ * relationships: the sidebar sits a step below the content panel, cards and controls a step above it, menus one more.
+ * Status colors (red, green, yellow, orange, blue) are fixed LCH points, shared by both themes; only their text
+ * variants move, darker on light and lighter on dark, so they read on every surface.
+ *
+ *            light (base lch 98 0.5 282)          dark (base lch 5.5 0.4 272)
+ * sidebar    #efeff0                              #09090a
+ * content    #f9f9fa                              #121213
+ * control    #ffffff                              #1b1c1d
+ * menu       #ffffff                              #202122
+ * accent     #6d78d5  lch(53 52 287)              #5e6ad2  lch(48 59 288)
+ * red        #f34e52  lch(58 73 29)               #f34e52
+ */
+
+/* ---------- Accent ramp: indigo, hue 288. 100 is the faintest tint, 1200 the strongest. ---------- */
+:root {
+    --brand-100: lch(97 4 288);
+    --brand-200: lch(94 8 288);
+    --brand-300: lch(89 15 288);
+    --brand-400: lch(81 26 288);
+    --brand-500: lch(71 38 288);
+    --brand-600: lch(61 48 288);
+    --brand-700: lch(53 52 287);
+    --brand-800: lch(47 50 287);
+    --brand-900: lch(42 50 288);
+    --brand-1000: lch(36 45 288);
+    --brand-1100: lch(29 38 288);
+    --brand-1200: lch(22 30 288);
+    --brand-default: #6d78d5;
+}
+
+:root[data-theme*="dark"] {
+    --brand-100: lch(14 12 288);
+    --brand-200: lch(19 20 288);
+    --brand-300: lch(25 30 288);
+    --brand-400: lch(32 40 288);
+    --brand-500: lch(40 50 288);
+    --brand-600: lch(48 59 288);
+    --brand-700: lch(57 62 288);
+    --brand-800: lch(67 50 288);
+    --brand-900: lch(77 36 288);
+    --brand-1000: lch(85 24 288);
+    --brand-1100: lch(91 14 288);
+    --brand-1200: lch(96 6 288);
+    --brand-default: #5e6ad2;
+}
+
+/* ---------- Light ---------- */
+html:not([data-theme*="dark"]) {
+    /* Surfaces: the sidebar one step below the content panel, controls and cards white above it. */
+    --bg-canvas: #efeff0;
+    --bg-surface-1: #f9f9fa;
+    --bg-surface-2: #f1f1f2;
+    --bg-layer-1: #ffffff;
+    --bg-layer-1-hover: #f0f0f1;
+    --bg-layer-1-active: #ececed;
+    --bg-layer-1-selected: #e6e6e8;
+    --bg-layer-2: #ffffff;
+    --bg-layer-2-hover: #f3f3f4;
+    --bg-layer-2-active: #ececed;
+    --bg-layer-2-selected: #ececed;
+    --bg-layer-3: #ececed;
+    --bg-layer-3-hover: #e6e6e7;
+    --bg-layer-3-active: #e0e0e1;
+    --bg-layer-3-selected: #e0e0e1;
+    --bg-layer-transparent-hover: rgb(0 0 0 / 4%);
+    --bg-layer-transparent-active: rgb(0 0 0 / 6%);
+    --bg-layer-transparent-selected: rgb(0 0 0 / 6%);
+    --bg-layer-disabled: #efeff0;
+    --bg-inverse: #1b1b1c;
+    --bg-inverse-hover: #2f2f31;
+    --bg-menu: #ffffff;
+    --bg-menu-hover: #f0f0f1;
+    --bg-backdrop: rgb(0 0 0 / 25%);
+
+    /* Borders. The alpha borders sit on any surface, so a control's edge reads the same on the page and in a menu. */
+    --border-subtle: #e0e0e1;
+    --border-subtle-1: #d9d9da;
+    --border-strong: #d3d3d4;
+    --border-strong-1: #b5b5b6;
+    --border-disabled: #ececed;
+    --border-control: rgb(0 0 0 / 9%);
+    --border-control-hover: rgb(0 0 0 / 15%);
+
+    /* Text. Primary is for titles, secondary for body copy and labels, tertiary for metadata. */
+    --txt-primary: #1b1b1c;
+    --txt-secondary: #2f2f31;
+    --txt-tertiary: #5c5c5e;
+    --txt-placeholder: #8a8a8d;
+    --txt-disabled: #a8a8aa;
+    --txt-icon-primary: #1b1b1c;
+    --txt-icon-secondary: #2f2f31;
+    --txt-icon-tertiary: #5c5c5e;
+    --txt-icon-placeholder: #8a8a8d;
+    --txt-icon-disabled: #c4c4c6;
+
+    /* Accent */
+    --bg-accent-primary: #6d78d5;
+    --bg-accent-primary-hover: #5e6ac1;
+    --bg-accent-primary-active: #535eb0;
+    --bg-accent-subtle: #ebecf6;
+    --bg-accent-subtle-hover: #e3e4f4;
+    --bg-accent-subtle-active: #daddf2;
+    --border-accent-strong: #6d78d5;
+    --border-accent-subtle: #c9cdef;
+    --txt-accent-primary: #5e6ad2;
+    --txt-accent-secondary: #4f5bc4;
+    --txt-link-primary: #5e6ad2;
+    --txt-icon-accent-primary: #6d78d5;
+
+    /* Danger */
+    --bg-danger-primary: #f34e52;
+    --bg-danger-primary-hover: #e33f47;
+    --bg-danger-primary-active: #d32e3b;
+    --bg-danger-subtle: #f8e8e9;
+    --bg-danger-subtle-hover: #f8dedf;
+    --bg-danger-subtle-active: #f5d3d4;
+    --bg-danger-transparent-hover: #f8e8e9;
+    --border-danger-strong: #f34e52;
+    --border-danger-subtle: #f3c3c5;
+    --txt-danger-primary: #e2253b;
+    --txt-danger-secondary: #c81e33;
+    --txt-icon-danger-primary: #e2253b;
+    --txt-icon-danger-secondary: #f34e52;
+
+    /* Success, warning */
+    --bg-success-primary: #44bc58;
+    --bg-success-subtle: #e3f2e7;
+    --border-success-strong: #44bc58;
+    --border-success-subtle: #bfe3c7;
+    --txt-success-primary: #008419;
+    --txt-success-secondary: #27a644;
+    --txt-icon-success-primary: #008419;
+    --bg-warning-primary: #f0bf00;
+    --bg-warning-subtle: #f8f1d7;
+    --border-warning-strong: #e1b200;
+    --border-warning-subtle: #ecdca0;
+    /* Amber text reads at 4.5:1 or more on every light surface, the sidebar included. */
+    --txt-warning-primary: #946600;
+    --txt-warning-secondary: #a87a00;
+    --txt-icon-warning-primary: #946600;
+    --txt-icon-states-started: #e1b200;
+
+    /* Priority: urgent is the only one in color; the bars are the muted text color, so they never compete with status. */
+    --priority-urgent: #fc7840;
+    --priority-high: #5c5c5e;
+    --priority-medium: #5c5c5e;
+    --priority-low: #5c5c5e;
+    --priority-none: #8a8a8d;
+
+    /* Elevation: low under controls, medium under menus and popovers, high under dialogs. */
+    --elevation-low: 0px 3px 6px -2px rgb(0 0 0 / 2%), 0px 1px 1px rgb(0 0 0 / 4%);
+    --elevation-medium: 0 6px 18px rgb(0 0 0 / 4%), 0 3px 9px rgb(0 0 0 / 5%), 0 1px 1px rgb(0 0 0 / 4%);
+    --elevation-high: 0 9px 48px rgb(0 0 0 / 8%), 0 6px 24px rgb(0 0 0 / 10%), 0 1px 1px rgb(0 0 0 / 4%);
+}
+
+/* ---------- Dark ---------- */
+html[data-theme*="dark"] {
+    --bg-canvas: #09090a;
+    --bg-surface-1: #121213;
+    --bg-surface-2: #161617;
+    --bg-layer-1: #191a1b;
+    --bg-layer-1-hover: #222324;
+    --bg-layer-1-active: #29292b;
+    --bg-layer-1-selected: #232426;
+    --bg-layer-2: #1b1c1d;
+    --bg-layer-2-hover: #252527;
+    --bg-layer-2-active: #2d2d2f;
+    --bg-layer-2-selected: #2d2d2f;
+    --bg-layer-3: #222324;
+    --bg-layer-3-hover: #29292b;
+    --bg-layer-3-active: #2d2d2f;
+    --bg-layer-3-selected: #2d2d2f;
+    --bg-layer-transparent-hover: rgb(255 255 255 / 5%);
+    --bg-layer-transparent-active: rgb(255 255 255 / 8%);
+    --bg-layer-transparent-selected: rgb(255 255 255 / 8%);
+    --bg-layer-disabled: #161617;
+    --bg-inverse: #f7f8f8;
+    --bg-inverse-hover: #e3e4e6;
+    --bg-menu: #202122;
+    --bg-menu-hover: #2c2d2f;
+    --bg-backdrop: rgb(0 0 0 / 40%);
+
+    --border-subtle: #232426;
+    --border-subtle-1: #27282b;
+    --border-strong: #2e2f31;
+    --border-strong-1: #3a3b3e;
+    --border-disabled: #1a1b1d;
+    --border-control: rgb(255 255 255 / 13%);
+    --border-control-hover: rgb(255 255 255 / 22%);
+
+    --txt-primary: #f7f8f8;
+    --txt-secondary: #e3e4e6;
+    --txt-tertiary: #959597;
+    --txt-placeholder: #636365;
+    --txt-disabled: #4f5052;
+    --txt-icon-primary: #f7f8f8;
+    --txt-icon-secondary: #e3e4e6;
+    --txt-icon-tertiary: #959597;
+    --txt-icon-placeholder: #636365;
+    --txt-icon-disabled: #3a3b3e;
+
+    --bg-accent-primary: #5e6ad2;
+    --bg-accent-primary-hover: #6975e2;
+    --bg-accent-primary-active: #5361c5;
+    --bg-accent-subtle: #1d1e2e;
+    --bg-accent-subtle-hover: #212439;
+    --bg-accent-subtle-active: #262945;
+    --border-accent-strong: #5e6ad2;
+    --border-accent-subtle: #343a72;
+    --txt-accent-primary: #828fff;
+    --txt-accent-secondary: #9aa4ff;
+    --txt-link-primary: #828fff;
+    --txt-icon-accent-primary: #828fff;
+
+    --bg-danger-primary: #f34e52;
+    --bg-danger-primary-hover: #ff5c5d;
+    --bg-danger-primary-active: #e64249;
+    --bg-danger-subtle: #2d191b;
+    --bg-danger-subtle-hover: #3a1d1e;
+    --bg-danger-subtle-active: #44201f;
+    --bg-danger-transparent-hover: #2d191b;
+    --border-danger-strong: #f34e52;
+    --border-danger-subtle: #5a2427;
+    --txt-danger-primary: #ff8683;
+    --txt-danger-secondary: #f34e52;
+    --txt-icon-danger-primary: #ff8683;
+    --txt-icon-danger-secondary: #f34e52;
+
+    --bg-success-primary: #27a644;
+    --bg-success-subtle: #152419;
+    --border-success-strong: #27a644;
+    --border-success-subtle: #1f4a2a;
+    --txt-success-primary: #4cc66a;
+    --txt-success-secondary: #27a644;
+    --txt-icon-success-primary: #4cc66a;
+    --bg-warning-primary: #f0bf00;
+    --bg-warning-subtle: #2d2711;
+    --border-warning-strong: #f0bf00;
+    --border-warning-subtle: #5a4a12;
+    --txt-warning-primary: #eec00a;
+    --txt-warning-secondary: #d9ae00;
+    --txt-icon-warning-primary: #eec00a;
+    --txt-icon-states-started: #f0bf00;
+
+    --priority-urgent: #fc7840;
+    --priority-high: #959597;
+    --priority-medium: #959597;
+    --priority-low: #959597;
+    --priority-none: #636365;
+
+    --elevation-low: 0px 0.5px 1px 1px rgb(0 0 0 / 30%);
+    --elevation-medium: 0 4px 24px rgb(0 0 0 / 20%), 0 3px 8px rgb(0 0 0 / 12.5%), 0 1px 1px rgb(0 0 0 / 12.5%);
+    --elevation-high: 0 4px 40px rgb(0 0 0 / 10%), 0 3px 20px rgb(0 0 0 / 12.5%), 0 3px 12px rgb(0 0 0 / 12.5%), 0 2px 8px rgb(0 0 0 / 12.5%), 0 1px 1px rgb(0 0 0 / 12.5%);
+}
+
+/*
+ * Tailwind writes a theme shadow into each utility when it builds, so the per-theme values go through these
+ * runtime variables: `shadow-raised-*` sits under controls, `shadow-overlay-200` under menus and popovers,
+ * `shadow-overlay-100` under dialogs.
+ */
+@theme {
+    --shadow-raised-100: var(--elevation-low);
+    --shadow-raised-200: var(--elevation-low);
+    --shadow-raised-300: var(--elevation-medium);
+    --shadow-overlay-200: var(--elevation-medium);
+    --shadow-overlay-100: var(--elevation-high);
+}
+
+/* Utilities for the tokens the vendored set does not name: menus and the alpha edge of a control. */
+@theme inline {
+    --color-menu: var(--bg-menu);
+    --color-menu-hover: var(--bg-menu-hover);
+    --color-control-edge: var(--border-control);
+    --color-control-edge-hover: var(--border-control-hover);
+}
+
+/*
+ * Chart colours. Two categorical series (indigo, then orange) and a one-hue indigo ramp for the contribution map.
+ * In dark mode the ramp runs the other way, so more activity is always the brighter cell.
+ */
+html:not([data-theme*="dark"]) {
+    --chart-series-1: #6d78d5;
+    --chart-series-2: #fc7840;
+    --chart-grid: #e6e6e8;
+    --chart-heat-0: #ececed;
+    --chart-heat-1: #c3c8f0;
+    --chart-heat-2: #8f98e0;
+    --chart-heat-3: #5e6ad2;
+    --chart-heat-4: #343c8f;
+}
+
+html[data-theme*="dark"] {
+    --chart-series-1: #5e6ad2;
+    --chart-series-2: #fc7840;
+    --chart-grid: #232426;
+    --chart-heat-0: #1b1c1d;
+    --chart-heat-1: #262945;
+    --chart-heat-2: #3c449a;
+    --chart-heat-3: #5e6ad2;
+    --chart-heat-4: #a3abf5;
+}

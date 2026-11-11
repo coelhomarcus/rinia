@@ -41,7 +41,7 @@ interface IssueQuickCreateModalProps {
 const pill =
     "flex h-7 max-w-56 shrink-0 items-center gap-1 rounded-full border border-subtle px-2.5 text-xs text-secondary outline-none transition-colors hover:bg-layer-2-hover hover:text-primary focus-visible:ring-2 focus-visible:ring-accent-strong data-[popup-open]:bg-layer-2-hover";
 const menuItem =
-    "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary";
+    "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";
 
 /**
  * Creates an issue, laid out like Linear's: the project and "New issue" on top, a large title and a description,
@@ -112,7 +112,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
     return (
         <Dialog.Root open={open} onOpenChange={(next) => !next && !createIssue.isPending && setOpen(false)} onOpenChangeComplete={(isOpen) => !isOpen && onClose()}>
             <Dialog.Portal>
-                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay/60 transition-opacity duration-(--motion-enter) data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay transition-opacity duration-(--motion-enter) data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
                 <Dialog.Viewport
                     className={cx("fixed inset-0 z-50 flex justify-center overflow-y-auto p-safe-4", expanded ? "items-center" : "items-start pt-[max(12vh,env(safe-area-inset-top,0px))]")}
                 >

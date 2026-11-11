@@ -54,7 +54,7 @@ export const Sheet = ({ open, onOpenChange, title, children, className, side = "
                     className={cx(
                         "fixed inset-0 transition-opacity duration-300 ease-out data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
                         backdropLayer,
-                        bottom ? "bg-overlay/70" : "bg-transparent",
+                        bottom ? "bg-overlay" : "bg-transparent",
                     )}
                 />
                 <BaseDialog.Viewport

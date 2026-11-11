@@ -1,7 +1,7 @@
 export const controlScale = {
     button: {
-        xs: "h-5 px-1.5 text-xs", sm: "h-6 px-2 text-xs", md: "h-7 px-2 text-xs",
-        lg: "h-8 px-2 text-sm", xl: "h-10 px-3 text-md",
+        xs: "h-5 px-2 text-xs", sm: "h-6 px-2 text-xs", md: "h-7 px-2.5 text-xs",
+        lg: "h-8 px-3 text-sm", xl: "h-10 px-4 text-sm",
     },
     iconButton: { xs: "size-5", sm: "size-6", md: "size-7", lg: "size-8", xl: "size-10" },
     field: { sm: "h-7 px-2 text-sm", md: "h-8 px-3 text-sm", lg: "h-10 px-3 text-md" },

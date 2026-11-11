@@ -13,7 +13,7 @@ const sizes = {
 };
 
 const themes = {
-    light: "text-placeholder hover:bg-layer-1-hover hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 outline-accent-strong",
+    light: "text-tertiary hover:bg-layer-transparent-hover hover:text-secondary focus-visible:outline-2 focus-visible:outline-offset-2 outline-accent-strong",
     dark: "text-fg-white/70 hover:text-fg-white hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 outline-accent-strong",
 };
 
@@ -32,7 +32,7 @@ export const CloseButton = ({ label, className, size = "sm", theme = "light", on
             onClick={onPress || otherProps.onClick}
             aria-label={label || t("common.close")}
             className={cx(
-                    "flex cursor-pointer items-center justify-center rounded-md transition duration-150 ease-out focus:outline-hidden motion-safe:active:scale-90",
+                    "flex cursor-pointer items-center justify-center rounded-full transition duration-150 ease-out hover:duration-0 focus:outline-hidden",
                     sizes[size].root,
                     themes[theme],
                     className,

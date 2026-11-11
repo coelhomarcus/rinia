@@ -4,28 +4,14 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource/ibm-plex-mono";
 @import "./theme.css";
+@import "./palette.css";
 @import "./typography.css";
 @import "./prose.css";
 
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
-/* A true link blue (#2563eb at its center) in both themes. Each step keeps the hue near 262 so tints never
-   drift toward violet or cyan. Light: hover and active step darker (900, 1000). Dark: they step darker too (500, 400). */
 :root {
-    --brand-100: oklch(0.97 0.014 258);
-    --brand-200: oklch(0.932 0.032 258);
-    --brand-300: oklch(0.882 0.059 258);
-    --brand-400: oklch(0.809 0.105 258);
-    --brand-500: oklch(0.707 0.165 259);
-    --brand-600: oklch(0.623 0.214 260);
-    --brand-700: oklch(0.546 0.245 262.9);
-    --brand-800: oklch(0.515 0.245 263.6);
-    --brand-900: oklch(0.488 0.243 264.4);
-    --brand-1000: oklch(0.424 0.199 265.6);
-    --brand-1100: oklch(0.379 0.146 265.5);
-    --brand-1200: oklch(0.282 0.091 267.9);
-    --brand-default: oklch(0.546 0.245 262.9);
     /* Comfortable density. Compact tightens these; a coarse pointer keeps rows at 44px. */
     --row-height: 2.25rem;
     --sidebar-height: 1.75rem;
@@ -66,23 +52,6 @@ html[data-density="compact"] {
         display: flex;
     }
 }
-
-:root[data-theme*="dark"] {
-    --brand-100: oklch(0.27 0.07 264);
-    --brand-200: oklch(0.32 0.09 264);
-    --brand-300: oklch(0.38 0.12 264);
-    --brand-400: oklch(0.45 0.18 264);
-    --brand-500: oklch(0.5 0.21 264);
-    --brand-600: oklch(0.62 0.19 260);
-    --brand-700: oklch(0.71 0.15 258);
-    --brand-800: oklch(0.8 0.1 258);
-    --brand-900: oklch(0.88 0.06 258);
-    --brand-1000: oklch(0.92 0.04 258);
-    --brand-1100: oklch(0.95 0.02 258);
-    --brand-1200: oklch(0.98 0.01 258);
-    --brand-default: oklch(0.546 0.245 262.9);
-}
-
 
 @custom-variant label (& [data-label]);
 @custom-variant focus-input-within (&:has(input:focus));
@@ -291,125 +260,6 @@ input[type="number"] {
 /* Hide the default clear button (X) from search inputs. */
 input[type="search"]::-webkit-search-cancel-button {
     -webkit-appearance: none;
-}
-
-/*
- * Light theme. Every gray here is a pure neutral, so text, icons and surfaces never mix a cool tint with a plain one.
- * The page sits one step below its white cards and the sidebar one step below the page; borders carry the edge of a
- * card (about 1.3:1 on white). Placeholder text and icons stay at 3:1 or more; the secondary and tertiary text pass 4.5:1.
- */
-html:not([data-theme*="dark"]) {
-    --bg-canvas: #ebebeb;
-    --bg-surface-1: #f6f6f6;
-    --bg-surface-2: #f1f1f1;
-    --bg-layer-1: #ffffff;
-    --bg-layer-1-hover: #f4f4f4;
-    --bg-layer-1-active: #ececec;
-    --bg-layer-1-selected: #e3e3e3;
-    --bg-layer-2: #ffffff;
-    --bg-layer-2-hover: #f1f1f1;
-    --bg-layer-2-active: #e9e9e9;
-    --bg-layer-2-selected: #e9e9e9;
-    --bg-layer-3: #ededed;
-    --bg-layer-3-hover: #e5e5e5;
-    --bg-layer-3-active: #dedede;
-    --bg-layer-3-selected: #dedede;
-    --bg-layer-transparent-hover: rgb(0 0 0 / 5%);
-    --bg-layer-transparent-active: rgb(0 0 0 / 8%);
-    --bg-layer-transparent-selected: rgb(0 0 0 / 8%);
-    --bg-layer-disabled: #ebebeb;
-    --bg-inverse: #141414;
-    --bg-inverse-hover: #303030;
-    --border-subtle: #e0e0e0;
-    --border-subtle-1: #d8d8d8;
-    --border-strong: #cecece;
-    --border-strong-1: #bdbdbd;
-    --border-disabled: #ededed;
-    --txt-primary: #141414;
-    --txt-secondary: #303030;
-    --txt-tertiary: #5b5b5b;
-    --txt-placeholder: #8a8a8a;
-    --txt-disabled: #9a9a9a;
-    --txt-icon-primary: #141414;
-    --txt-icon-secondary: #303030;
-    --txt-icon-tertiary: #5b5b5b;
-    --txt-icon-placeholder: #8a8a8a;
-    --txt-icon-disabled: #c4c4c4;
-    /* Amber text reads at 4.5:1 or more on every light surface, the sidebar included. */
-    --txt-warning-primary: oklch(0.47 0.137 46.2);
-    /* Yellow and orange marks drawn without text (priority bars, the started state) keep 3:1 against the page. */
-    --priority-high: oklch(0.62 0.165 50.67);
-    --priority-medium: oklch(0.64 0.14 78);
-    --txt-icon-states-started: oklch(0.66 0.15 71);
-    --txt-accent-primary: #1d4ed8;
-    --txt-link-primary: #1d4ed8;
-    --brand-default: #2563eb;
-    --bg-accent-primary: #2563eb;
-    --border-accent-strong: #2563eb;
-    /* Secondary buttons mirror the accent button: a soft drop shadow and a 1px highlight along the top edge. */
-    --button-secondary-drop: rgb(0 0 0 / 0.06);
-    --button-secondary-highlight: rgb(255 255 255 / 0.9);
-}
-
-html[data-theme*="dark"] {
-    --bg-canvas: #090909;
-    --bg-surface-1: #121212;
-    --bg-surface-2: #161616;
-    --bg-layer-1: #1a1a1a;
-    --bg-layer-1-hover: #222222;
-    --bg-layer-1-active: #2a2a2a;
-    --bg-layer-1-selected: #2c2c2c;
-    --bg-layer-2: #1c1c1c;
-    --bg-layer-2-hover: #262626;
-    --bg-layer-2-active: #303030;
-    --bg-layer-2-selected: #303030;
-    --bg-layer-3: #262626;
-    --bg-layer-3-hover: #303030;
-    --bg-layer-transparent-hover: rgb(255 255 255 / 5%);
-    --bg-layer-transparent-active: rgb(255 255 255 / 8%);
-    --bg-layer-transparent-selected: rgb(255 255 255 / 8%);
-    --border-subtle: #2a2a2a;
-    --border-subtle-1: #333333;
-    --border-strong: #3a3a3a;
-    --border-strong-1: #454545;
-    --txt-primary: #f3f3f3;
-    --txt-secondary: #d2d2d2;
-    --txt-tertiary: #8f8f8f;
-    --txt-placeholder: #6b6b6b;
-    --txt-accent-primary: #4493f8;
-    --txt-link-primary: #4493f8;
-    --brand-default: #2563eb;
-    --bg-accent-primary: #2563eb;
-    --border-accent-strong: #2563eb;
-    --button-secondary-drop: rgb(0 0 0 / 0.4);
-    --button-secondary-highlight: rgb(255 255 255 / 0.07);
-}
-
-/*
- * Chart colours. Two categorical series (blue, then orange, in that order) and a one-hue blue ramp for the
- * contribution map, checked for colour-blind separation and contrast on each theme's surface. In dark mode the ramp
- * runs the other way, so more activity is always the brighter cell.
- */
-html:not([data-theme*="dark"]) {
-    --chart-series-1: #2a78d6;
-    --chart-series-2: #eb6834;
-    --chart-grid: #e6e6e6;
-    --chart-heat-0: #ebebeb;
-    --chart-heat-1: #86b6ef;
-    --chart-heat-2: #3987e5;
-    --chart-heat-3: #1c5cab;
-    --chart-heat-4: #0d366b;
-}
-
-html[data-theme*="dark"] {
-    --chart-series-1: #3987e5;
-    --chart-series-2: #d95926;
-    --chart-grid: #2a2a2a;
-    --chart-heat-0: #222222;
-    --chart-heat-1: #184f95;
-    --chart-heat-2: #2a78d6;
-    --chart-heat-3: #6da7ec;
-    --chart-heat-4: #b7d3f6;
 }
 
 /* A project that picked a logo colour paints its overview charts in that hue. The orange series stays, so the two bars still separate. */

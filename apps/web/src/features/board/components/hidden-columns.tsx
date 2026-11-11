@@ -89,7 +89,7 @@ export function HiddenColumnsMenu({
                         ) : (
                             <>
                                 {columns.length > 1 && (
-                                    <Menu.Item onClick={onShowAll} className="flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary">
+                                    <Menu.Item onClick={onShowAll} className="flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary">
                                         <Eye className="size-4 text-tertiary" />
                                         {t("projects.showAllColumns")}
                                     </Menu.Item>
@@ -97,7 +97,7 @@ export function HiddenColumnsMenu({
                                 {columns.map((column) => {
                                     const label = translateStatusName(column.name, t);
                                     return (
-                                        <Menu.Item key={column.id} onClick={() => onShow(column.id)} className="flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary">
+                                        <Menu.Item key={column.id} onClick={() => onShow(column.id)} className="flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary">
                                             <StateIcon name={column.name} color={column.color} className="size-4" />
                                             <span className="min-w-0 flex-1 truncate">{label}</span>
                                             <span className="text-tertiary tabular-nums">{countFor(column.id)}</span>

@@ -40,7 +40,7 @@ export function SaveViewDialog({
     return (
         <Dialog.Root open={open} onOpenChange={(next) => !isPending && onOpenChange(next)}>
             <Dialog.Portal>
-                <Dialog.Backdrop className="fixed inset-0 z-[110] bg-overlay/70 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                <Dialog.Backdrop className="fixed inset-0 z-[110] bg-overlay transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
                 <Dialog.Viewport className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto p-safe-4">
                     <Dialog.Popup className="max-h-full w-full max-w-md overflow-y-auto rounded-lg border border-subtle bg-surface-1 p-4 shadow-overlay-200 transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.2,0,0,1)] outline-none data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0">
                         <div className="mb-3 flex items-start justify-between gap-3">

@@ -57,7 +57,7 @@ export const pillTab = (active: boolean) =>
     );
 
 const menuItem =
-    "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary";
+    "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";
 
 /** The project's filters (or a cross-project list's own), what the address has on, and a setter that writes it. */
 export function useIssueFilters(projectId = "", customFilters?: IssueFilter[]) {

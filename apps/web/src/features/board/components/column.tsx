@@ -24,7 +24,7 @@ import { IssueCard } from "./issue-card";
 import { StateIcon } from "./issue-property-icons";
 
 const columnMenuItem =
-    "flex h-8 cursor-pointer items-center gap-2.5 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-layer-2-hover data-highlighted:text-primary";
+    "flex h-8 cursor-pointer items-center gap-2.5 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";
 
 export interface ColumnProps {
     column: BoardColumn;

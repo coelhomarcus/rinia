@@ -301,7 +301,7 @@ function ViewMenuItem({
         <Menu.Item
             onClick={onClick}
             className={cx(
-                "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] outline-none data-highlighted:bg-layer-2-hover",
+                "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] outline-none data-highlighted:bg-menu-hover",
                 destructive ? "text-danger-primary" : "text-secondary data-highlighted:text-primary",
             )}
         >

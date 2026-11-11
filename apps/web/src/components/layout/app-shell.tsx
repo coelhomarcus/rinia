@@ -55,7 +55,7 @@ export const AppShell = () => {
                         onResize={(next) => setWidth(Math.max(220, Math.min(360, next)))}
                         onResizeEnd={() => setResizing(false)}
                     />
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-subtle bg-surface-1" data-app-content>
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-subtle bg-surface-1 shadow-raised-100" data-app-content>
                         {/* No mobile bar of its own: every page header carries the menu button that opens the navigation. */}
                         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" id="main-content">
                             <Suspense fallback={<WorkspaceLoadingFallback />}>

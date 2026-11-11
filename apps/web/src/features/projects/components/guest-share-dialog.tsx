@@ -26,7 +26,7 @@ export function GuestShareDialog({ projectId, base, open, onOpenChange }: { proj
             <Modal className="max-w-md">
                 <Dialog aria-label={t("settings.shareWithGuests")}>
                     {({ close }) => (
-                        <div className="w-full rounded-lg bg-surface-1 p-4 shadow-xl ring-1 ring-subtle">
+                        <div className="w-full rounded-xl bg-layer-1 p-4 shadow-overlay-100 ring-1 ring-subtle">
                             <h2 className="text-base font-semibold text-primary">{t("settings.shareWithGuests")}</h2>
                             <p className="mt-1 text-[13px] text-tertiary">{t("settings.shareWithGuestsDescription")}</p>
                             <div className="mt-4 space-y-1">

@@ -5,29 +5,30 @@ import { cx } from "@/utils/cx";
 import type { BadgeColors, BadgeTypeToColorMap, BadgeTypes, FlagTypes, IconComponentType, Sizes } from "./badge-types";
 import { badgeTypes } from "./badge-types";
 
+/* Chips stay neutral: a hairline edge on the surface, and only the text carries a status color. */
 export const filledColors: Record<BadgeColors, { root: string; addon: string; addonButton: string }> = {
     gray: {
-        root: "bg-utility-neutral-50 text-utility-neutral-700 ring-utility-neutral-200",
+        root: "bg-transparent text-secondary ring-strong",
         addon: "text-utility-neutral-500",
         addonButton: "hover:bg-utility-neutral-100 text-utility-neutral-400 hover:text-utility-neutral-500",
     },
     brand: {
-        root: "bg-utility-brand-50 text-utility-brand-700 ring-utility-brand-200",
+        root: "bg-transparent text-accent-primary ring-strong",
         addon: "text-utility-brand-500",
         addonButton: "hover:bg-utility-brand-100 text-utility-brand-400 hover:text-utility-brand-500",
     },
     error: {
-        root: "bg-utility-red-50 text-utility-red-700 ring-utility-red-200",
+        root: "bg-transparent text-danger-primary ring-strong",
         addon: "text-utility-red-500",
         addonButton: "hover:bg-utility-red-100 text-utility-red-400 hover:text-utility-red-500",
     },
     warning: {
-        root: "bg-utility-yellow-50 text-utility-yellow-700 ring-utility-yellow-200",
+        root: "bg-transparent text-warning-primary ring-strong",
         addon: "text-utility-yellow-500",
         addonButton: "hover:bg-utility-yellow-100 text-utility-yellow-400 hover:text-utility-yellow-500",
     },
     success: {
-        root: "bg-utility-green-50 text-utility-green-700 ring-utility-green-200",
+        root: "bg-transparent text-success-primary ring-strong",
         addon: "text-utility-green-500",
         addonButton: "hover:bg-utility-green-100 text-utility-green-400 hover:text-utility-green-500",
     },

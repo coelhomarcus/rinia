@@ -81,8 +81,8 @@ export const InputBase = ({
             data-disabled={isDisabled || undefined}
             data-invalid={isInvalid || undefined}
             className={cx(
-                "group/input shadow-xs relative flex w-full flex-row place-content-center place-items-center rounded-md bg-surface-1 ring-1 ring-strong transition-shadow duration-100 ease-linear ring-inset",
-                "focus-within:ring-2 focus-within:ring-accent-strong",
+                "group/input relative flex w-full flex-row place-content-center place-items-center rounded-lg bg-surface-1 ring-1 ring-strong transition-shadow duration-100 ease-linear ring-inset",
+                "focus-within:ring-1 focus-within:ring-accent-strong",
                 isDisabled && "cursor-not-allowed opacity-50",
                 isInvalid && "ring-danger-subtle",
                 context.wrapperClassName,

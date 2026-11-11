@@ -232,7 +232,7 @@ function ToastCard({ toast, depth, expanded, held, onDismiss }: { toast: ToastEn
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
-                className="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-xl border border-subtle bg-layer-2 px-3.5 py-3 shadow-overlay-200"
+                className="pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-xl border border-subtle bg-menu px-3.5 py-3 shadow-overlay-200"
             >
                 <Icon className={`mt-px size-4 shrink-0 ${toast.tone === "error" ? "text-danger-primary" : "text-tertiary"}`} aria-hidden="true" />
                 <div className="min-w-0 flex-1">

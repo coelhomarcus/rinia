@@ -1,4 +1,4 @@
-import { ArrowRight, Plus, Search, Settings } from "lucide-react";
+import { ArrowRight, Plus, Search, Settings, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { Badge } from "@/components/base/badges/badges";
@@ -39,6 +39,18 @@ export default function DesignSystemPage() {
                         <Button isDisabled>{t("designSystem.disabled")}</Button>
                         <ButtonUtility icon={Settings} tooltip={t("nav.settings")} />
                         <ButtonUtility icon={Search} tooltip={t("common.search")} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {(["primary-destructive", "secondary-destructive", "tertiary-destructive"] as const).map((color) => (
+                            <Button key={color} color={color} iconLeading={Trash2}>
+                                {t("designSystem.destructive")}
+                            </Button>
+                        ))}
+                        {(["sm", "md", "lg", "xl"] as const).map((size) => (
+                            <Button key={size} size={size} color="secondary">
+                                {size}
+                            </Button>
+                        ))}
                     </div>
                 </section>
                 <section className="space-y-3">

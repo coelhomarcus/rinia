@@ -7,8 +7,8 @@ import { isReactComponent } from "@/utils/is-react-component";
 import { controlScale } from "@/components/base/control-scale";
 
 export const styles = {
-    secondary: "border border-strong bg-layer-2 text-placeholder shadow-raised-100 hover:bg-layer-2-hover hover:text-secondary",
-    tertiary: "text-placeholder hover:bg-layer-1-hover hover:text-secondary",
+    secondary: "bg-layer-2 text-tertiary shadow-[0_0_0_0.5px_var(--border-control),var(--elevation-low)] hover:bg-layer-2-hover hover:text-secondary hover:shadow-[0_0_0_0.5px_var(--border-control-hover),var(--elevation-low)]",
+    tertiary: "text-tertiary hover:bg-layer-transparent-hover hover:text-secondary",
 };
 
 export interface CommonProps {
@@ -27,11 +27,11 @@ export type Props = ButtonProps | LinkProps;
 export const ButtonUtility = ({ tooltip, className, isDisabled, icon: Icon, size = "sm", color = "secondary", tooltipPlacement = "top", ...otherProps }: Props) => {
     const href = "href" in otherProps ? otherProps.href : undefined;
     const content = href ? (
-        <a {...(otherProps as LinkProps)} href={isDisabled ? undefined : href} aria-disabled={isDisabled || undefined} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-150 ease-out motion-safe:active:scale-90 focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1", controlScale.iconButton[size], isDisabled && "pointer-events-none opacity-50", styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
+        <a {...(otherProps as LinkProps)} href={isDisabled ? undefined : href} aria-disabled={isDisabled || undefined} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-full transition-[color,background-color,box-shadow,opacity] duration-150 ease-out hover:duration-0 outline-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2", controlScale.iconButton[size], isDisabled && "pointer-events-none opacity-60", styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
             {isReactComponent(Icon) && <Icon data-icon />}{isValidElement(Icon) && Icon}
         </a>
     ) : (
-        <BaseButton {...(otherProps as ButtonProps)} disabled={isDisabled} aria-label={tooltip} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-md transition-all duration-150 ease-out motion-safe:active:scale-90 focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100", controlScale.iconButton[size], styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
+        <BaseButton {...(otherProps as ButtonProps)} disabled={isDisabled} aria-label={tooltip} className={cx("group relative inline-flex cursor-pointer items-center justify-center rounded-full transition-[color,background-color,box-shadow,opacity] duration-150 ease-out hover:duration-0 outline-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60", controlScale.iconButton[size], styles[color], "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-current", className)}>
             {isReactComponent(Icon) && <Icon data-icon />}{isValidElement(Icon) && Icon}
         </BaseButton>
     );

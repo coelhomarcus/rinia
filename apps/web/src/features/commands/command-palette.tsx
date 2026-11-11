@@ -191,7 +191,7 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
         <ModalOverlay isOpen onOpenChange={(open) => !open && onClose()} isDismissable className="sm:items-start sm:pt-[12vh] sm:pb-8">
             <Modal className="max-w-xl">
                 <Dialog>
-                    <div className="flex max-h-[70vh] w-full flex-col overflow-hidden rounded-lg bg-surface-1 shadow-xl ring-1 ring-subtle">
+                    <div className="flex max-h-[70vh] w-full flex-col overflow-hidden rounded-xl bg-menu shadow-overlay-100 ring-1 ring-subtle">
                         <div className="border-b border-subtle p-2">
                             <Input
                                 autoFocus

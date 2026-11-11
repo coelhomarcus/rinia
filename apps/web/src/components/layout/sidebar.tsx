@@ -26,8 +26,8 @@ import { urls } from "@/lib/urls";
 import { useTranslation } from "react-i18next";
 
 const SECTIONS_KEY = "rinia-sidebar-sections";
-const ITEM = "flex h-[var(--sidebar-height)] w-full min-w-0 items-center gap-[var(--row-gap)] rounded-md px-2 text-left text-[13px] font-medium transition-colors duration-150";
-const IDLE = "text-tertiary hover:bg-layer-transparent-hover hover:text-primary";
+const ITEM = "flex h-[var(--sidebar-height)] w-full min-w-0 items-center gap-[var(--row-gap)] rounded-lg px-2 text-left text-[13px] font-medium transition-colors duration-150 hover:duration-0";
+const IDLE = "text-secondary hover:bg-layer-transparent-hover hover:text-primary [&_svg]:text-tertiary";
 const ACTIVE = "bg-layer-1-selected text-primary [&_svg]:text-primary";
 
 /**

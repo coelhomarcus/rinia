@@ -5,14 +5,21 @@ import { cx, sortCx } from "@/utils/cx";
 import { isReactComponent } from "@/utils/is-react-component";
 import { controlScale } from "@/components/base/control-scale";
 
+/*
+ * Buttons are pills at every size, in a 500 weight. Hover changes color at once and eases back over 150ms; nothing
+ * moves when pressed. Primary and destructive are filled; secondary is a raised control with a hairline alpha edge
+ * that darkens on hover, so it reads the same on the page, in a card and in a menu.
+ */
 export const styles = sortCx({
     common: {
         root: [
-            "group relative inline-flex h-max cursor-pointer items-center justify-center whitespace-nowrap transition-all duration-150 ease-out before:absolute motion-safe:active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-1",
+            "group relative inline-flex h-max cursor-pointer items-center justify-center rounded-full font-medium whitespace-nowrap select-none before:absolute",
+            "transition-[color,background-color,border-color,box-shadow,opacity] duration-150 ease-out hover:duration-0",
+            "outline-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2",
             // When button is used within `InputGroup`
-            "in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
+            "in-data-input-wrapper:rounded-md in-data-input-wrapper:shadow-xs in-data-input-wrapper:focus:!z-50 in-data-input-wrapper:in-data-leading:-mr-px in-data-input-wrapper:in-data-leading:rounded-r-none in-data-input-wrapper:in-data-leading:before:rounded-r-none in-data-input-wrapper:in-data-trailing:-ml-px in-data-input-wrapper:in-data-trailing:rounded-l-none in-data-input-wrapper:in-data-trailing:before:rounded-l-none",
             // Disabled styles
-            "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 in-data-input-wrapper:disabled:opacity-100 in-data-input-wrapper:active:scale-100",
+            "disabled:cursor-not-allowed disabled:opacity-60 in-data-input-wrapper:disabled:opacity-100",
             // Same as `icon` but for SSR icons that cannot be passed to the client as functions.
             "*:data-icon:pointer-events-none *:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:transition-inherit-all",
         ].join(" "),
@@ -22,34 +29,36 @@ export const styles = sortCx({
         xs: {
             root: [
                 controlScale.button.xs,
-                "gap-1 rounded-md font-medium data-icon-only:size-7 data-icon-only:p-0",
+                "gap-1 data-icon-only:size-5 data-icon-only:p-0 has-[>[data-icon=inline-start]]:pl-1",
                 "in-data-input-wrapper:px-3 in-data-input-wrapper:data-icon-only:size-7",
-                "*:data-icon:size-4 *:data-icon:stroke-[2.25px]",
+                "*:data-icon:size-3.5",
             ].join(" "),
             linkRoot: "gap-1 *:data-text:underline-offset-3",
         },
         sm: {
             root: [
                 controlScale.button.sm,
-                "gap-1 rounded-md font-medium data-icon-only:size-8 data-icon-only:p-0",
+                "gap-1 data-icon-only:size-6 data-icon-only:p-0 has-[>[data-icon=inline-start]]:pl-1.5",
                 "in-data-input-wrapper:px-3 in-data-input-wrapper:data-icon-only:size-8",
+                "*:data-icon:size-3.5",
             ].join(" "),
             linkRoot: "gap-1 *:data-text:underline-offset-3",
         },
         md: {
             root: [
                 controlScale.button.md,
-                "gap-1 rounded-md font-medium data-icon-only:size-9 data-icon-only:p-0",
+                "gap-1 data-icon-only:size-7 data-icon-only:p-0 has-[>[data-icon=inline-start]]:pl-2",
                 "in-data-input-wrapper:px-4 in-data-input-wrapper:data-icon-only:size-9",
+                "*:data-icon:size-3.5",
             ].join(" "),
             linkRoot: "gap-1 *:data-text:underline-offset-4",
         },
         lg: {
-            root: `${controlScale.button.lg} gap-1 rounded-md font-medium data-icon-only:size-10 data-icon-only:p-0`,
+            root: `${controlScale.button.lg} gap-2 data-icon-only:size-8 data-icon-only:p-0 has-[>[data-icon=inline-start]]:pl-2.5`,
             linkRoot: "gap-2 *:data-text:underline-offset-4",
         },
         xl: {
-            root: `${controlScale.button.xl} gap-1 rounded-md font-medium data-icon-only:size-11 data-icon-only:p-0`,
+            root: `${controlScale.button.xl} gap-2 data-icon-only:size-10 data-icon-only:p-0 has-[>[data-icon=inline-start]]:pl-3.5`,
             linkRoot: "gap-2 *:data-text:underline-offset-4",
         },
     },
@@ -57,81 +66,76 @@ export const styles = sortCx({
     colors: {
         primary: {
             root: [
-                "border border-(--bg-accent-primary) bg-accent-primary text-white",
-                "shadow-[0_1px_2px_0_color-mix(in_oklch,var(--bg-accent-primary),transparent_75%)]",
-                "inset-shadow-[0_1px_rgb(255_255_255/0.2)]",
-                "hover:bg-accent-primary-hover",
-                "active:bg-accent-primary-active active:inset-shadow-[0_1px_rgb(0_0_0/0.12)] active:shadow-none",
-                "*:data-icon:text-white/70 hover:*:data-icon:text-white",
+                "bg-accent-primary text-white shadow-raised-100",
+                "hover:bg-accent-primary-hover active:bg-accent-primary-hover data-loading:bg-accent-primary-hover",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         secondary: {
             root: [
-                "border border-strong bg-layer-2 text-secondary hover:bg-layer-2-hover hover:text-primary data-loading:bg-layer-1-hover",
-                // The same shadow as the primary button: a drop shadow and a top highlight that both give way when pressed.
-                "shadow-[0_1px_2px_0_var(--button-secondary-drop)]",
-                "inset-shadow-[0_1px_var(--button-secondary-highlight)]",
-                "active:bg-layer-2-active active:inset-shadow-[0_1px_rgb(0_0_0/0.08)] active:shadow-none",
+                "bg-layer-2 text-secondary shadow-[0_0_0_0.5px_var(--border-control),var(--elevation-low)]",
+                "hover:bg-layer-2-hover hover:text-primary hover:shadow-[0_0_0_0.5px_var(--border-control-hover),var(--elevation-low)]",
+                "active:bg-layer-2-hover data-loading:bg-layer-2-hover",
                 // Icon styles
-                "*:data-icon:text-placeholder hover:*:data-icon:text-secondary",
+                "*:data-icon:text-tertiary hover:*:data-icon:text-secondary",
             ].join(" "),
         },
         tertiary: {
             root: [
-                "text-tertiary hover:bg-layer-1-hover hover:text-secondary data-loading:bg-layer-1-hover",
+                "text-tertiary hover:bg-layer-transparent-hover hover:text-secondary active:bg-layer-transparent-active data-loading:bg-layer-transparent-hover",
                 // Icon styles
-                "*:data-icon:text-placeholder hover:*:data-icon:text-secondary",
+                "*:data-icon:text-tertiary hover:*:data-icon:text-secondary",
             ].join(" "),
         },
         "link-color": {
             root: [
-                "active:scale-100 justify-normal rounded p-0! text-accent-primary hover:text-accent-secondary",
+                "justify-normal rounded p-0! text-accent-primary hover:text-accent-secondary",
                 // Inner text underline
-                "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-fg-brand-secondary_alt",
+                "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-current",
                 // Icon styles
-                "*:data-icon:text-accent-secondary hover:*:data-icon:text-accent-secondary",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         "link-gray": {
             root: [
-                "active:scale-100 justify-normal rounded p-0! text-tertiary hover:text-secondary",
+                "justify-normal rounded p-0! text-tertiary hover:text-secondary",
                 // Inner text underline
-                "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-fg-quaternary",
+                "*:data-text:underline *:data-text:decoration-transparent hover:*:data-text:decoration-current",
                 // Icon styles
-                "*:data-icon:text-placeholder hover:*:data-icon:text-secondary",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         "primary-destructive": {
             root: [
-                "border border-(--bg-danger-primary) bg-danger-primary text-white outline-error",
-                "shadow-[0_1px_2px_0_color-mix(in_oklch,var(--bg-danger-primary),transparent_75%)]",
-                "inset-shadow-[0_1px_rgb(255_255_255/0.18)]",
-                "hover:bg-danger-primary-hover",
-                "active:bg-danger-primary-active active:inset-shadow-[0_1px_rgb(0_0_0/0.12)] active:shadow-none",
-                "*:data-icon:text-white/70 hover:*:data-icon:text-white",
+                "bg-danger-primary text-white",
+                "hover:bg-danger-primary-hover active:bg-danger-primary-hover data-loading:bg-danger-primary-hover",
+                "focus-visible:outline-danger-strong",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         "secondary-destructive": {
             root: [
-                "bg-surface-1 text-danger-primary ring-1 ring-danger-subtle outline-error ring-inset hover:bg-danger-subtle hover:text-danger-secondary data-loading:bg-danger-subtle",
+                "bg-layer-2 text-danger-primary shadow-[0_0_0_0.5px_var(--border-control),var(--elevation-low)]",
+                "hover:bg-danger-subtle hover:shadow-[0_0_0_0.5px_var(--border-danger-subtle),var(--elevation-low)] data-loading:bg-danger-subtle",
+                "focus-visible:outline-danger-strong",
                 // Icon styles
-                "*:data-icon:text-danger-secondary hover:*:data-icon:text-danger-primary",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         "tertiary-destructive": {
             root: [
-                "text-danger-primary outline-error hover:bg-danger-subtle hover:text-danger-secondary data-loading:bg-danger-subtle",
+                "text-danger-primary hover:bg-danger-subtle data-loading:bg-danger-subtle focus-visible:outline-danger-strong",
                 // Icon styles
-                "*:data-icon:text-danger-secondary hover:*:data-icon:text-danger-primary",
+                "*:data-icon:text-current",
             ].join(" "),
         },
         "link-destructive": {
             root: [
-                "active:scale-100 justify-normal rounded p-0! text-danger-primary outline-error hover:text-danger-secondary",
+                "justify-normal rounded p-0! text-danger-primary hover:text-danger-secondary focus-visible:outline-danger-strong",
                 // Inner text underline
                 "*:data-text:underline *:data-text:decoration-transparent *:data-text:underline-offset-2 hover:*:data-text:decoration-current",
                 // Icon styles
-                "*:data-icon:text-danger-secondary hover:*:data-icon:text-danger-primary",
+                "*:data-icon:text-current",
             ].join(" "),
         },
     },
