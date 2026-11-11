@@ -47,6 +47,14 @@ The palette lives in `styles/palette.css`. Both themes come from one LCH recipe:
 - `secondary-destructive` and `tertiary-destructive` keep the danger color in the text and tint only on hover.
 - Disabled buttons drop to 60% opacity.
 
+## Selects, menus and switches
+
+- A `Select` trigger is a raised control squared to a field: `bg-layer-2`, an 8px radius, the same hairline alpha edge as a secondary button, the value in regular weight with any `supportingText` muted after it, and a small muted chevron. It is as wide as its value unless the caller sizes it; do not give settings selects a fixed width.
+- The list opens with the chosen option over the trigger (`alignItemWithTrigger`). Popups are `rounded-xl` with `p-1`; options and menu items are `rounded-lg`, 32px tall, highlighted with `bg-menu-hover`, and the selected one shows a muted check on the right.
+- An option's icon can be any element; `SelectItemGraphic` sizes plain SVGs to 16px and leaves wider graphics, such as `ThemeSwatch`, at their own size.
+- `Toggle` is a gray track (`--bg-switch-off`) that turns accent when on, with a white knob inset 2px. The knob slides on the settle curve and stretches slightly while pressed. Its look follows Base UI's `data-checked`, so uncontrolled switches work.
+- Settings cards are `rounded-xl`; rows are at least 64px with a 14px title and a 13px description. Text fields in rows are 32px tall, `rounded-lg`, on a `border-strong` edge. Small edit actions next to a value are round icon buttons with a pencil.
+
 ## Feedback
 
 - `Alert` is the one card for a message about a form or panel: a neutral surface, the tone (`error`, `warning`, `success`, `info`) only in its icon, an optional `title`, and `actions` at the end. Do not tint a whole block or its text yellow, red or green.

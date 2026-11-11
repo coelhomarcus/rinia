@@ -73,6 +73,7 @@ html:not([data-theme*="dark"]) {
     --bg-inverse-hover: #2f2f31;
     --bg-menu: #ffffff;
     --bg-menu-hover: #f0f0f1;
+    --bg-switch-off: #d6d6d9;
     --bg-backdrop: rgb(0 0 0 / 25%);
 
     /* Borders. The alpha borders sit on any surface, so a control's edge reads the same on the page and in a menu. */
@@ -181,6 +182,7 @@ html[data-theme*="dark"] {
     --bg-inverse-hover: #e3e4e6;
     --bg-menu: #202122;
     --bg-menu-hover: #2c2d2f;
+    --bg-switch-off: #5b5c60;
     --bg-backdrop: rgb(0 0 0 / 40%);
 
     --border-subtle: #232426;

@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { type RequestEmailChangeInput, requestEmailChangeSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,8 +17,10 @@ export function ChangeEmailButton() {
     const { t } = useTranslation();
     const { data: options } = useAuthOptions();
     if (!options?.emailChange) return null;
+    // A round pencil beside the address, as small edit actions are throughout settings.
+    const trigger = <Button size="sm" color="secondary" iconLeading={Pencil} aria-label={t("profile.changeEmail")} />;
     return (
-        <ModalDialog trigger={<Button size="sm" color="secondary">{t("profile.changeEmail")}</Button>} title={t("profile.changeEmail")} description={t("profile.changeEmailDescription")}>
+        <ModalDialog trigger={trigger} title={t("profile.changeEmail")} description={t("profile.changeEmailDescription")}>
             {({ close }) => <ChangeEmailForm onDone={close} />}
         </ModalDialog>
     );

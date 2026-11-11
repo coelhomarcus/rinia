@@ -1,6 +1,6 @@
 import { Popover } from "@base-ui/react/popover";
 import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { Camera } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { ImageCrop } from "@/components/appearance/image-crop";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -60,14 +60,14 @@ export function AvatarPhotoPicker({ hasPhoto, disabled, onUpdated, children }: {
             <Popover.Trigger
                 disabled={disabled}
                 aria-label={hasPhoto ? t("profile.changePhoto") : t("profile.addPhoto")}
-                className="group/avatar relative flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="group/avatar relative flex rounded-full outline-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 {children}
                 <span
                     aria-hidden="true"
-                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100 group-data-[popup-open]/avatar:opacity-100 group-disabled/avatar:opacity-0"
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100 group-data-[popup-open]/avatar:opacity-100 group-disabled/avatar:opacity-0"
                 >
-                    <Camera className="size-4" />
+                    <Pencil className="size-3.5" fill="currentColor" strokeWidth={1.5} />
                 </span>
             </Popover.Trigger>
             <Popover.Portal>

@@ -36,16 +36,11 @@ export interface CommonProps {
     hideRequiredIndicator?: boolean;
 }
 
+/** Heights follow the field scale; icons size themselves (`SelectItemGraphic`), so a wider graphic such as a theme swatch keeps its shape. */
 export const sizes = {
-    sm: {
-        root: `${controlScale.field.sm} gap-2 *:data-icon:size-4 *:data-icon:stroke-[2.25px]`,
-        withIcon: "",
-        text: "text-sm",
-        textContainer: "gap-x-2",
-        shortcut: "pr-2",
-    },
-    md: { root: `${controlScale.field.md} gap-2 *:data-icon:size-4`, withIcon: "", text: "text-md", textContainer: "gap-x-2", shortcut: "pr-2" },
-    lg: { root: `${controlScale.field.lg} gap-2 *:data-icon:size-4`, withIcon: "", text: "text-md", textContainer: "gap-x-2", shortcut: "pr-2" },
+    sm: { root: `${controlScale.field.sm} gap-2`, item: "h-7", text: "text-[13px]", textContainer: "gap-x-2", shortcut: "pr-2" },
+    md: { root: `${controlScale.field.md} gap-2`, item: "h-8", text: "text-[13px]", textContainer: "gap-x-2", shortcut: "pr-2" },
+    lg: { root: `${controlScale.field.lg} gap-2`, item: "h-9", text: "text-md", textContainer: "gap-x-2", shortcut: "pr-2" },
 };
 
 export const SelectContext = createContext<{ size: "sm" | "md" | "lg" }>({ size: "md" });
@@ -53,11 +48,11 @@ export const SelectContext = createContext<{ size: "sm" | "md" | "lg" }>({ size:
 export function SelectItemGraphic({ icon }: { icon?: FC | ReactNode }) {
     if (!icon) return null;
     if (isReactComponent(icon)) {
-        const Icon = icon;
-        return <Icon data-icon aria-hidden="true" />;
+        const Icon = icon as FC<{ className?: string }>;
+        return <Icon data-icon aria-hidden="true" className="size-4 shrink-0 text-tertiary" />;
     }
     if (isValidElement(icon)) {
-        return <span data-icon className="inline-flex size-4 shrink-0 items-center justify-center [&>svg]:size-full">{icon}</span>;
+        return <span data-icon className="inline-flex shrink-0 items-center justify-center [&>svg]:size-4">{icon}</span>;
     }
     return null;
 }

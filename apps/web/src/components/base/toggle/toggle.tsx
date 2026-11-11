@@ -2,29 +2,60 @@ import type { ComponentProps, ReactNode } from "react";
 import { Switch as BaseSwitch } from "@base-ui/react/switch";
 import { cx } from "@/utils/cx";
 
-interface ToggleBaseProps { size?: "sm" | "md"; slim?: boolean; className?: string; isHovered?: boolean; isFocusVisible?: boolean; isSelected?: boolean; isDisabled?: boolean }
+/*
+ * A switch: a gray track with a white knob that slides to the accent side when on. The knob sits 2px inside the track,
+ * moves on the settle curve, and stretches a little while pressed, as a held finger squeezes it. Its look follows Base
+ * UI's `data-checked`, so a switch nobody controls still shows its state.
+ */
+const sizes = {
+    sm: { track: "h-5 w-8", thumb: "size-4 group-active/switch:w-[18px]", on: "data-[checked]:translate-x-3 group-active/switch:data-[checked]:translate-x-2.5" },
+    md: { track: "h-6 w-10", thumb: "size-5 group-active/switch:w-[22px]", on: "data-[checked]:translate-x-4 group-active/switch:data-[checked]:translate-x-3.5" },
+} as const;
 
-export const ToggleBase = ({ className, isDisabled, isFocusVisible, isSelected, slim, size = "sm" }: ToggleBaseProps) => {
-    const root = slim ? (size === "sm" ? "h-4 w-8" : "h-5 w-10") : size === "sm" ? "h-5 w-9 p-0.5" : "h-6 w-11 p-0.5";
-    const thumb = slim ? (size === "sm" ? "size-4" : "size-5") : size === "sm" ? "size-4" : "size-5";
-    return <span aria-hidden className={cx("flex shrink-0 cursor-pointer rounded-full bg-layer-3 shadow-[inset_0_0_0_1px_var(--border-strong-1)] outline-accent-strong transition duration-150", isSelected && "bg-accent-primary shadow-none", isDisabled && "cursor-not-allowed opacity-50", isFocusVisible && "outline-2 outline-offset-2", slim && "ring-1", root, className)}><span className={cx("rounded-full bg-fg-white shadow-sm transition-transform duration-200 ease-(--motion-ease-enter)", slim && "border border-toggle-border shadow-xs", thumb, isSelected && (size === "sm" ? "translate-x-4" : "translate-x-5"))} /></span>;
-};
+const trackClass = cx(
+    "group/switch relative inline-flex shrink-0 cursor-pointer items-center rounded-full bg-[var(--bg-switch-off)] p-0.5 outline-accent-strong",
+    "transition-colors duration-200 ease-out data-[checked]:bg-accent-primary",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
+);
+
+const thumbClass = cx(
+    "block rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.25),0_0_0_0.5px_rgb(0_0_0/0.04)]",
+    "transition-[translate,width] duration-200 ease-(--ease-out-quint) motion-reduce:transition-none",
+);
 
 interface ToggleProps extends Omit<ComponentProps<typeof BaseSwitch.Root>, "children" | "checked" | "defaultChecked" | "disabled" | "onCheckedChange" | "className"> {
     className?: string;
     size?: "sm" | "md";
     label?: string;
     hint?: ReactNode;
-    slim?: boolean;
     isSelected?: boolean;
     defaultSelected?: boolean;
     isDisabled?: boolean;
     onChange?: (selected: boolean) => void;
 }
 
-export const Toggle = ({ label, hint, className, size = "sm", slim, isSelected, defaultSelected, isDisabled, onChange, ...props }: ToggleProps) => (
-    <BaseSwitch.Root {...props} checked={isSelected} defaultChecked={defaultSelected} disabled={isDisabled} onCheckedChange={(checked) => onChange?.(checked)} className={cx("flex w-max items-start gap-2", isDisabled && "cursor-not-allowed", className)}>
-        <ToggleBase slim={slim} size={size} isDisabled={isDisabled} isSelected={isSelected} className={slim ? "mt-0.5" : ""} />
-        {(label || hint) && <span className="flex flex-col gap-1"><span className={cx("text-secondary select-none", size === "md" ? "text-md" : "text-sm")}>{label}</span>{hint && <span className={cx("text-tertiary", size === "md" ? "text-md" : "text-sm")}>{hint}</span>}</span>}
-    </BaseSwitch.Root>
-);
+export const Toggle = ({ label, hint, className, size = "sm", isSelected, defaultSelected, isDisabled, onChange, ...props }: ToggleProps) => {
+    const switchElement = (
+        <BaseSwitch.Root
+            {...props}
+            checked={isSelected}
+            defaultChecked={defaultSelected}
+            disabled={isDisabled}
+            onCheckedChange={(checked) => onChange?.(checked)}
+            className={cx(trackClass, sizes[size].track, !(label || hint) && className)}
+        >
+            <BaseSwitch.Thumb className={cx(thumbClass, sizes[size].thumb, sizes[size].on)} />
+        </BaseSwitch.Root>
+    );
+    if (!label && !hint) return switchElement;
+    // With a label, the whole line toggles the switch.
+    return (
+        <label className={cx("flex w-max cursor-pointer items-center gap-2", isDisabled && "cursor-not-allowed", className)}>
+            {switchElement}
+            <span className="flex flex-col gap-0.5">
+                {label && <span className={cx("text-secondary select-none", size === "md" ? "text-md" : "text-[13px]")}>{label}</span>}
+                {hint && <span className="text-xs text-tertiary">{hint}</span>}
+            </span>
+        </label>
+    );
+};

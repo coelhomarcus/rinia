@@ -41,7 +41,7 @@ interface IssueQuickCreateModalProps {
 const pill =
     "flex h-7 max-w-56 shrink-0 items-center gap-1 rounded-full border border-subtle px-2.5 text-xs text-secondary outline-none transition-colors hover:bg-layer-2-hover hover:text-primary focus-visible:ring-2 focus-visible:ring-accent-strong data-[popup-open]:bg-layer-2-hover";
 const menuItem =
-    "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";
+    "flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";
 
 /**
  * Creates an issue, laid out like Linear's: the project and "New issue" on top, a large title and a description,

@@ -5,6 +5,7 @@ import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
+import { Toggle } from "@/components/base/toggle/toggle";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { AppIcons } from "@/components/foundations/icons";
@@ -74,6 +75,8 @@ export default function DesignSystemPage() {
                             )}
                         </Select>
                         <Checkbox label={t("designSystem.includeCompleted")} defaultSelected />
+                        <Toggle label={t("designSystem.includeCompleted")} defaultSelected />
+                        <Toggle label={t("designSystem.disabled")} isDisabled />
                     </div>
                 </section>
                 <section className="space-y-3">

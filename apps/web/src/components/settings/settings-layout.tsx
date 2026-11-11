@@ -74,7 +74,7 @@ export function SettingsGroup({ title, description, action, children }: { title?
 
 /** The rounded card itself, with a thin divider between rows. */
 export function SettingsCard({ children }: { children: ReactNode }) {
-    return <div className="rounded-lg border border-subtle bg-layer-1 px-4 [&>*+*]:border-t [&>*+*]:border-subtle">{children}</div>;
+    return <div className="rounded-xl border border-subtle bg-layer-1 px-4 [&>*+*]:border-t [&>*+*]:border-subtle">{children}</div>;
 }
 
 /** Label and muted hint, as every row shows them on its left. */
@@ -82,7 +82,7 @@ function RowText({ title, description }: { title: ReactNode; description?: React
     return (
         <div className="min-w-0 select-none">
             <h3 className="text-md font-medium text-primary">{title}</h3>
-            {description && <p className="text-xs text-tertiary">{description}</p>}
+            {description && <p className="mt-0.5 text-[13px] text-tertiary">{description}</p>}
         </div>
     );
 }
@@ -100,7 +100,7 @@ export function SettingsControl({ title, description, stacked = false, children 
             </div>
         );
     return (
-        <div className="flex min-h-15 flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div className="flex min-h-16 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
             <RowText title={title} description={description} />
             <div className="flex shrink-0 items-center gap-2">{children}</div>
         </div>
@@ -158,7 +158,7 @@ export function SettingsLinkRow({ to, icon, leading, title, description, value }
 
 /** The same height as a `lg` button, so a field and the button beside it line up. */
 const settingsFieldBase =
-    "h-8 w-full rounded-md border border-subtle bg-transparent px-3 text-[13px] text-primary outline-none transition-colors duration-150 placeholder:text-placeholder hover:border-strong focus-visible:border-accent-strong disabled:cursor-not-allowed disabled:text-tertiary disabled:hover:border-subtle";
+    "h-8 w-full rounded-lg border border-strong bg-transparent px-3 text-[13px] text-primary outline-none transition-colors duration-150 placeholder:text-placeholder hover:border-strong-1 focus-visible:border-accent-strong disabled:cursor-not-allowed disabled:text-tertiary disabled:hover:border-strong";
 
 /** Text input sized for the right side of a settings row. */
 export const settingsFieldClass = `${settingsFieldBase} sm:w-56`;

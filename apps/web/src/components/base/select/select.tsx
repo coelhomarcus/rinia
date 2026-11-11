@@ -42,26 +42,28 @@ const SelectValue = ({
     placeholder?: string;
     items: SelectItemType[];
 }) => (
-    <BaseSelect.Value
-        className={cx("flex min-w-0 flex-1 items-center gap-2 truncate text-left", "*:data-icon:size-4", sizes[size].text)}
-        placeholder={placeholder}
-    >
+    <BaseSelect.Value className={cx("flex min-w-0 flex-1 items-center gap-2 truncate text-left", sizes[size].text)} placeholder={placeholder}>
         {(value) => {
             const selected = value as SelectItemType | string | number | null;
             const selectedItem = (typeof selected === "object" && selected ? selected : items.find((item) => item.id === selected)) ?? null;
+            const label = selectedItem?.label ?? (typeof selected === "string" || typeof selected === "number" ? String(selected) : null);
 
             return (
                 <>
                     {selectedItem?.avatarUrl && <Avatar size="xs" src={selectedItem.avatarUrl} alt={selectedItem.label} />}
                     <SelectItemGraphic icon={selectedItem?.icon ?? icon} />
-                    <span className={cx("min-w-0 truncate font-medium text-primary", sizes[size].text)}>
-                        {selectedItem?.label ?? (typeof selected === "string" || typeof selected === "number" ? String(selected) : placeholder)}
+                    <span className={cx("min-w-0 truncate", label ? "text-secondary" : "text-placeholder")}>
+                        {label ?? placeholder}
+                        {selectedItem?.supportingText && <span className="text-tertiary"> {selectedItem.supportingText}</span>}
                     </span>
                 </>
             );
         }}
     </BaseSelect.Value>
 );
+
+/** Field heights for the trigger, matching inputs of the same size. */
+const triggerHeight = { sm: "h-7", md: "h-8", lg: "h-10" } as const;
 
 const Select = ({
     placeholder,
@@ -115,31 +117,39 @@ const Select = ({
                             {label}
                         </Label>
                     )}
+                    {/*
+                     * A raised control like a secondary button, squared to a field: lighter than the card it sits on,
+                     * a hairline edge that darkens on hover. It is as wide as its value unless the caller sizes it.
+                     */}
                     <BaseSelect.Trigger
                         id={triggerId}
                         aria-label={ariaLabel ?? label}
                         className={cx(
-                            "relative flex w-full cursor-pointer items-center rounded-lg bg-surface-1 ring-1 ring-strong outline-hidden transition duration-100 ease-linear ring-inset",
-                            "focus-visible:ring-1 focus-visible:ring-accent-strong",
-                            "disabled:cursor-not-allowed disabled:opacity-50",
-                            sizes[size].root,
+                            "relative inline-flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg bg-layer-2 pr-2 pl-3 outline-none select-none",
+                            "shadow-[0_0_0_0.5px_var(--border-control),var(--elevation-low)] transition-[background-color,box-shadow] duration-150 hover:duration-0",
+                            "hover:bg-layer-2-hover hover:shadow-[0_0_0_0.5px_var(--border-control-hover),var(--elevation-low)] data-[popup-open]:bg-layer-2-hover",
+                            "outline-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2",
+                            "disabled:cursor-not-allowed disabled:opacity-60",
+                            "aria-[invalid=true]:shadow-[0_0_0_1px_var(--border-danger-strong)]",
+                            triggerHeight[size],
                         )}
                         aria-invalid={isInvalid || undefined}
                     >
                         <SelectValue icon={icon} size={size} placeholder={resolvedPlaceholder} items={items} />
-                        <BaseSelect.Icon className="ml-auto shrink-0 text-placeholder">
-                            <ChevronDown aria-hidden="true" className={size === "lg" ? "size-5" : "size-4 stroke-[2.25px]"} />
+                        <BaseSelect.Icon className="ml-auto shrink-0 text-tertiary">
+                            <ChevronDown aria-hidden="true" className="size-3.5" strokeWidth={2.25} />
                         </BaseSelect.Icon>
                     </BaseSelect.Trigger>
+                    {/* The list opens with the chosen option over the trigger, so the eye does not have to move to find it. */}
                     <BaseSelect.Portal>
-                        <BaseSelect.Positioner className="z-50 outline-none" sideOffset={4}>
+                        <BaseSelect.Positioner className="z-50 outline-none" sideOffset={4} alignItemWithTrigger>
                             <BaseSelect.Popup
                                 className={cx(
-                                    "overlay-motion shadow-overlay-200 min-w-(--anchor-width) overflow-hidden rounded-lg bg-menu p-1 ring-1 ring-subtle outline-none",
+                                    "overlay-motion min-w-(--anchor-width) overflow-hidden rounded-xl border border-subtle bg-menu p-1 shadow-overlay-200 outline-none",
                                     popoverClassName,
                                 )}
                             >
-                                <BaseSelect.List className="max-h-72 overflow-y-auto outline-none">{renderedItems}</BaseSelect.List>
+                                <BaseSelect.List className="flex max-h-80 flex-col gap-px overflow-y-auto outline-none">{renderedItems}</BaseSelect.List>
                             </BaseSelect.Popup>
                         </BaseSelect.Positioner>
                     </BaseSelect.Portal>

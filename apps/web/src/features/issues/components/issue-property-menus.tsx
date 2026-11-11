@@ -12,7 +12,7 @@ import { AssigneeAvatar, EstimateIcon, OptionNumber, UnassignedIcon, assigneeOpt
 
 export { AssigneeAvatar, UnassignedIcon, propertyIcon };
 
-const menuItem = "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover";
+const menuItem = "flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover";
 
 type Person = { id: string; name: string; avatarUrl: string | null };
 type Status = { id: string; name: string; color: string | null };

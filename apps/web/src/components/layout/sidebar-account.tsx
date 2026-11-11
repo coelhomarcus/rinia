@@ -37,7 +37,7 @@ export function SidebarAccount({ variant = "icon" }: { variant?: "icon" | "row" 
         .slice(0, 2)
         .map((n) => n[0])
         .join("");
-    const item = "flex min-h-7 cursor-pointer items-center gap-2 rounded px-2 py-1 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover";
+    const item = "flex min-h-7 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover";
     const header = variant === "header";
     return (
         <Menu.Root>

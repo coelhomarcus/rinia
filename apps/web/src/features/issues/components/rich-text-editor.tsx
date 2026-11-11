@@ -40,7 +40,7 @@ type SuggestionItem = { id: string; label: string; description?: string; detail?
 function SuggestionMenu<T extends SuggestionItem>({ items, selectedIndex, onSelect }: { items: T[]; selectedIndex: number; onSelect: (item: T) => void }) {
     const { t } = useTranslation();
     return (
-        <div role="listbox" aria-label={t("editor.editorSuggestions")} className="min-w-60 overflow-hidden rounded-lg border border-subtle bg-menu p-1 shadow-overlay-200">
+        <div role="listbox" aria-label={t("editor.editorSuggestions")} className="min-w-60 overflow-hidden rounded-xl border border-subtle bg-menu p-1 shadow-overlay-200">
             {items.length === 0 ? <p className="px-3 py-2 text-xs text-tertiary">{t("editor.noMatchingCommands")}</p> : items.map((item, index) => {
                 const Icon = commandIcons[item.id];
                 const detail = item.detail ?? item.description;
@@ -324,7 +324,7 @@ function RichTextToolbar({ editor, showImages }: { editor: NonNullable<ReturnTyp
             </BasePopover.Trigger>
             <BasePopover.Portal>
                 <BasePopover.Positioner side="bottom" align="start" sideOffset={6} className="z-50">
-                    <BasePopover.Popup className="overlay-motion w-72 rounded-lg border border-subtle bg-menu p-3 shadow-overlay-200 outline-none">
+                    <BasePopover.Popup className="overlay-motion w-72 rounded-xl border border-subtle bg-menu p-3 shadow-overlay-200 outline-none">
                         <form className="flex flex-col gap-2" onSubmit={saveLink}>
                             <label className="text-xs font-medium text-secondary" htmlFor="tiptap-link-url">{t("editor.linkUrl")}</label>
                             <Input autoFocus id="tiptap-link-url" size="sm" type="url" value={url} onChange={setUrl} placeholder="https://example.com" />
@@ -339,7 +339,7 @@ function RichTextToolbar({ editor, showImages }: { editor: NonNullable<ReturnTyp
         </BasePopover.Root>
         <div className="relative">
             <FormatButton icon={MoreHorizontal} label={t("editor.moreFormatting")} active={isMoreOpen} onClick={() => setIsMoreOpen((open) => !open)} />
-            {isMoreOpen && <div className="absolute top-9 left-0 z-20 flex min-w-44 flex-col gap-1 rounded-lg border border-subtle bg-menu p-1 shadow-overlay-200">
+            {isMoreOpen && <div className="absolute top-9 left-0 z-20 flex min-w-44 flex-col gap-1 rounded-xl border border-subtle bg-menu p-1 shadow-overlay-200">
                 <Button size="xs" color="tertiary" className="justify-start" iconLeading={List} onClick={() => editor.chain().focus().toggleBulletList().run()}>{t("editor.bulletList")}</Button>
                 <Button size="xs" color="tertiary" className="justify-start" iconLeading={ListOrdered} onClick={() => editor.chain().focus().toggleOrderedList().run()}>{t("editor.numberedList")}</Button>
                 <Button size="xs" color="tertiary" className="justify-start" iconLeading={CheckSquare} onClick={() => editor.chain().focus().toggleTaskList().run()}>{t("editor.todoList")}</Button>
@@ -360,7 +360,7 @@ function RichTextBubbleMenu({ editor }: { editor: NonNullable<ReturnType<typeof 
         appendTo={() => document.body}
         options={{ strategy: "fixed", placement: "top", offset: 8, flip: { padding: 12 }, shift: { padding: 12 } }}
         shouldShow={({ view, state: editorState, element }) => (view.hasFocus() || element.contains(document.activeElement)) && (!editorState.selection.empty || editor.isActive("table")) && !editor.isActive("image")}
-        className="z-[100] flex items-center gap-1 rounded-lg border border-subtle bg-menu p-1 shadow-overlay-200"
+        className="z-[100] flex items-center gap-1 rounded-xl border border-subtle bg-menu p-1 shadow-overlay-200"
     >
         {!state.empty && <>
             <FormatButton icon={Bold} label={t("editor.bold")} active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()} />
@@ -398,7 +398,7 @@ function LinkPopover({ editor }: { editor: NonNullable<ReturnType<typeof useEdit
         </BasePopover.Trigger>
         <BasePopover.Portal>
             <BasePopover.Positioner side="bottom" align="start" sideOffset={6} className="z-[110]">
-                <BasePopover.Popup className="overlay-motion w-72 rounded-lg border border-subtle bg-menu p-3 shadow-overlay-200 outline-none">
+                <BasePopover.Popup className="overlay-motion w-72 rounded-xl border border-subtle bg-menu p-3 shadow-overlay-200 outline-none">
                     <form className="flex flex-col gap-2" onSubmit={save}>
                         <label className="text-xs font-medium text-secondary" htmlFor="tiptap-bubble-link-url">{t("editor.linkUrl")}</label>
                         <Input autoFocus id="tiptap-bubble-link-url" size="sm" type="url" value={url} onChange={setUrl} placeholder="https://example.com" />

@@ -139,7 +139,7 @@ export const ComboBoxItem = ({ item, children }: { item: SelectItemType; childre
         <BaseCombobox.Item
             value={item.id}
             disabled={item.isDisabled}
-            className={(state) => cx("w-full rounded-md outline-none data-[highlighted]:bg-menu-hover", state.highlighted && "bg-menu-hover")}
+            className={(state) => cx("w-full rounded-lg outline-none data-[highlighted]:bg-menu-hover", state.highlighted && "bg-menu-hover")}
         >
             <div className={cx("flex cursor-pointer items-center", sizes[size].root)}>
                 {item.avatarUrl && <Avatar size="xs" src={item.avatarUrl} alt={item.label} />}

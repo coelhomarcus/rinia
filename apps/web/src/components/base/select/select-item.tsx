@@ -36,19 +36,33 @@ export const SelectItem = ({
             value={value ?? id}
             label={text}
             disabled={isDisabled}
-            className={(state) => cx("w-full rounded-md outline-none", "data-[highlighted]:bg-menu-hover", "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50", state.highlighted && "bg-menu-hover", className)}
+            className={cx(
+                "flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-secondary outline-none select-none",
+                "data-[highlighted]:bg-menu-hover data-[highlighted]:text-primary data-[selected]:text-primary",
+                "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
+                sizes[size].item,
+                sizes[size].text,
+                className,
+            )}
         >
-            <div className={cx("flex cursor-pointer items-center select-none", sizes[size].root)}>
-                {isLeft && selectionIndicator === "checkbox" && <CheckboxBase size={size === "lg" ? "md" : "sm"} />}
-                {avatarUrl && <Avatar aria-hidden="true" size="xs" src={avatarUrl} alt={label} />}
-                <SelectItemGraphic icon={Icon} />
-                <span className={cx("flex min-w-0 flex-1 flex-wrap", sizes[size].textContainer)}>
-                    <span className={cx("truncate font-medium whitespace-nowrap text-primary", sizes[size].text)}>{children ?? label}</span>
-                    {supportingText && <span className={cx("whitespace-nowrap text-tertiary", sizes[size].text)}>{supportingText}</span>}
-                </span>
-                {selectionIndicator === "checkmark" && <BaseSelect.ItemIndicator className="ml-auto"><Check aria-hidden="true" className="size-4 text-accent-primary" /></BaseSelect.ItemIndicator>}
-                {!isLeft && selectionIndicator === "checkbox" && <BaseSelect.ItemIndicator className="ml-auto"><CheckboxBase size={size === "lg" ? "md" : "sm"} /></BaseSelect.ItemIndicator>}
-            </div>
+            {isLeft && selectionIndicator === "checkbox" && <CheckboxBase size={size === "lg" ? "md" : "sm"} />}
+            {avatarUrl && <Avatar aria-hidden="true" size="xs" src={avatarUrl} alt={label} />}
+            <SelectItemGraphic icon={Icon} />
+            <span className={cx("flex min-w-0 flex-1 items-baseline", sizes[size].textContainer)}>
+                <span className="truncate whitespace-nowrap">{children ?? label}</span>
+                {supportingText && <span className="whitespace-nowrap text-tertiary">{supportingText}</span>}
+            </span>
+            {/* The check stays quiet, the color of a secondary label; the row's highlight does the pointing. */}
+            {selectionIndicator === "checkmark" && (
+                <BaseSelect.ItemIndicator className="ml-3 shrink-0 text-tertiary">
+                    <Check aria-hidden="true" className="size-4" />
+                </BaseSelect.ItemIndicator>
+            )}
+            {!isLeft && selectionIndicator === "checkbox" && (
+                <BaseSelect.ItemIndicator className="ml-auto">
+                    <CheckboxBase size={size === "lg" ? "md" : "sm"} />
+                </BaseSelect.ItemIndicator>
+            )}
         </BaseSelect.Item>
     );
 };

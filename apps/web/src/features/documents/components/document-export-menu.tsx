@@ -8,7 +8,7 @@ import { overlayChrome } from "@/components/overlay/overlay-chrome";
 import { downloadDocumentMarkdown, downloadProjectDocuments } from "@/features/documents/api";
 import { ApiError } from "@/lib/api-client";
 
-const item = "flex min-h-7 w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-[13px] text-secondary outline-none data-disabled:cursor-default data-disabled:opacity-50 data-highlighted:bg-menu-hover";
+const item = "flex min-h-7 w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left text-[13px] text-secondary outline-none data-disabled:cursor-default data-disabled:opacity-50 data-highlighted:bg-menu-hover";
 
 function useDownload() {
     const { t } = useTranslation();

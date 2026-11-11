@@ -11,8 +11,8 @@ export function LanguageSelector({ compact = false }: { compact?: boolean }) {
     return (
         <div className="flex items-center gap-2">
             <Select
-                size="sm"
-                className={compact ? "w-40" : "w-48"}
+                size={compact ? "sm" : "md"}
+                className={compact ? "w-40" : undefined}
                 aria-label={t("common.language")}
                 selectedKey={locale}
                 onSelectionChange={(value) => setLocale((value ?? locale) as Locale)}
