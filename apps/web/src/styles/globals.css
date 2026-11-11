@@ -389,6 +389,71 @@ html[data-theme*="dark"] .chart-accent {
     }
 }
 
+/*
+ * Phones. A menu, a select list or a popover that would hang off a small control becomes a sheet along the bottom
+ * edge instead, within reach of the thumb: full width, rounded top corners, taller rows, and room for the home
+ * indicator. Base UI positions these through a `role="presentation"` wrapper; this pins that wrapper to the bottom
+ * and lets the popup slide up. A dim layer behind it shows the page is waiting. Tooltips and editor toolbars, which
+ * have none of these roles, keep their anchored position.
+ */
+@media (max-width: 767px) {
+    [data-base-ui-portal] > [role="presentation"]:has(> :is([role="menu"], [role="listbox"], [role="dialog"].overlay-motion)) {
+        position: fixed !important;
+        inset: auto 0 0 0 !important;
+        transform: none !important;
+        /* Base UI sets will-change on the positioner, which would trap the full-screen dim layer inside the sheet. */
+        will-change: auto !important;
+        width: auto !important;
+        max-width: none !important;
+        z-index: 60;
+    }
+    [data-base-ui-portal] > [role="presentation"]:has(> :is([role="menu"], [role="listbox"], [role="dialog"].overlay-motion))::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: var(--bg-backdrop);
+        pointer-events: none;
+        animation: rinia-sheet-dim var(--motion-dialog) ease-out;
+    }
+    [data-base-ui-portal] > [role="presentation"] > :is([role="menu"], [role="listbox"], [role="dialog"].overlay-motion) {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        max-height: min(70dvh, 32rem) !important;
+        overflow-y: auto;
+        border-width: 1px 0 0;
+        border-radius: 1rem 1rem 0 0;
+        padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        background: var(--bg-menu);
+        transform-origin: bottom center;
+        transition:
+            opacity var(--motion-dialog) var(--ease-out-quint),
+            transform var(--motion-dialog) var(--ease-out-quint);
+    }
+    [data-base-ui-portal] > [role="presentation"] > :is([role="menu"], [role="listbox"], [role="dialog"].overlay-motion):is([data-starting-style], [data-ending-style]) {
+        opacity: 1;
+        transform: translateY(100%);
+    }
+    /* A grabber at the top says the sheet belongs to the bottom edge. */
+    [data-base-ui-portal] > [role="presentation"] > :is([role="menu"], [role="listbox"])::before {
+        content: "";
+        display: block;
+        width: 2.25rem;
+        height: 0.25rem;
+        margin: 0 auto 0.5rem;
+        border-radius: 9999px;
+        background: var(--border-strong-1);
+    }
+    [data-base-ui-portal] :is([role="menu"], [role="listbox"]) :is([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"]) {
+        min-height: 2.75rem;
+        font-size: 15px;
+    }
+}
+@keyframes rinia-sheet-dim {
+    from { opacity: 0; }
+}
+
 /* The same motion for menus that are not built on Base UI, such as the right-click menu. */
 @keyframes rinia-popup-in {
     from { opacity: 0; transform: scale(0.97); }

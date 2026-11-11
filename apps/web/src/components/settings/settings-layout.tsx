@@ -1,10 +1,8 @@
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
-import { ButtonUtility } from "@/components/base/buttons/button-utility";
-import { AppIcons } from "@/components/foundations/icons";
-import { useAppNavigation } from "@/components/layout/app-shell";
-import { useTranslation } from "react-i18next";
+import { MobileBackButton } from "@/components/layout/app-shell";
+import { urls } from "@/lib/urls";
 
 export interface SettingsBackLink {
     to: string;
@@ -17,15 +15,11 @@ export interface SettingsBackLink {
  * scrolls as one. The back link sits at the top left of the panel, outside the column, so titles line up across pages.
  */
 export function SettingsPage({ title, description, aside, back, children }: { title?: string; description?: ReactNode; aside?: ReactNode; back?: SettingsBackLink; children: ReactNode }) {
-    const { openNavigation } = useAppNavigation();
-    const { t } = useTranslation();
     return (
         <div className="h-full min-h-0 overflow-y-auto">
-            {/* Phones have no sidebar, so the page opens it from here. */}
+            {/* Phones have no sidebar: without a back link of its own, the page returns to the settings list. */}
             <div className="flex h-12 items-center gap-1 px-2 select-none md:px-4">
-                <span className="md:hidden">
-                    <ButtonUtility icon={AppIcons.Menu} color="tertiary" tooltip={t("nav.expand")} onClick={openNavigation} />
-                </span>
+                {!back && <MobileBackButton fallback={urls.settings()} />}
                 {back && (
                     <Link to={back.to} className="group flex h-7 min-w-0 items-center gap-1 rounded-md px-2 text-[13px] text-secondary transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary hover:duration-0">
                         <ChevronLeft className="size-4 shrink-0 text-tertiary transition-transform duration-150 ease-out group-hover:-translate-x-0.5" aria-hidden="true" />

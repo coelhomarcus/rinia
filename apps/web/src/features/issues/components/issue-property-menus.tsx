@@ -72,7 +72,7 @@ function PropertyMenu<V>({ property, label, triggerLabel, trigger, className, op
                     >
                         <div className="flex items-center justify-between px-2 py-1 text-[11px] text-placeholder">
                             <span>{label}</span>
-                            {numbered.hint && <span className="tabular-nums">{numbered.hint}</span>}
+                            {numbered.hint && <span className="tabular-nums max-md:hidden">{numbered.hint}</span>}
                         </div>
                         {options.map((option, index) => {
                             return (

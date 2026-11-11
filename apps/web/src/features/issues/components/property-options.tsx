@@ -66,5 +66,5 @@ export function estimateOptions(t: TFunction): PropertyOption<number | null>[] {
 
 /** The key beside an option (its digit, or ⌫): right-aligned, tabular and the same size in every menu. Empty where an option has none. */
 export function OptionNumber({ value }: { value: string | null }) {
-    return <span aria-hidden="true" className="w-3 shrink-0 text-right text-[11px] text-placeholder tabular-nums">{value ?? ""}</span>;
+    return <span aria-hidden="true" className="w-3 shrink-0 text-right text-[11px] text-placeholder tabular-nums max-md:hidden">{value ?? ""}</span>;
 }

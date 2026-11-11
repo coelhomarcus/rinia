@@ -7,6 +7,7 @@ import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { Skeleton } from "@/components/base/feedback/skeleton";
 import { Presence, usePresence } from "@/components/base/presence";
+import { SwipeRow } from "@/components/base/swipe-row";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { ErrorMessage } from "@/components/feedback/error-message";
@@ -149,14 +150,17 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
     const { t, i18n } = useTranslation();
     const unread = !notification.readAt;
     const { issue, actor } = notification;
+    const action = unread ? t("inbox.markRead") : t("inbox.markUnread");
     return (
-        <div className="group/notification relative border-b border-subtle">
+        // On touch screens, swiping the row left marks it read or unread; the hover button does the same with a pointer.
+        <SwipeRow action={{ label: action, icon: unread ? <MailOpen className="size-4" /> : <MailCheck className="size-4" />, onTrigger: () => onRead(unread) }} className="border-b border-subtle">
+        <div className="group/notification relative">
             <Link
                 viewTransition
                 to={urls.issue(issue.identifier, issue.title)}
                 state={{ issueTitle: issue.title }}
                 onClick={() => onRead(true)}
-                className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none hover:duration-0"
+                className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 max-md:items-start max-md:py-3 max-md:pr-4 max-md:pl-2 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none hover:duration-0"
             >
                 <span
                     aria-hidden="true"
@@ -165,9 +169,9 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                         unread ? "scale-100 opacity-100" : "scale-50 opacity-0",
                     )}
                 />
-                <IssueAvatar name={actor.name} avatarUrl={actor.avatarUrl} className="size-7 text-[12px]" />
+                <IssueAvatar name={actor.name} avatarUrl={actor.avatarUrl} className="size-7 text-[12px] max-md:size-8" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="flex min-w-0 items-center gap-2 text-[13px]">
+                    <span className="flex min-w-0 items-center gap-2 text-[13px] max-md:text-[15px]">
                         <ProjectIcon icon={notification.project.iconAppearance ?? notification.project.icon} className="size-3.5 shrink-0" />
                         <span className="shrink-0 font-mono text-xs text-tertiary" style={issueViewTransitionStyle(issue.identifier, "id")}>
                             {issue.identifier}
@@ -187,21 +191,22 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                         {notification.excerpt && <span className="min-w-0 truncate text-placeholder">{notification.excerpt}</span>}
                     </span>
                 </span>
-                <time dateTime={notification.createdAt} className="shrink-0 text-xs text-tertiary">
+                <time dateTime={notification.createdAt} className="shrink-0 text-xs text-tertiary max-md:pt-0.5">
                     {formatAge(notification.createdAt, i18n.language)}
                 </time>
             </Link>
-            <Tooltip title={unread ? t("inbox.markRead") : t("inbox.markUnread")}>
+            <Tooltip title={action}>
                 <button
                     type="button"
-                    aria-label={unread ? t("inbox.markRead") : t("inbox.markUnread")}
-                    onClick={() => onRead(!unread)}
-                    className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/notification:opacity-100 can-hover:group-focus-within/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100"
+                    aria-label={action}
+                    onClick={() => onRead(unread)}
+                    className="absolute top-1/2 right-3 grid size-6 -translate-y-1/2 place-items-center rounded text-tertiary can-hover:opacity-0 transition-opacity duration-150 can-hover:group-hover/notification:opacity-100 can-hover:group-focus-within/notification:opacity-100 hover:bg-layer-1-hover hover:text-primary focus-visible:opacity-100 max-md:hidden"
                 >
                     {unread ? <MailOpen className="size-3.5" /> : <MailCheck className="size-3.5" />}
                 </button>
             </Tooltip>
         </div>
+        </SwipeRow>
     );
 }
 

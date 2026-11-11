@@ -91,6 +91,9 @@ export function IssueListRow({
             style={drag?.style}
             className={cx(
                 "group/issue relative flex h-[var(--row-height)] w-full items-center gap-[var(--row-gap)] bg-surface-1 px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover hover:duration-0",
+                // Phones: two lines. Status, title and assignee first; identifier, labels, due date and priority below,
+                // lined up under the title. Flex order and a full-width break do the rearranging, so the row stays one tree.
+                "max-md:h-auto max-md:min-h-15 max-md:flex-wrap max-md:content-center max-md:gap-x-3 max-md:gap-y-1 max-md:px-4 max-md:py-3",
                 selected && "bg-layer-1-selected",
                 checked && "bg-accent-subtle/60 hover:bg-accent-subtle/80",
                 drag?.className,
@@ -102,43 +105,44 @@ export function IssueListRow({
             data-issue-identifier={issue.identifier}
             data-issue-title={issue.title}
         >
-            <IssueCheckbox issueId={issue.id} className="can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100" />
-            {drag ? drag.handle : <span aria-hidden="true" className="size-5 shrink-0" />}
+            <IssueCheckbox issueId={issue.id} className="can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100 max-md:hidden" />
+            {drag ? <span className="contents max-md:hidden">{drag.handle}</span> : <span aria-hidden="true" className="size-5 shrink-0 max-md:hidden" />}
             <Link
                 viewTransition
                 to={urls.issue(issue.identifier, issue.title)}
                 state={{ issueTitle: issue.title }}
                 onFocus={onSelect}
                 onClick={rangeClick}
-                className="shrink-0 truncate font-mono text-xs text-tertiary"
+                className="shrink-0 truncate font-mono text-xs text-tertiary max-md:order-5 max-md:ml-8 max-md:w-auto!"
                 style={{ width: `${identifierWidth}ch`, ...issueViewTransitionStyle(issue.identifier, "id") }}
             >
                 {issue.identifier}
             </Link>
-            <StatusMenu value={column} statuses={columns} onChange={(columnId) => onUpdate({ columnId })} />
+            <StatusMenu value={column} statuses={columns} onChange={(columnId) => onUpdate({ columnId })} className="max-md:order-1" />
             <Link
                 viewTransition
                 to={urls.issue(issue.identifier, issue.title)}
                 state={{ issueTitle: issue.title }}
                 onClick={rangeClick}
-                className="min-w-0 flex-1 truncate text-secondary"
+                className="min-w-0 flex-1 truncate text-secondary max-md:order-2 max-md:line-clamp-2 max-md:text-[15px] max-md:leading-5 max-md:whitespace-normal max-md:text-primary"
                 style={issueViewTransitionStyle(issue.identifier, "title")}
             >
                 {issue.title}
             </Link>
             {categories.length > 0 && (
-                <LabelMenu value={categories} labels={labels} onChange={(categoryIds) => onUpdate({ categoryIds })} className="max-w-[40%]" />
+                <LabelMenu value={categories} labels={labels} onChange={(categoryIds) => onUpdate({ categoryIds })} className="max-w-[40%] max-md:order-6 max-md:max-w-[60%]" />
             )}
             {issue.dueDate && (
-                <DueDateMenu value={issue.dueDate} closed={columnBucket(column?.name ?? "") === "closed"} onChange={(dueDate) => onUpdate({ dueDate })} />
+                <DueDateMenu value={issue.dueDate} closed={columnBucket(column?.name ?? "") === "closed"} onChange={(dueDate) => onUpdate({ dueDate })} className="max-md:order-7" />
             )}
             <PriorityMenu
                 value={issue.priority}
                 onChange={(priority) => onUpdate({ priority })}
-                className="can-hover:opacity-0 can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100 focus-visible:opacity-100"
+                className="can-hover:opacity-0 can-hover:group-hover/issue:opacity-100 can-hover:group-focus-within/issue:opacity-100 focus-visible:opacity-100 max-md:order-8"
             />
-            <AssigneeMenu value={member} people={members} onChange={(assigneeId) => onUpdate({ assigneeId })} />
-            <span className="w-14 shrink-0 text-right text-xs text-tertiary">{date}</span>
+            <AssigneeMenu value={member} people={members} onChange={(assigneeId) => onUpdate({ assigneeId })} className="max-md:order-3" />
+            <span aria-hidden="true" className="hidden h-0 basis-full max-md:order-4 max-md:block" />
+            <span className="w-14 shrink-0 text-right text-xs text-tertiary max-md:hidden">{date}</span>
         </IssueMotionFrame>
     );
 }

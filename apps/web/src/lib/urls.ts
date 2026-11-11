@@ -16,6 +16,8 @@ export function projectKeyOf(identifier: string) {
 }
 
 export const urls = {
+    home: () => "/home",
+    settings: () => "/settings",
     inbox: () => "/inbox",
     myIssues: (filter: MyIssuesFilter = "assigned") => (filter === "assigned" ? "/my-issues" : `/my-issues/${filter}`),
     project: appPaths.project,

@@ -18,6 +18,7 @@ const ProfileSettingsPage = lazy(() => import("@/pages/profile-settings-page").t
 const DesignSystemPage = lazy(() => import("@/pages/design-system-page").then((module) => ({ default: module.default })));
 
 const IssueView = lazy(() => import("@/features/issues/components/issue-view/issue-view").then((module) => ({ default: module.IssueView })));
+const MobileNavPage = lazy(() => import("@/pages/mobile-nav-page").then((module) => ({ default: module.MobileNavPage })));
 const InboxPage = lazy(() => import("@/pages/inbox-page").then((module) => ({ default: module.InboxPage })));
 const LoginPage = lazy(() => import("@/pages/login-page").then((module) => ({ default: module.LoginPage })));
 const MyIssuesPage = lazy(() => import("@/pages/my-issues-page").then((module) => ({ default: module.MyIssuesPage })));
@@ -94,6 +95,8 @@ export const AppRoutes = () => {
                     }
                 >
                     <Route path="/" element={<Navigate to={urls.myIssues()} replace />} />
+                    <Route path="/home" element={<MobileNavPage desktopTo={urls.myIssues()} />} />
+                    <Route path="/settings" element={<MobileNavPage desktopTo="/settings/profile" />} />
                     <Route path="/inbox" element={<InboxPage />} />
                     <Route path="/my-issues" element={<MyIssuesPage />} />
                     <Route path="/my-issues/:filter" element={<MyIssuesPage />} />

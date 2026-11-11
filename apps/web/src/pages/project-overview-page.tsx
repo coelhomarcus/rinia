@@ -197,7 +197,7 @@ function ProjectDescription({ projectId, description, editable }: { projectId: s
                     event.currentTarget.blur();
                 }
             }}
-            className="mt-3 block w-full max-w-2xl resize-none overflow-hidden bg-transparent text-[15px] leading-6 text-secondary outline-none placeholder:text-placeholder"
+            className="field-sizing-content mt-3 block w-full max-w-2xl resize-none overflow-hidden bg-transparent text-[15px] leading-6 text-secondary outline-none placeholder:text-placeholder"
         />
     );
 }

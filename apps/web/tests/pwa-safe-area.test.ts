@@ -17,10 +17,12 @@ describe("iOS PWA safe area", () => {
 
     test("the shell, overlays and bulk bar inset with env(safe-area-inset-*)", () => {
         const shell = read("src/components/layout/app-shell.tsx");
-        expect(shell).toContain("p-safe");
         expect(shell).toContain("pt-safe");
-        expect(shell).toContain("pb-safe");
+        expect(shell).toContain("pr-safe");
         expect(shell).toContain("pl-safe");
+        // The bottom inset belongs to the shell from md up, and to the tab bar on phones, which sits on the bottom edge.
+        expect(shell).toContain("md:pb-safe");
+        expect(read("src/components/layout/mobile-tab-bar.tsx")).toContain("pb-safe");
 
         expect(read("src/components/feedback/toaster.tsx")).toContain("safe-area-inset-bottom");
         expect(read("src/components/base/sheet/sheet.tsx")).toContain("safe-area-inset-bottom");

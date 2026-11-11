@@ -30,7 +30,8 @@ export function Collapse({
         setWasOpen(open);
         if (animate) setSettled(false);
     }
-    const track = axis === "x" ? (open ? "grid-cols-[1fr]" : "grid-cols-[0fr]") : open ? "grid-rows-[1fr]" : "grid-rows-[0fr]";
+    // The cross axis is held to the container's size, so long unwrapped content (a truncated title) cannot widen it.
+    const track = axis === "x" ? (open ? "grid-cols-[1fr]" : "grid-cols-[0fr]") : cx("grid-cols-[minmax(0,1fr)]", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]");
     return (
         <div
             inert={!open}
@@ -44,7 +45,7 @@ export function Collapse({
                 open ? "opacity-100" : "opacity-0",
             )}
         >
-            <div className={cx(axis === "x" ? "min-w-0" : "min-h-0", open && settled ? "overflow-visible" : "overflow-hidden")}>{mounted && children}</div>
+            <div className={cx(axis === "x" ? "min-w-0" : "min-h-0 min-w-0", open && settled ? "overflow-visible" : "overflow-hidden")}>{mounted && children}</div>
         </div>
     );
 }

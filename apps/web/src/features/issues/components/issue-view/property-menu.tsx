@@ -102,7 +102,7 @@ export function PropertyMenu<V>({
                 }}
                 className={cx("min-w-0 flex-1 bg-transparent text-[13px] text-primary outline-none placeholder:text-placeholder", sheet ? "h-11" : "h-8")}
             />
-            {numbered.hint && !query && <span className="shrink-0 text-[11px] text-placeholder tabular-nums">{numbered.hint}</span>}
+            {numbered.hint && !query && <span className="shrink-0 text-[11px] text-placeholder tabular-nums max-md:hidden">{numbered.hint}</span>}
         </div>
     );
 

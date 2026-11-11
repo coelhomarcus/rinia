@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { AppIcons } from "@/components/foundations/icons";
-import { useAppNavigation } from "@/components/layout/app-shell";
+import { MobileBackButton } from "@/components/layout/app-shell";
 import { ContextMenuButton } from "@/components/overlay/context-menu-provider";
 import type { FavoriteTarget } from "@/features/favorites/api";
 import { FavoriteStar } from "@/features/favorites/components/favorite-star";
@@ -16,6 +16,7 @@ import { ProjectIcon } from "./project-icon";
 import { useTranslation } from "react-i18next";
 import { urls } from "@/lib/urls";
 import { repositoryHost } from "@/features/projects/lib/repository";
+import { pillTab } from "@/components/base/pill-tab";
 
 export function ProjectWorkspaceHeader({
     projectId,
@@ -43,7 +44,6 @@ export function ProjectWorkspaceHeader({
     const { can } = useProjectPermissions(projectId);
     const project = projectData ?? projects?.find((candidate) => candidate.id === projectId);
     const { t } = useTranslation();
-    const { openNavigation } = useAppNavigation();
     const favoriteTarget: FavoriteTarget | null =
         favorite !== undefined
             ? favorite
@@ -54,12 +54,21 @@ export function ProjectWorkspaceHeader({
                 : null;
     const showSection = !hideSection && activeView !== "overview" && activeView !== "members";
     const title = activeView === "views" ? t("views.title") : activeView === "issues" || activeView === "board" ? t("nav.issues") : activeView === "documents" ? t("nav.documents") : activeView === "settings" ? t("nav.projectSettings") : t("nav.overview");
+    // Phones have no sidebar to switch sections from, so the section pills sit under the header there.
+    const sections =
+        project && !crumb && activeView !== "settings" && activeView !== "members"
+            ? ([
+                  ["overview", t("nav.overview"), urls.project(project.issueKey)],
+                  ["issues", t("nav.issues"), urls.issues(project.issueKey)],
+                  ["documents", t("nav.documents"), urls.documents(project.issueKey)],
+                  ["views", t("views.title"), urls.views(project.issueKey)],
+              ] as const)
+            : null;
     return (
-        <header className="flex h-11 shrink-0 select-none items-center justify-between gap-3 border-b border-subtle px-3" data-print-hide>
+        <>
+        <header className="flex h-11 shrink-0 select-none items-center justify-between gap-3 border-b border-subtle px-3 max-md:border-b-0" data-print-hide>
             <div className="flex min-w-0 items-center gap-1 text-[13px]">
-                <span className="md:hidden">
-                    <ButtonUtility icon={AppIcons.Menu} color="tertiary" tooltip={t("nav.expand")} onClick={openNavigation} />
-                </span>
+                <MobileBackButton fallback={urls.home()} />
                 <span className="flex min-w-0 items-center gap-2" data-project-context="true" data-project-id={projectId} data-project-name={project?.name ?? t("projects.project")} data-project-issue-key={project?.issueKey ?? ""}>
                     <ProjectIcon icon={project?.iconAppearance ?? project?.icon} className="size-4 shrink-0" />
                     <Link to={project ? urls.project(project.issueKey) : "/"} className="truncate text-secondary hover:text-primary">{project?.name ?? t("projects.project")}</Link>
@@ -93,6 +102,19 @@ export function ProjectWorkspaceHeader({
                 )}
             </div>
         </header>
+        {sections && (
+            <nav aria-label={t("nav.projectSections")} data-print-hide className="scrollbar-hide flex shrink-0 gap-1 overflow-x-auto border-b border-subtle px-3 pb-2 md:hidden">
+                {sections.map(([view, label, to]) => {
+                    const active = view === activeView || (view === "issues" && activeView === "board");
+                    return (
+                        <Link key={view} to={to} aria-current={active ? "page" : undefined} className={pillTab(active)}>
+                            {label}
+                        </Link>
+                    );
+                })}
+            </nav>
+        )}
+        </>
     );
 }
 

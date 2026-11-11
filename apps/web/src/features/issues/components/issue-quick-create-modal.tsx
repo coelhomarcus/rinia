@@ -114,12 +114,17 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
             <Dialog.Portal>
                 <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-motion" />
                 <Dialog.Viewport
-                    className={cx("fixed inset-0 z-50 flex justify-center overflow-y-auto p-safe-4", expanded ? "items-center" : "items-start pt-[max(12vh,env(safe-area-inset-top,0px))]")}
+                    className={cx(
+                        "fixed inset-0 z-50 flex justify-center overflow-y-auto p-safe-4 max-md:p-0",
+                        expanded ? "items-center" : "items-start pt-[max(12vh,env(safe-area-inset-top,0px))] max-md:pt-0",
+                    )}
                 >
                     <Dialog.Popup
                         initialFocus={titleRef}
                         className={cx(
                             "flex w-full flex-col rounded-xl border border-subtle bg-layer-1 shadow-overlay-100 outline-none",
+                            // A phone composes on the whole screen, like a native compose sheet, and it rises from the bottom.
+                            "max-md:h-dvh max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pt-safe max-md:pb-safe max-md:data-[ending-style]:translate-y-8 max-md:data-[ending-style]:scale-100 max-md:data-[starting-style]:translate-y-8 max-md:data-[starting-style]:scale-100",
                             "transition-[opacity,transform,max-width,height] duration-(--motion-dialog) ease-(--ease-out-quint) data-[ending-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.96] data-[starting-style]:opacity-0",
                             expanded ? "h-[min(860px,calc(100dvh-32px))] max-w-4xl" : "max-w-2xl",
                         )}
@@ -136,7 +141,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                                     <Button
                                         size="xs"
                                         color="tertiary"
-                                        className="rounded-full"
+                                        className="rounded-full max-md:hidden"
                                         iconLeading={expanded ? Minimize2 : Maximize2}
                                         aria-label={expanded ? t("issue.collapseEditor") : t("issue.expandEditor")}
                                         onClick={() => setExpanded((current) => !current)}
@@ -148,7 +153,7 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                             </div>
                         </div>
 
-                        <div className={cx("flex min-h-0 flex-col px-4 pt-3", expanded && "flex-1")}>
+                        <div className={cx("flex min-h-0 flex-col px-4 pt-3 max-md:flex-1", expanded && "flex-1")}>
                             <textarea
                                 ref={titleRef}
                                 rows={1}
@@ -166,9 +171,9 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
                                         submit();
                                     }
                                 }}
-                                className="field-sizing-content w-full resize-none bg-transparent text-lg font-medium text-primary outline-none placeholder:text-placeholder"
+                                className="field-sizing-content w-full resize-none bg-transparent text-lg font-medium text-primary outline-none placeholder:text-placeholder max-md:text-xl"
                             />
-                            <div className={cx("mt-1 min-h-16 overflow-y-auto text-[14px]", expanded ? "flex-1" : "max-h-64")}>
+                            <div className={cx("mt-1 min-h-16 overflow-y-auto text-[14px] max-md:max-h-none max-md:flex-1 max-md:text-[15px]", expanded ? "flex-1" : "max-h-64")}>
                                 <RichTextEditor
                                     key={draft}
                                     toolbar={false}

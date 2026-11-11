@@ -466,7 +466,7 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
                     <>
                         {viewActions.menu}
                         {canWrite && (
-                            <Button size="md" color="secondary" className={cx(COLLAPSE, "rounded-full")} iconLeading={Plus} onClick={() => startCreating(null)}>
+                            <Button size="md" color="secondary" className={cx(COLLAPSE, "rounded-full max-md:hidden")} iconLeading={Plus} onClick={() => startCreating(null)}>
                                 <Label>{t("issue.newIssue")}</Label>
                             </Button>
                         )}
@@ -477,12 +477,12 @@ const ProjectIssues = ({ savedView }: { savedView?: SavedView }) => {
             {/* The bar and the filter row share the content's background and need no border; on the board that is the board's own. */}
             <div
                 className={cx(
-                    "flex h-11 shrink-0 items-center gap-1 px-3 transition-colors max-sm:overflow-x-auto",
+                    "flex h-11 shrink-0 items-center gap-1 px-3 transition-colors",
                     view === "board" ? "bg-surface-2" : "bg-surface-1",
                 )}
             >
                 {view && (
-                    <div className="animate-enter flex min-w-0 items-center gap-1 max-sm:shrink-0">
+                    <div className="animate-enter scrollbar-hide flex min-w-0 items-center gap-1 overflow-x-auto max-md:pr-4 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)]">
                         {(
                             [
                                 ["all", t("issue.allIssues")],

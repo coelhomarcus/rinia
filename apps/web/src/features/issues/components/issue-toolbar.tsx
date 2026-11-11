@@ -49,12 +49,7 @@ type DisplayOption = { id: string; label: string; icon: FC<{ className?: string 
 /** Round icon buttons, the look of every icon control in the issues bar. */
 export const roundIconButton = "rounded-full";
 
-/** A pill in the issues bar: the scopes, saved views, and the tabs of My issues. */
-export const pillTab = (active: boolean) =>
-    cx(
-        "flex h-7 shrink-0 items-center gap-1 rounded-full border px-3 text-[13px] whitespace-nowrap transition-colors",
-        active ? "border-strong bg-layer-1-selected text-primary" : "border-subtle text-tertiary hover:bg-layer-transparent-hover hover:text-primary",
-    );
+export { pillTab } from "@/components/base/pill-tab";
 
 const menuItem =
     "flex h-8 cursor-pointer items-center gap-2 rounded px-2 text-[13px] text-secondary outline-none data-highlighted:bg-menu-hover data-highlighted:text-primary";

@@ -1,84 +1,72 @@
-import { Suspense, createContext, useContext, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
-import { Dialog } from "@base-ui/react/dialog";
-import { Outlet, useLocation } from "react-router";
+import { Outlet } from "react-router";
 import { NetworkStatus } from "@/components/feedback/network-status";
 import { WorkspaceLoadingFallback } from "@/components/feedback/workspace-loading-fallback";
 import { AppCommandsProvider } from "@/features/commands/app-commands";
 import { AppBadge } from "@/features/pwa/app-badge";
 import { RealtimeProvider } from "@/features/realtime/realtime-provider";
+import { MobileTabBar } from "./mobile-tab-bar";
 import { Sidebar } from "./sidebar";
 import { useTranslation } from "react-i18next";
 
-/** Opens the navigation drawer on small screens, where the sidebar is not shown. */
-const NavigationContext = createContext({ openNavigation: () => {} });
-export const useAppNavigation = () => useContext(NavigationContext);
+/*
+ * Page headers take their phone back button from here rather than from its own file. Pages importing the shell module
+ * keep it, and what it shares with them, in one chunk; without that edge the bundler splits those shared modules into
+ * dozens of tiny files.
+ */
+export { MobileBackButton } from "./mobile-back-button";
+
 const readWidth = () => {
     const value = Number(localStorage.getItem("rinia-sidebar-width") ?? 244);
     return Number.isFinite(value) ? Math.max(220, Math.min(360, value)) : 244;
 };
 
 export const AppShell = () => {
-    const location = useLocation();
     const { t } = useTranslation();
     const [width, setWidth] = useState(readWidth);
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [resizing, setResizing] = useState(false);
-    useEffect(() => {
-        setMobileOpen(false);
-    }, [location.pathname]);
     useEffect(() => {
         localStorage.setItem("rinia-sidebar-width", String(width));
     }, [width]);
-    const openNavigation = () => setMobileOpen(true);
     return (
-        <NavigationContext.Provider value={{ openNavigation }}>
-            <AppCommandsProvider>
-            {/* While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes. */}
-            <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-canvas p-safe text-primary ${resizing ? "cursor-ew-resize select-none" : ""}`}>
-                <aside
-                    className={`relative hidden h-full shrink-0 overflow-hidden md:flex ${resizing ? "" : "transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)]"}`}
-                    style={{ width }}
-                    aria-label={t("nav.navigation")}
-                >
-                    <div className="flex h-full min-h-0 flex-col overflow-hidden" style={{ width }}>
-                        <div className="min-h-0 flex-1">
-                            <Sidebar />
-                        </div>
-                    </div>
-                </aside>
-                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col p-2">
-                    <SidebarResizeHandle
-                        width={width}
-                        resizing={resizing}
-                        onResizeStart={() => setResizing(true)}
-                        onResize={(next) => setWidth(Math.max(220, Math.min(360, next)))}
-                        onResizeEnd={() => setResizing(false)}
-                    />
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-subtle bg-surface-1 shadow-raised-100" data-app-content>
-                        {/* No mobile bar of its own: every page header carries the menu button that opens the navigation. */}
-                        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" id="main-content">
-                            <Suspense fallback={<WorkspaceLoadingFallback />}>
-                                <Outlet />
-                            </Suspense>
-                        </main>
+        <AppCommandsProvider>
+        {/* While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes. */}
+        <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-surface-1 pt-safe pr-safe pl-safe text-primary md:bg-canvas md:pb-safe ${resizing ? "cursor-ew-resize select-none" : ""}`}>
+            <aside
+                className={`relative hidden h-full shrink-0 overflow-hidden md:flex ${resizing ? "" : "transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)]"}`}
+                style={{ width }}
+                aria-label={t("nav.navigation")}
+            >
+                <div className="flex h-full min-h-0 flex-col overflow-hidden" style={{ width }}>
+                    <div className="min-h-0 flex-1">
+                        <Sidebar />
                     </div>
                 </div>
-                <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-                    <Dialog.Portal>
-                        <Dialog.Backdrop data-print-hide className="fixed inset-0 z-40 bg-backdrop transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-                        <Dialog.Popup data-print-hide className="fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col border-r border-subtle bg-canvas pt-safe pb-safe pl-safe outline-none transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full">
-                            <Dialog.Title className="sr-only">{t("nav.navigation")}</Dialog.Title>
-                            <Sidebar onNavigate={() => setMobileOpen(false)} />
-                        </Dialog.Popup>
-                    </Dialog.Portal>
-                </Dialog.Root>
-                <NetworkStatus />
-                <RealtimeProvider />
-                <AppBadge />
+            </aside>
+            {/* Phones get the content edge to edge, with the tab bar below it; from `md` it sits inset in a rounded panel. */}
+            <div className="relative flex min-h-0 min-w-0 flex-1 flex-col md:p-2">
+                <SidebarResizeHandle
+                    width={width}
+                    resizing={resizing}
+                    onResizeStart={() => setResizing(true)}
+                    onResize={(next) => setWidth(Math.max(220, Math.min(360, next)))}
+                    onResizeEnd={() => setResizing(false)}
+                />
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface-1 md:rounded-xl md:border md:border-subtle md:shadow-raised-100" data-app-content>
+                    <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" id="main-content">
+                        <Suspense fallback={<WorkspaceLoadingFallback />}>
+                            <Outlet />
+                        </Suspense>
+                    </main>
+                </div>
+                <MobileTabBar />
             </div>
-            </AppCommandsProvider>
-        </NavigationContext.Provider>
+            <NetworkStatus />
+            <RealtimeProvider />
+            <AppBadge />
+        </div>
+        </AppCommandsProvider>
     );
 };
 

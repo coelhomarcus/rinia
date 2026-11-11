@@ -188,11 +188,13 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
     let offset = 0;
 
     return (
-        <ModalOverlay isOpen onOpenChange={(open) => !open && onClose()} isDismissable className="sm:items-start sm:pt-[12vh] sm:pb-8">
-            <Modal className="max-w-xl">
+        <ModalOverlay isOpen onOpenChange={(open) => !open && onClose()} isDismissable className="sm:items-start sm:pt-[12vh] sm:pb-8 max-md:items-stretch max-md:p-0">
+            {/* On a phone search takes the whole screen, with Cancel beside the field, as a native search does. */}
+            <Modal className="max-w-xl max-md:h-dvh max-md:max-w-none max-md:max-h-none max-md:rounded-none">
                 <Dialog>
-                    <div className="flex max-h-[70vh] w-full flex-col overflow-hidden rounded-xl bg-menu shadow-overlay-100 ring-1 ring-subtle">
-                        <div className="border-b border-subtle p-2">
+                    <div className="flex max-h-[70vh] w-full flex-col overflow-hidden rounded-xl bg-menu shadow-overlay-100 ring-1 ring-subtle max-md:h-dvh max-md:max-h-none max-md:rounded-none max-md:pt-safe max-md:pb-safe max-md:ring-0">
+                        <div className="flex items-center gap-2 border-b border-subtle p-2">
+                            <div className="min-w-0 flex-1">
                             <Input
                                 autoFocus
                                 aria-label={t("commands.label")}
@@ -208,6 +210,10 @@ export function CommandPalette({ onClose, onCreateIssue, onShowShortcuts }: Comm
                                 onChange={setQuery}
                                 onKeyDown={handleKeyDown}
                             />
+                            </div>
+                            <button type="button" onClick={onClose} className="shrink-0 rounded-md px-2 py-1 text-[15px] text-accent-primary md:hidden">
+                                {t("common.cancel")}
+                            </button>
                         </div>
 
                         <div id="rinia-command-results" role="listbox" aria-label={t("commands.results")} className="flex flex-col overflow-y-auto p-1.5">
@@ -257,7 +263,7 @@ function PaletteRow({ item, selected, onHover }: { item: PaletteItem; selected: 
                 </span>
                 {item.description && <span className="line-clamp-1 text-xs text-tertiary">{item.description}</span>}
             </span>
-            {item.shortcut ? <ShortcutKeys keys={item.shortcut} /> : selected && <span className="font-mono text-[11px] text-tertiary">↵</span>}
+            {item.shortcut ? <ShortcutKeys keys={item.shortcut} className="max-md:hidden" /> : selected && <span className="font-mono text-[11px] text-tertiary max-md:hidden">↵</span>}
         </button>
     );
 }

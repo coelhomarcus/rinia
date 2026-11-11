@@ -262,7 +262,7 @@ export const MyIssuesPage = () => {
         <div className="flex h-full min-h-0 flex-col bg-surface-1">
             <Topbar title={t("myIssues.title")} />
             <div className="flex h-11 shrink-0 items-center gap-1 px-3 select-none">
-                <div role="group" aria-label={t("myIssues.tabs")} className="flex min-w-0 items-center gap-1">
+                <div role="group" aria-label={t("myIssues.tabs")} className="scrollbar-hide flex min-w-0 items-center gap-1 overflow-x-auto max-md:pr-4 max-md:[mask-image:linear-gradient(to_right,black_85%,transparent)]">
                     {myIssuesFilterValues.map((value) => (
                         <button
                             key={value}

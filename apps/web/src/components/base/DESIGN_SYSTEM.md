@@ -83,6 +83,18 @@ The interface answers at once and lets go gently. The tokens live in `globals.cs
 - Navigation that only switches a list's filter does not run a view transition; the list animates its own rows.
 - Everything respects `prefers-reduced-motion`.
 
+## Phones
+
+Below `md` (768px) the app is a phone app, not a squeezed desktop.
+
+- **Shell.** Content runs edge to edge on `bg-surface-1`, with no inset panel. `MobileTabBar` sits along the bottom edge with the home-indicator inset: Home, My issues, a round accent button that creates an issue, Inbox (with the unread dot), and Search (the command palette, full screen with Cancel). There is no navigation drawer.
+- **Home.** `/home` is the sidebar as a page (projects, favorites, account), and `/settings` lists the settings sections. On wider screens both redirect, because the sidebar is always there.
+- **Headers.** Top-level tabs show only their title. Deeper pages start with `MobileBackButton`, which goes back in history or to a fallback when opened from a link. Breadcrumbs, presence and pagers give way; a project's sections become pill tabs under its header.
+- **Lists.** Issue rows wrap into two lines: status, a title of up to two lines at 15px, and the assignee; then the identifier, labels, due date and priority under the title. Pill tab rows scroll sideways with a fade at the edge. Keyboard hints (numbers, shortcuts) are hidden.
+- **Menus.** Menus, selects and popovers open as bottom sheets: full width, a grabber, rows at least 44px tall, over a dim layer. This is CSS on Base UI's positioner in `globals.css`, so components need no changes. Tooltips and editor toolbars keep their anchored position.
+- **Composer and dialogs.** Creating an issue takes the whole screen and rises from the bottom. Other dialogs sit at the bottom edge.
+- **Gestures.** `SwipeRow` gives a row a swipe-left action on touch screens; the inbox uses it to mark notifications read or unread. Vertical scrolling stays with the browser, and a swipe never also opens the row.
+
 ## Rich text
 
 `RichTextEditor` is a shared Tiptap composition. Editable instances use a sticky top toolbar, a selection BubbleMenu, and `/` commands. Documents, descriptions, and comments opt into the `document`, `description`, or `comment` variant. Read-only instances do not mount editing controls and must keep task list controls inert.
