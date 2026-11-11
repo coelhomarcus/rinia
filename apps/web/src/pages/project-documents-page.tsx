@@ -375,9 +375,9 @@ function DocumentWorkspace({ page, userId }: { page: DocumentPage; userId: strin
                 }}
             >
                 <Dialog.Portal>
-                    <Dialog.Backdrop className="fixed inset-0 z-50 bg-backdrop" />
+                    <Dialog.Backdrop className="fixed inset-0 z-50 bg-backdrop backdrop-motion" />
                     <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-safe-4">
-                        <Dialog.Popup className="w-full max-w-md rounded-lg border border-subtle bg-layer-2 p-6 shadow-overlay-200">
+                        <Dialog.Popup className="dialog-motion w-full max-w-md rounded-xl border border-subtle bg-layer-1 p-6 shadow-overlay-100">
                             <Dialog.Title className="text-lg font-semibold">{t("documents.deleteTitle")}</Dialog.Title>
                             <Dialog.Description className="mt-2 text-sm text-tertiary">{t("documents.deleteWarning")}</Dialog.Description>
                             {actionError && <ErrorMessage message={actionError} />}

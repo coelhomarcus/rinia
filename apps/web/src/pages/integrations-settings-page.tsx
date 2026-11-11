@@ -73,7 +73,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
     return (
         <Link
             to={urls.integration(integration.slug)}
-            className={`${cardClass} transition-colors duration-150 hover:bg-layer-1-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong`}
+            className={`${cardClass} transition-colors duration-150 hover:bg-layer-1-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong hover:duration-0`}
         >
             {body}
         </Link>

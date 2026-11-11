@@ -1,5 +1,6 @@
 import { Bell, BellOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { IconSwap } from "@/components/base/icon-swap";
 import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { useIssueSubscription, useToggleIssueSubscription } from "../hooks/use-notifications";
 
@@ -20,7 +21,7 @@ export function FollowButton({ identifier, className = "" }: { identifier: strin
                 className={`flex size-6 shrink-0 items-center justify-center rounded transition-colors duration-150 hover:bg-layer-transparent-hover ${following ? "text-secondary hover:text-primary" : "text-placeholder hover:text-secondary"} ${className}`}
                 onClick={() => toggle.mutate(!following)}
             >
-                {following ? <Bell className="size-3.5 transition-transform duration-150 active:scale-90" /> : <BellOff className="size-3.5 transition-transform duration-150 active:scale-90" />}
+                <IconSwap on={following} onIcon={<Bell className="size-3.5" />} offIcon={<BellOff className="size-3.5" />} className="size-3.5" />
             </button>
         </Tooltip>
     );

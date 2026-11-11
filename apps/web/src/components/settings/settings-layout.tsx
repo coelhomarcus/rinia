@@ -27,7 +27,7 @@ export function SettingsPage({ title, description, aside, back, children }: { ti
                     <ButtonUtility icon={AppIcons.Menu} color="tertiary" tooltip={t("nav.expand")} onClick={openNavigation} />
                 </span>
                 {back && (
-                    <Link to={back.to} className="group flex h-7 min-w-0 items-center gap-1 rounded-md px-2 text-[13px] text-secondary transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary">
+                    <Link to={back.to} className="group flex h-7 min-w-0 items-center gap-1 rounded-md px-2 text-[13px] text-secondary transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary hover:duration-0">
                         <ChevronLeft className="size-4 shrink-0 text-tertiary transition-transform duration-150 ease-out group-hover:-translate-x-0.5" aria-hidden="true" />
                         {back.icon}
                         <span className="truncate">{back.label}</span>
@@ -150,7 +150,7 @@ export function SettingsRowIcon({ icon: Icon }: { icon: ComponentType<SVGProps<S
  */
 export function SettingsLinkRow({ to, icon, leading, title, description, value }: { to: string; title: ReactNode; description: ReactNode; value?: ReactNode } & ({ icon: ComponentType<SVGProps<SVGSVGElement>>; leading?: never } | { icon?: never; leading: ReactNode })) {
     return (
-        <Link to={to} className="group -mx-4 flex min-h-15 items-center gap-3 px-4 py-3 select-none transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg hover:bg-layer-transparent-hover">
+        <Link to={to} className="group -mx-4 flex min-h-15 items-center gap-3 px-4 py-3 select-none transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg hover:bg-layer-transparent-hover hover:duration-0">
             {icon ? <SettingsRowIcon icon={icon} /> : leading}
             <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 items-center gap-2 text-md font-medium text-primary">{title}</span>

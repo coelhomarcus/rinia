@@ -13,25 +13,34 @@ interface TooltipProps {
     isDisabled?: boolean;
 }
 
-export const Tooltip = ({ title, description, arrow = false, delay = 300, offset = 6, placement = "top", children, isDisabled, ...props }: TooltipProps) => {
+/**
+ * One provider for the whole app, so tooltips behave as a group: the first waits a moment, and once one is showing,
+ * moving to a neighbor opens it at once and without animation (`data-instant`), as long as the pointer gets there
+ * within the timeout.
+ */
+export const TooltipGroup = ({ children }: { children: ReactNode }) => (
+    <BaseTooltip.Provider delay={500} closeDelay={0} timeout={400}>
+        {children}
+    </BaseTooltip.Provider>
+);
+
+export const Tooltip = ({ title, description, arrow = false, delay, offset = 6, placement = "top", children, isDisabled, ...props }: TooltipProps) => {
     const side = placement.split(" ")[0] as "top" | "bottom" | "left" | "right";
 
     return (
-        <BaseTooltip.Provider delay={delay}>
-            <BaseTooltip.Root disabled={isDisabled}>
-                {/* Popup props, including ref, land here when a dialog or menu clones this component. */}
-                <BaseTooltip.Trigger {...props} render={children} />
-                <BaseTooltip.Portal>
-                    <BaseTooltip.Positioner side={side} sideOffset={offset}>
-                        <BaseTooltip.Popup className={cx("overlay-motion z-50 flex max-w-xs flex-col items-start gap-1 rounded-lg border border-subtle bg-menu px-2 shadow-overlay-200", description ? "py-2" : "py-1")}>
-                            {arrow && <BaseTooltip.Arrow className="fill-menu" />}
-                            <span className="text-xs font-medium text-secondary">{title}</span>
-                            {description && <span className="text-xs text-tertiary">{description}</span>}
-                        </BaseTooltip.Popup>
-                    </BaseTooltip.Positioner>
-                </BaseTooltip.Portal>
-            </BaseTooltip.Root>
-        </BaseTooltip.Provider>
+        <BaseTooltip.Root disabled={isDisabled}>
+            {/* Popup props, including ref, land here when a dialog or menu clones this component. */}
+            <BaseTooltip.Trigger {...props} delay={delay} render={children} />
+            <BaseTooltip.Portal>
+                <BaseTooltip.Positioner side={side} sideOffset={offset}>
+                    <BaseTooltip.Popup className={cx("overlay-motion z-50 flex max-w-xs flex-col items-start gap-1 rounded-lg border border-subtle bg-menu px-2 shadow-overlay-200", description ? "py-2" : "py-1")}>
+                        {arrow && <BaseTooltip.Arrow className="fill-menu" />}
+                        <span className="text-xs font-medium text-secondary">{title}</span>
+                        {description && <span className="text-xs text-tertiary">{description}</span>}
+                    </BaseTooltip.Popup>
+                </BaseTooltip.Positioner>
+            </BaseTooltip.Portal>
+        </BaseTooltip.Root>
     );
 };
 

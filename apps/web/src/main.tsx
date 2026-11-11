@@ -5,6 +5,7 @@ import { ViewTransitionRouter } from "@/components/application/view-transition-r
 import { AppErrorBoundary } from "@/components/feedback/app-error-boundary";
 import { ToastProvider } from "@/components/feedback/toaster";
 import { ContextMenuProvider } from "@/components/overlay/context-menu-provider";
+import { TooltipGroup } from "@/components/base/tooltip/tooltip";
 import { AuthProvider } from "@/features/auth/hooks/use-auth";
 import { queryClient } from "@/lib/query-client";
 import { RouteProvider } from "@/providers/router-provider";
@@ -35,7 +36,9 @@ createRoot(document.getElementById("root")!).render(
                                     <ToastProvider>
                                         <ServiceWorkerUpdates />
                                         <ContextMenuProvider>
-                                            <AppRoutes />
+                                            <TooltipGroup>
+                                                <AppRoutes />
+                                            </TooltipGroup>
                                         </ContextMenuProvider>
                                     </ToastProvider>
                                 </RouteProvider>

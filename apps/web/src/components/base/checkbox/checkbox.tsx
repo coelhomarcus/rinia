@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode, Ref } from "react";
+import { useState, type ComponentProps, type ReactNode, type Ref } from "react";
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 import { cx } from "@/utils/cx";
 
@@ -28,7 +28,17 @@ export const CheckboxBase = ({ className, isSelected, isDisabled, isIndeterminat
             <path d="M2.91675 7H11.0834" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <svg viewBox="0 0 14 14" fill="none" className={cx("pointer-events-none absolute size-3 scale-50 text-fg-white opacity-0 transition-[opacity,transform] duration-150 ease-(--motion-ease-enter)", size === "md" && "size-3.5", isSelected && !isIndeterminate && "scale-100 opacity-100")}>
-            <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {/* The check draws itself from its short stroke to its long one as it scales in. */}
+            <path
+                d="M2.33325 7L5.24992 9.91667L11.6666 3.5"
+                pathLength={1}
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="1"
+                className={cx("transition-[stroke-dashoffset] duration-200 ease-(--ease-out-cubic) motion-reduce:transition-none", isSelected && !isIndeterminate ? "[stroke-dashoffset:0]" : "[stroke-dashoffset:1]")}
+            />
         </svg>
     </span>
 );
@@ -51,6 +61,9 @@ interface CheckboxProps extends Omit<ComponentProps<typeof BaseCheckbox.Root>, "
 
 export const Checkbox = ({ label, hint, size = "sm", className, isSelected, defaultSelected, isDisabled, isIndeterminate, isInvalid, isFocusVisible, onChange, ref, ...props }: CheckboxProps) => {
     const sizes = size === "md" ? { root: "gap-2", text: "text-md", hint: "text-md" } : { root: "gap-2", text: "text-sm", hint: "text-sm" };
+    // An uncontrolled checkbox still has to tell its box whether it is checked, so the fill and the check show.
+    const [uncontrolled, setUncontrolled] = useState(defaultSelected ?? false);
+    const checked = isSelected ?? uncontrolled;
 
     return (
         <BaseCheckbox.Root
@@ -61,10 +74,13 @@ export const Checkbox = ({ label, hint, size = "sm", className, isSelected, defa
             indeterminate={isIndeterminate}
             disabled={isDisabled}
             aria-invalid={isInvalid || undefined}
-            onCheckedChange={(checked) => onChange?.(checked === true)}
+            onCheckedChange={(next) => {
+                if (isSelected === undefined) setUncontrolled(next === true);
+                onChange?.(next === true);
+            }}
             className={cx("group/checkbox flex items-start", sizes.root, isDisabled && "cursor-not-allowed", className)}
         >
-            <CheckboxBase size={size} isSelected={isSelected} isIndeterminate={isIndeterminate} isDisabled={isDisabled} isFocusVisible={isFocusVisible} className={label || hint ? "mt-0.5" : ""} />
+            <CheckboxBase size={size} isSelected={checked} isIndeterminate={isIndeterminate} isDisabled={isDisabled} isFocusVisible={isFocusVisible} className={label || hint ? "mt-0.5" : ""} />
             {(label || hint) && (
                 <span className="inline-flex flex-col gap-1">
                     {label && <span className={cx("text-secondary select-none", sizes.text)}>{label}</span>}

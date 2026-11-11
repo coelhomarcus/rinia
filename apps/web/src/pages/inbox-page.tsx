@@ -156,7 +156,7 @@ function NotificationRow({ notification, onRead }: { notification: InboxNotifica
                 to={urls.issue(issue.identifier, issue.title)}
                 state={{ issueTitle: issue.title }}
                 onClick={() => onRead(true)}
-                className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none"
+                className="flex min-h-[var(--row-height)] items-center gap-3 py-[var(--card-pad-y)] pr-12 pl-3 transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:bg-layer-transparent-hover focus-visible:outline-none hover:duration-0"
             >
                 <span
                     aria-hidden="true"

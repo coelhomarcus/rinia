@@ -60,7 +60,7 @@ export const IssueSubIssues = memo(function IssueSubIssues({ issue }: { issue: I
                             const column = columnOf(child.columnId);
                             return (
                                 <li key={child.id} className="animate-enter" data-issue-id={child.id} data-issue-context="true" data-project-id={issue.projectId} data-issue-identifier={identifier} data-issue-title={child.title}>
-                                    <Link viewTransition to={urls.issue(identifier, child.title)} state={{ issueTitle: child.title }} className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
+                                    <Link viewTransition to={urls.issue(identifier, child.title)} state={{ issueTitle: child.title }} className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover hover:duration-0">
                                         <StateIcon name={column?.name ?? ""} color={column?.color} />
                                         <span className="shrink-0 whitespace-nowrap text-tertiary" style={issueViewTransitionStyle(identifier, "id")}>{identifier}</span>
                                         <span className="min-w-0 truncate text-primary" style={issueViewTransitionStyle(identifier, "title")}>{child.title}</span>

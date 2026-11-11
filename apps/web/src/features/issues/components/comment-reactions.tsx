@@ -17,7 +17,7 @@ const MORE_EMOJI = [
 ];
 const popupMotion =
     "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0";
-const emojiButton = "grid size-8 place-items-center rounded-md text-[18px] leading-none transition-[background-color,transform] duration-100 hover:bg-layer-2-hover active:scale-90";
+const emojiButton = "grid size-8 place-items-center rounded-md text-[18px] leading-none transition-[background-color,transform] duration-100 hover:bg-layer-2-hover active:scale-90 hover:duration-0";
 
 /** The add-reaction button: the usual emoji in one row, and more behind it. */
 export function ReactionPicker({ onPick, className }: { onPick: (emoji: string) => void; className?: string }) {
@@ -39,7 +39,7 @@ export function ReactionPicker({ onPick, className }: { onPick: (emoji: string) 
             <Tooltip title={t("issue.addReaction")}>
             <Popover.Trigger
                 aria-label={t("issue.addReaction")}
-                className={cx("grid size-6 place-items-center rounded-md text-tertiary outline-none transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover data-[popup-open]:bg-layer-transparent-hover data-[popup-open]:text-primary", className)}
+                className={cx("grid size-6 place-items-center rounded-md text-tertiary outline-none transition-colors duration-150 hover:bg-layer-transparent-hover hover:text-primary focus-visible:bg-layer-transparent-hover data-[popup-open]:bg-layer-transparent-hover data-[popup-open]:text-primary hover:duration-0 data-[popup-open]:duration-0", className)}
             >
                 <SmilePlus className="size-3.5" />
             </Popover.Trigger>

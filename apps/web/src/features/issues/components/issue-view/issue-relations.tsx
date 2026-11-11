@@ -77,7 +77,7 @@ function RelationsPanel({
                     const identifier = `${relation.target.project.issueKey}-${relation.target.number}`;
                     const targetProjectId = relation.target.projectId || projectId;
                     return (
-                        <li key={relation.id} className="group/relation animate-enter flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover">
+                        <li key={relation.id} className="group/relation animate-enter flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors duration-150 hover:bg-layer-transparent-hover hover:duration-0">
                             <span className="w-24 shrink-0 truncate text-tertiary">{typeLabels[relation.type as RelationType] ?? relation.type}</span>
                             <Link
                                 viewTransition

@@ -1,8 +1,8 @@
 /**
- * How long things take to arrive and to leave, in milliseconds. Leaving is quicker. These mirror `--motion-enter`
- * and `--motion-exit` in globals.css, for timers that wait for an animation to finish before unmounting.
+ * How long things take to arrive and to leave, in milliseconds. Leaving is quicker. These mirror `--motion-enter`,
+ * `--motion-exit` and `--motion-dialog` in globals.css, for timers that wait for an animation to finish before unmounting.
  */
-export const MOTION = { enter: 200, exit: 120 } as const;
+export const MOTION = { enter: 150, exit: 100, dialog: 200 } as const;
 
 /**
  * How long something stays mounted once it starts leaving. A transition starts a frame or two after the state

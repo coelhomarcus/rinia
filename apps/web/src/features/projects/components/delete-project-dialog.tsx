@@ -44,9 +44,9 @@ export function DeleteProjectDialog({ project, trigger, hideTrigger = false, ope
         >
             {!hideTrigger && <Dialog.Trigger render={trigger ?? <Button color="secondary-destructive" />}>{t("projects.deleteProject")}</Dialog.Trigger>}
             <Dialog.Portal>
-                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-motion" />
                 <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-safe-4">
-                    <Dialog.Popup className="max-h-full w-full max-w-md overflow-y-auto rounded-lg border border-subtle bg-surface-1 p-4 shadow-overlay-200 outline-none transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.2,0,0,1)] data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0">
+                    <Dialog.Popup className="max-h-full w-full max-w-md overflow-y-auto dialog-motion rounded-xl border border-subtle bg-layer-1 p-4 shadow-overlay-100 outline-none">
                         <form
                             className="flex flex-col gap-4"
                             onSubmit={(event) => {

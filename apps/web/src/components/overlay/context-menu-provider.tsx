@@ -45,7 +45,7 @@ interface MenuAction {
 
 const ContextMenuContext = createContext<ContextMenuApi>({ open: () => undefined });
 const menuClass = "fixed z-[100] max-h-[calc(100dvh-16px)] min-w-56 max-w-[calc(100vw-16px)] overflow-y-auto rounded-lg border border-subtle bg-layer-2 p-1 shadow-overlay-200 outline-none";
-const itemClass = "flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] text-secondary transition duration-100 ease-linear hover:bg-layer-1-hover hover:text-primary focus-visible:bg-layer-1-hover focus-visible:text-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
+const itemClass = "flex min-h-7 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] text-secondary transition duration-100 ease-linear hover:bg-layer-1-hover hover:text-primary focus-visible:bg-layer-1-hover focus-visible:text-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 hover:duration-0";
 
 /** A mobile action button that opens the same entity menu used by desktop context clicks. */
 export function ContextMenuButton({ entity, className }: { entity: ContextMenuEntity; className?: string }) {
@@ -476,9 +476,9 @@ export const ContextMenuProvider = ({ children }: { children: ReactNode }) => {
                     }}
                 >
                     <Dialog.Portal>
-                        <Dialog.Backdrop className="fixed inset-0 z-[110] bg-backdrop" />
+                        <Dialog.Backdrop className="fixed inset-0 z-[110] bg-backdrop backdrop-motion" />
                         <Dialog.Viewport className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto p-safe-4">
-                            <Dialog.Popup className="w-full max-w-md rounded-lg border border-subtle bg-surface-1 p-6 shadow-overlay-200 outline-none">
+                            <Dialog.Popup className="dialog-motion w-full max-w-md rounded-xl border border-subtle bg-layer-1 p-6 shadow-overlay-100 outline-none">
                                 <Dialog.Title className="text-lg font-semibold text-primary">
                                     {confirmation.type === "issue" ? t("contextMenu.deleteIssueTitle") : t("contextMenu.deletePageTitle")}
                                 </Dialog.Title>

@@ -63,10 +63,25 @@ The palette lives in `styles/palette.css`. Both themes come from one LCH recipe:
 
 ## Motion
 
-- Use the motion tokens: `--motion-enter` (200ms) and `--motion-ease-enter` for things that arrive, `--motion-exit` (120ms) for things that leave. `motion.ts` mirrors them for timers.
-- Hover and color changes take `duration-150`. Buttons and sidebar rows change color at once on hover (`hover:duration-0`) and ease back over 150ms when the pointer leaves. New content in place (alerts, notices, list items) uses `animate-enter`; overlays use `overlay-motion`.
+The interface answers at once and lets go gently. The tokens live in `globals.css`, and `motion.ts` mirrors them for timers.
+
+| Token | Value | Used for |
+| --- | --- | --- |
+| `--motion-highlight-in` / `--motion-highlight-out` | 0s / 150ms | Hover and keyboard highlights: they appear instantly and fade out |
+| `--motion-quick` | 100ms | Small state changes |
+| `--motion-enter` / `--motion-exit` | 150ms / 100ms | Menus, popovers, selects and tooltips arriving and leaving |
+| `--motion-dialog` | 200ms | Dialogs and their backdrop |
+| `--motion-regular` | 250ms | Side sheets and larger panels |
+| `--ease-out-quint`, `--ease-out-cubic`, `--ease-out-quad` | | Arrivals use quint; exits use cubic |
+
+- Highlights need no classes: a zero-specificity baseline in `globals.css` gives links, buttons, rows, menu items and anything with a `hover:bg-*` or `data-highlighted:bg-*` class the instant-in, 150ms-out color transition. A component that sets its own color transition adds `hover:duration-0` (and `data-highlighted:duration-0` for menu items) to keep the instant start.
+- Overlays use `overlay-motion`: a fade and a 0.97 scale from the anchor on the way in, a plain fade on the way out. Dialogs use `dialog-motion` (fade and 0.96 scale) over a `backdrop-motion` backdrop, never a blur.
+- Tooltips share one `TooltipGroup` at the app root: the first waits 500ms, and once one is showing, its neighbors open at once and without animation (`data-instant`). Pass `delay` only for a tooltip that must differ.
+- Two icons that trade places (copy and its check, follow and unfollow) go through `IconSwap`, which cross-fades and scales them in one slot.
+- The checkbox's check draws itself as it scales in. New content in place (alerts, notices, list items) uses `animate-enter`.
 - Buttons and icon buttons do not move when pressed; checkboxes still scale to 0.9, behind `motion-safe:` and never while disabled.
 - Navigation that only switches a list's filter does not run a view transition; the list animates its own rows.
+- Everything respects `prefers-reduced-motion`.
 
 ## Rich text
 

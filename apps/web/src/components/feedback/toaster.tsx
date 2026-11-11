@@ -248,7 +248,7 @@ function ToastCard({ toast, depth, expanded, held, onDismiss }: { toast: ToastEn
                                 .catch(() => undefined);
                             onDismiss();
                         }}
-                        className="-my-0.5 shrink-0 rounded-md px-2 py-0.5 text-[13px] font-medium text-accent-primary transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong"
+                        className="-my-0.5 shrink-0 rounded-md px-2 py-0.5 text-[13px] font-medium text-accent-primary transition-colors duration-150 hover:bg-layer-transparent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong hover:duration-0"
                     >
                         {toast.action.label}
                     </button>

@@ -29,7 +29,7 @@ interface ModalOverlayProps extends Omit<ComponentProps<typeof BaseDialog.Root>,
 
 const OverlayContent = ({ children, className }: Pick<ModalOverlayProps, "children" | "className">) => (
     <BaseDialog.Portal>
-        <BaseDialog.Backdrop className={cx("fixed inset-0 z-50 flex min-h-dvh w-full items-end justify-center overflow-y-auto bg-overlay p-safe-modal outline-hidden transition-opacity duration-300 ease-out data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 sm:items-center", className)} />
+        <BaseDialog.Backdrop className={cx("fixed inset-0 z-50 flex min-h-dvh w-full items-end justify-center overflow-y-auto bg-overlay p-safe-modal outline-hidden backdrop-motion sm:items-center", className)} />
         <BaseDialog.Viewport className={cx("fixed inset-0 z-50 flex items-end justify-center overflow-y-auto p-safe-modal sm:items-center", className)}>
             {children}
         </BaseDialog.Viewport>
@@ -52,7 +52,7 @@ export const ModalOverlay = ({ isOpen, onOpenChange, children, className, ...pro
 };
 
 export const Modal = ({ className, children }: { className?: string; children: ReactNode }) => (
-    <BaseDialog.Popup className={cx("max-h-full w-full align-middle outline-hidden transition-[transform,opacity] duration-300 ease-out data-[ending-style]:translate-y-2 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-2 data-[starting-style]:opacity-0 max-sm:overflow-y-auto max-sm:rounded-xl", className)}>{children}</BaseDialog.Popup>
+    <BaseDialog.Popup className={cx("dialog-motion max-h-full w-full align-middle outline-hidden max-sm:overflow-y-auto max-sm:rounded-xl", className)}>{children}</BaseDialog.Popup>
 );
 
 export const Dialog = ({ className, children }: { className?: string; children: ReactNode | ((args: CloseContext) => ReactNode) }) => {

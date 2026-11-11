@@ -289,15 +289,42 @@ html[data-theme*="dark"] .chart-accent {
 }
 
 /*
- * Motion. Things arrive easing out and leave faster, so a dismissed thing gets out of the way
- * instead of lingering. `components/base/motion.ts` mirrors these numbers for timers.
+ * Motion. The interface answers at once and lets go gently: a hover or keyboard highlight appears with no delay and
+ * fades out over 150ms, so moving the pointer down a list leaves a short trail instead of a flicker. Things that
+ * arrive (menus, popovers, dialogs) ease out quickly; things that leave go faster still. `components/base/motion.ts`
+ * mirrors these numbers for timers.
  */
 :root {
-    --motion-enter: 200ms;
-    --motion-exit: 120ms;
-    --motion-ease-enter: cubic-bezier(0.2, 0, 0, 1);
+    --motion-highlight-in: 0s;
+    --motion-highlight-out: 150ms;
+    --motion-quick: 100ms;
+    --motion-enter: 150ms;
+    --motion-exit: 100ms;
+    --motion-dialog: 200ms;
+    --motion-regular: 250ms;
+    --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+    --motion-ease-enter: var(--ease-out-quint);
     /* Exits decelerate too: most of the fade happens early and it settles at zero, instead of vanishing at the end. */
-    --motion-ease-exit: cubic-bezier(0.3, 0, 0.1, 1);
+    --motion-ease-exit: var(--ease-out-cubic);
+}
+
+/*
+ * The highlight baseline. Anything that can be pointed at (links, buttons, rows and menu items, and any element that
+ * paints a hover or highlight background) fades its colors out over 150ms and takes them on instantly. `:where()`
+ * keeps this at zero specificity, so a component's own `transition-*` classes still win.
+ */
+@layer base {
+    :where(a, button, summary, label, [role="button"], [role="link"], [role="tab"], [role="option"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="treeitem"], [role="switch"], [class*="hover:bg-"], [class*="data-highlighted:bg-"]) {
+        transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, box-shadow;
+        transition-duration: var(--motion-highlight-out);
+        transition-timing-function: ease-out;
+    }
+    :where(a, button, summary, label, [role="button"], [role="link"], [role="tab"], [role="option"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="treeitem"], [role="switch"], [class*="hover:bg-"], [class*="data-highlighted:bg-"]):is(:hover, :active, [data-highlighted], [data-popup-open], [aria-expanded="true"]) {
+        transition-duration: var(--motion-highlight-in);
+    }
 }
 
 /*
@@ -310,8 +337,9 @@ html[data-theme*="dark"] .chart-accent {
 }
 
 /*
- * Every dropdown (menu, popover, select, tooltip) grows from its anchor while fading in, and shrinks back faster.
- * Base UI sets `data-starting-style` and `data-ending-style` for the two ends; the exit pace comes from the rule above.
+ * Every dropdown (menu, popover, select, tooltip) grows a little from its anchor while fading in, and fades back
+ * faster. Base UI sets `data-starting-style` and `data-ending-style` for the two ends; the exit pace comes from the
+ * rule above. A tooltip that opens while another was just showing gets `data-instant` and skips the animation.
  */
 .overlay-motion,
 .document-popover {
@@ -322,15 +350,51 @@ html[data-theme*="dark"] .chart-accent {
 }
 :is(.overlay-motion, .document-popover):is([data-starting-style], [data-ending-style]) {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.97);
+}
+:is(.overlay-motion, .document-popover)[data-ending-style] {
+    transform: none;
+}
+:is(.overlay-motion, .document-popover)[data-instant] {
+    transition-duration: 0s !important;
+}
+
+/* Dialogs settle in from slightly smaller over a plain fading backdrop, and leave at the exit pace. */
+@utility dialog-motion {
+    transition:
+        opacity var(--motion-dialog) var(--ease-out-quint),
+        transform var(--motion-dialog) var(--ease-out-quint);
+    &[data-starting-style],
+    &[data-ending-style] {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+@utility backdrop-motion {
+    transition: opacity var(--motion-dialog) ease-out;
+    &[data-starting-style],
+    &[data-ending-style] {
+        opacity: 0;
+    }
+}
+
+/* Two icons that trade places (copy and its check, a bell and its slash) cross-fade and scale, as one control. */
+@utility icon-swap {
+    transition:
+        opacity var(--motion-highlight-out) ease-in-out,
+        transform var(--motion-highlight-out) ease-in-out;
+    &[data-hidden] {
+        opacity: 0;
+        transform: scale(0.6);
+    }
 }
 
 /* The same motion for menus that are not built on Base UI, such as the right-click menu. */
 @keyframes rinia-popup-in {
-    from { opacity: 0; transform: scale(0.96); }
+    from { opacity: 0; transform: scale(0.97); }
 }
 @keyframes rinia-popup-out {
-    to { opacity: 0; transform: scale(0.96); }
+    to { opacity: 0; }
 }
 .animate-popup-in { animation: rinia-popup-in var(--motion-enter) var(--motion-ease-enter); }
 .animate-popup-out { animation: rinia-popup-out var(--motion-exit) var(--motion-ease-exit) forwards; pointer-events: none; }

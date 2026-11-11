@@ -112,15 +112,15 @@ export const IssueQuickCreateModal = ({ projectId, columnId, onClose, onCreated 
     return (
         <Dialog.Root open={open} onOpenChange={(next) => !next && !createIssue.isPending && setOpen(false)} onOpenChangeComplete={(isOpen) => !isOpen && onClose()}>
             <Dialog.Portal>
-                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay transition-opacity duration-(--motion-enter) data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+                <Dialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-motion" />
                 <Dialog.Viewport
                     className={cx("fixed inset-0 z-50 flex justify-center overflow-y-auto p-safe-4", expanded ? "items-center" : "items-start pt-[max(12vh,env(safe-area-inset-top,0px))]")}
                 >
                     <Dialog.Popup
                         initialFocus={titleRef}
                         className={cx(
-                            "flex w-full flex-col rounded-xl border border-subtle bg-layer-1 shadow-overlay-200 outline-none",
-                            "transition-[opacity,transform,max-width,height] duration-(--motion-enter) ease-(--motion-ease-enter) data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0",
+                            "flex w-full flex-col rounded-xl border border-subtle bg-layer-1 shadow-overlay-100 outline-none",
+                            "transition-[opacity,transform,max-width,height] duration-(--motion-dialog) ease-(--ease-out-quint) data-[ending-style]:scale-[0.96] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.96] data-[starting-style]:opacity-0",
                             expanded ? "h-[min(860px,calc(100dvh-32px))] max-w-4xl" : "max-w-2xl",
                         )}
                     >

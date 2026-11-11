@@ -9,7 +9,7 @@ import { cx } from "@/utils/cx";
 
 const popupMotion =
     "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0";
-const shortcutClass = "flex h-8 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] text-secondary transition-colors duration-100 hover:bg-layer-2-hover hover:text-primary";
+const shortcutClass = "flex h-8 w-full items-center gap-2.5 rounded px-2 text-left text-[13px] text-secondary transition-colors duration-100 hover:bg-layer-2-hover hover:text-primary hover:duration-0";
 
 /** Shortcuts, a month to pick any day from, and a way to clear the date. */
 export function DueDateCalendar({ value, onChange, touch = false }: { value: string | null; onChange: (dueDate: string | null) => void; touch?: boolean }) {

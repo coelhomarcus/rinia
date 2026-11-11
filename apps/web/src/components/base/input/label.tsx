@@ -45,7 +45,7 @@ export const Label = ({ isInvalid, isRequired, tooltip, tooltipDescription, clas
                         // but we don't that. We want the tooltip be enabled even if the parent
                         // field is disabled.
                         isDisabled={false}
-                        className="cursor-pointer text-placeholder transition duration-200 hover:text-secondary focus:text-secondary"
+                        className="cursor-pointer text-placeholder transition duration-200 hover:text-secondary focus:text-secondary hover:duration-0"
                     >
                         <HelpCircle className="size-4" />
                     </TooltipTrigger>

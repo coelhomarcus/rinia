@@ -52,7 +52,7 @@ export const Sheet = ({ open, onOpenChange, title, children, className, side = "
             <BaseDialog.Portal>
                 <BaseDialog.Backdrop
                     className={cx(
-                        "fixed inset-0 transition-opacity duration-300 ease-out data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+                        "fixed inset-0 backdrop-motion",
                         backdropLayer,
                         bottom ? "bg-overlay" : "bg-transparent",
                     )}
@@ -71,10 +71,10 @@ export const Sheet = ({ open, onOpenChange, title, children, className, side = "
                             "flex min-w-0 flex-col bg-surface-1 outline-none",
                             bottom
                                 ? cx(
-                                      "w-full rounded-t-xl border-t border-subtle pb-[env(safe-area-inset-bottom,0px)] transition-[transform,opacity] duration-300 ease-out data-[ending-style]:translate-y-8 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-8 data-[starting-style]:opacity-0 motion-reduce:transition-none",
+                                      "w-full rounded-t-xl border-t border-subtle pb-[env(safe-area-inset-bottom,0px)] transition-[transform,opacity] duration-(--motion-regular) ease-(--ease-out-quint) data-[ending-style]:translate-y-8 data-[ending-style]:opacity-0 data-[starting-style]:translate-y-8 data-[starting-style]:opacity-0 motion-reduce:transition-none",
                                       size === "full" ? "h-[min(100%,calc(100dvh-env(safe-area-inset-top,0px)-0.5rem))]" : "max-h-[min(85dvh,calc(100dvh-env(safe-area-inset-top,0px)-0.5rem))]",
                                   )
-                                : "h-full w-full border-l border-subtle transition-[transform,opacity] duration-300 ease-out data-[ending-style]:translate-x-6 data-[ending-style]:opacity-0 data-[starting-style]:translate-x-6 data-[starting-style]:opacity-0 md:w-1/2 md:rounded-r-lg",
+                                : "h-full w-full border-l border-subtle transition-[transform,opacity] duration-(--motion-regular) ease-(--ease-out-quint) data-[ending-style]:translate-x-6 data-[ending-style]:opacity-0 data-[starting-style]:translate-x-6 data-[starting-style]:opacity-0 md:w-1/2 md:rounded-r-lg",
                             className,
                         )}
                         style={bottom && dragY > 0 ? { transform: `translateY(${dragY}px)`, transition: "none" } : undefined}

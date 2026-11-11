@@ -130,7 +130,7 @@ export const ProjectIconPicker = ({ value, color, onChange, onColorChange }: Pro
                                         }}
                                         data-project-icon-option
                                         className={cx(
-                                            "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-secondary ring-1 ring-subtle transition duration-100 ease-linear ring-inset hover:bg-layer-1-hover hover:text-primary focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong",
+                                            "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-secondary ring-1 ring-subtle transition duration-100 ease-linear ring-inset hover:bg-layer-1-hover hover:text-primary focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-strong hover:duration-0",
                                             isSelected && "bg-brand-primary_alt text-accent-primary ring-2 ring-accent-strong hover:text-accent-primary",
                                         )}
                                     >
