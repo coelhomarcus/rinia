@@ -302,6 +302,13 @@
       "when": 1794350593318,
       "tag": "0042_project_roles_and_guest_shares",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794386663495,
+      "tag": "0043_remove_github_integration",
+      "breakpoints": true
     }
   ]
 }
