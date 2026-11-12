@@ -558,7 +558,7 @@ html:not([data-theme*="dark"]) .state-icon { color: oklch(from var(--state-color
     html,
     body,
     #root,
-    .h-dvh,
+    [data-app-shell],
     .h-full,
     .min-h-0,
     .flex,
@@ -576,13 +576,16 @@ html:not([data-theme*="dark"]) .state-icon { color: oklch(from var(--state-color
         border: 0 !important;
         box-shadow: none !important;
     }
-    .h-dvh > aside,
+    [data-app-shell] {
+        position: static !important;
+    }
+    [data-app-shell] > aside,
     [data-print-hide],
     [role="menu"],
     [role="dialog"] {
         display: none !important;
     }
-    .h-dvh > .p-2 {
+    [data-app-shell] > .p-2 {
         padding: 0 !important;
     }
     @page {

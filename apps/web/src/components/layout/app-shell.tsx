@@ -31,8 +31,12 @@ export const AppShell = () => {
     }, [width]);
     return (
         <AppCommandsProvider>
-        {/* While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes. */}
-        <div className={`relative flex h-dvh min-h-0 overflow-hidden bg-surface-1 pt-safe pr-safe pl-safe text-primary md:bg-canvas md:pb-safe ${resizing ? "cursor-ew-resize select-none" : ""}`}>
+        {/*
+          * Pinned to the screen's edges rather than sized with `h-dvh`: an iOS home-screen app can open with `100dvh`
+          * shorter than the screen and correct it a moment later, leaving a gap under the tab bar until it drops into place.
+          * While resizing, nothing on the page can be selected and the resize cursor holds wherever the pointer goes.
+          */}
+        <div data-app-shell className={`fixed inset-0 flex min-h-0 overflow-hidden bg-surface-1 pt-safe pr-safe pl-safe text-primary md:bg-canvas md:pb-safe ${resizing ? "cursor-ew-resize select-none" : ""}`}>
             <aside
                 className={`relative hidden h-full shrink-0 overflow-hidden md:flex ${resizing ? "" : "transition-[width] duration-200 ease-[cubic-bezier(0.2,0,0,1)]"}`}
                 style={{ width }}

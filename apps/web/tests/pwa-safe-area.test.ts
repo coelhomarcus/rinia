@@ -20,6 +20,9 @@ describe("iOS PWA safe area", () => {
         expect(shell).toContain("pt-safe");
         expect(shell).toContain("pr-safe");
         expect(shell).toContain("pl-safe");
+        // Pinned to the screen, not sized with viewport units, which an iOS home-screen app can get wrong on launch.
+        expect(shell).toContain("fixed inset-0");
+        expect(shell).not.toMatch(/className=\{?[`"][^`"]*\bh-dvh\b/);
         // The bottom inset belongs to the shell from md up, and to the tab bar on phones, which sits on the bottom edge.
         expect(shell).toContain("md:pb-safe");
         expect(read("src/components/layout/mobile-tab-bar.tsx")).toContain("pb-safe");
