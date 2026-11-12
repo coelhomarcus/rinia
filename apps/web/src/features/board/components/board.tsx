@@ -41,6 +41,7 @@ import { cx } from "@/utils/cx";
 import { columnBucket } from "../column-bucket";
 import { useColumns } from "../hooks/use-board";
 import { useBoardColumnSnap } from "../hooks/use-board-column-snap";
+import { mergeColumnWindows } from "../merge-column-windows";
 import { Column, type ColumnProps } from "./column";
 import { BoardColumnTabs } from "./column-tabs";
 import { IssueCardContent } from "./issue-card";
@@ -105,7 +106,7 @@ export const Board = ({
             return updated;
         });
     }, []);
-    const issues = useMemo(() => [...loadedByColumn.values()].flat(), [loadedByColumn]);
+    const issues = useMemo(() => mergeColumnWindows(loadedByColumn), [loadedByColumn]);
     // The columns on screen: the scope's states, minus the ones the person hid.
     const shownColumns = useMemo(
         () => (columns ?? []).filter((column) => !hidden.has(column.id) && (scope === "all" || columnBucket(column.name) === scope)),
