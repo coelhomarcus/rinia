@@ -89,9 +89,10 @@ function useFillProgress(key: string) {
 }
 
 /**
- * Each member's work since the project began: a dithered pixel bar for issues completed
- * (relative to whoever completed most), their share of all completions, then the open issues assigned to them now and
- * the issues they created. A completion counts for the issue's assignee.
+ * Each member's work since the project began: a dithered pixel bar for issues completed (relative to whoever
+ * completed most, so people compare at a glance), then the open issues assigned to them now and the issues they
+ * created. Hovering the bar tells their share of all completions. A completion counts for the issue's assignee.
+ * The project's totals are left to the cards above, which also count issues nobody is assigned to.
  */
 export function PeoplePerformance({ people, members }: { people: ProjectPersonStats[]; members: ProjectMember[] | undefined }) {
     const { t, i18n } = useTranslation();
@@ -100,7 +101,7 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
     const byId = new Map((members ?? []).map((member) => [member.id, member]));
     const rows = people.filter((person) => byId.has(person.userId));
     const most = Math.max(1, ...rows.map((person) => person.completed));
-    const totals = rows.reduce((sum, person) => ({ completed: sum.completed + person.completed, open: sum.open + person.open, created: sum.created + person.created }), { completed: 0, open: 0, created: 0 });
+    const completedTotal = rows.reduce((sum, person) => sum + person.completed, 0);
     const { ref: barRef, cells } = useCellCount();
     const progress = useFillProgress(rows.map((person) => `${person.userId}:${person.completed}`).join(","));
     if (rows.length === 0) return null;
@@ -110,13 +111,12 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
             <h3 id="people-performance" className="text-xs font-medium text-tertiary">
                 {t("projectStats.peopleTitle")}
             </h3>
-            <p className="mt-1 text-xs text-placeholder">{t("projectStats.peopleHint")}</p>
             <table className="mt-4 w-full table-fixed text-left font-mono text-[12px] leading-6 tabular-nums">
                 <colgroup>
-                    <col className="w-[34%] sm:w-[30%]" />
+                    <col className="w-[40%] sm:w-[30%]" />
                     <col />
-                    <col className="w-14 sm:w-16" />
-                    <col className="w-14 sm:w-16" />
+                    <col className="w-16" />
+                    <col className="w-16" />
                 </colgroup>
                 <thead>
                     <tr className="text-[11px] tracking-wider text-tertiary uppercase [&>th]:pb-2">
@@ -131,6 +131,8 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
                         const member = byId.get(person.userId)!;
                         // Rows fill one after another, a beat apart, so the list reads top to bottom.
                         const own = Math.max(0, Math.min(1, progress * (1 + rows.length * 0.15) - index * 0.15));
+                        const shareTitle = t("projectStats.peopleShareTitle", { completed: number.format(person.completed), total: number.format(completedTotal) });
+                        const share = t("projectStats.peopleShare", { share: percent.format(completedTotal ? person.completed / completedTotal : 0) });
                         return (
                             <tr key={person.userId} className="group/person">
                                 <th scope="row" className="py-0.5 pr-3 font-normal">
@@ -142,15 +144,15 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
                                     </span>
                                 </th>
                                 <td className="py-0.5 pr-3">
-                                    <span className="flex min-w-0 items-center gap-2">
-                                        <span ref={index === 0 ? barRef : undefined} className="min-w-0 flex-1 overflow-hidden">
-                                            <DitherBar ratio={(person.completed / most) * own} cells={cells} />
+                                    <Tooltip title={shareTitle} description={share}>
+                                        <span className="flex min-w-0 items-center gap-2">
+                                            <span ref={index === 0 ? barRef : undefined} className="min-w-0 flex-1 overflow-hidden">
+                                                <DitherBar ratio={(person.completed / most) * own} cells={cells} />
+                                            </span>
+                                            <span aria-hidden="true" className="w-8 shrink-0 text-right text-primary">{number.format(person.completed)}</span>
                                         </span>
-                                        <span className="w-7 shrink-0 text-right text-primary">{number.format(person.completed)}</span>
-                                        <span className="hidden w-10 shrink-0 text-right text-tertiary sm:inline">
-                                            {totals.completed ? percent.format(person.completed / totals.completed) : "–"}
-                                        </span>
-                                    </span>
+                                    </Tooltip>
+                                    <span className="sr-only">{`${shareTitle}, ${share}`}</span>
                                 </td>
                                 <td className="py-0.5 text-right text-secondary">{number.format(person.open)}</td>
                                 <td className="py-0.5 text-right text-secondary">{number.format(person.created)}</td>
@@ -158,19 +160,6 @@ export function PeoplePerformance({ people, members }: { people: ProjectPersonSt
                         );
                     })}
                 </tbody>
-                <tfoot>
-                    <tr className="text-tertiary [&>*]:pt-2">
-                        <th scope="row" className="pr-3 font-normal">{t("projectStats.total")}</th>
-                        <td className="pr-3">
-                            <span className="flex items-center justify-end gap-2">
-                                <span className="w-7 shrink-0 text-right text-primary">{number.format(totals.completed)}</span>
-                                <span className="hidden w-10 shrink-0 sm:inline" />
-                            </span>
-                        </td>
-                        <td className="text-right">{number.format(totals.open)}</td>
-                        <td className="text-right">{number.format(totals.created)}</td>
-                    </tr>
-                </tfoot>
             </table>
         </section>
     );

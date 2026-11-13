@@ -9,7 +9,7 @@ const projectStats = {
         updatedCount_one: "{{count}} update", updatedCount_other: "{{count}} updates",
         completedTitle: "Completed issues", completedTotal_zero: "No issues completed", completedTotal_one: "{{count}} issue completed", completedTotal_other: "{{count}} issues completed",
         createdTitle: "Created issues", createdTotal_zero: "No issues created", createdTotal_one: "{{count}} issue created", createdTotal_other: "{{count}} issues created",
-        peopleTitle: "Performance by person", peopleHint: "Since the project was created. A completed issue counts for whoever it is assigned to.", person: "Person", completed: "Completed", open: "Open", created: "Created",
+        peopleTitle: "Performance by person", peopleShareTitle: "{{completed}} of {{total}} completed", peopleShare: "{{share}} of the project",person: "Person", completed: "Completed", open: "Open", created: "Created",
         seriesWeb: "In the app", seriesMcp: "Through MCP", total: "Total", today: "Today", date: "Date",
         tableCaption: "Values by day",
     } as const;

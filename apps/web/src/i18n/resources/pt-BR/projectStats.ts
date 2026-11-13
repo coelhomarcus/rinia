@@ -9,7 +9,7 @@ const projectStats = {
         updatedCount_one: "{{count}} atualização", updatedCount_other: "{{count}} atualizações",
         completedTitle: "Tarefas concluídas", completedTotal_zero: "Nenhuma tarefa concluída", completedTotal_one: "{{count}} tarefa concluída", completedTotal_other: "{{count}} tarefas concluídas",
         createdTitle: "Tarefas criadas", createdTotal_zero: "Nenhuma tarefa criada", createdTotal_one: "{{count}} tarefa criada", createdTotal_other: "{{count}} tarefas criadas",
-        peopleTitle: "Desempenho por pessoa", peopleHint: "Desde a criação do projeto. Uma tarefa concluída conta para quem está atribuído a ela.", person: "Pessoa", completed: "Concluídas", open: "Abertas", created: "Criadas",
+        peopleTitle: "Desempenho por pessoa", peopleShareTitle: "{{completed}} de {{total}} concluídas", peopleShare: "{{share}} do projeto",person: "Pessoa", completed: "Concluídas", open: "Abertas", created: "Criadas",
         seriesWeb: "No app", seriesMcp: "Via MCP", total: "Total", today: "Hoje", date: "Data",
         tableCaption: "Valores por dia",
     } as const;
