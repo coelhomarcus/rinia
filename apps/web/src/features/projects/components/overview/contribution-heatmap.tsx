@@ -3,13 +3,17 @@ import type { ProjectActivityDay } from "@rinia/shared";
 import { useTranslation } from "react-i18next";
 import { cx } from "@/utils/cx";
 import { ChartTooltip, ChartTable, formatDay, parseDay, useElementWidth, type TooltipRow } from "./chart-utils";
+import { ditherStyle } from "./dither";
 
 /** Cells grow to fill the width, between these steps (cell plus gap); below the smallest the map scrolls. */
-const MIN_STEP = 9;
+const MIN_STEP = 10;
 const MAX_STEP = 15;
 const LABEL_WIDTH = 28;
 const LEVELS = [0, 1, 2, 3, 4] as const;
-const levelColor = (level: number) => `var(--chart-heat-${level})`;
+/** How many of a dither tile's 16 pixels each level lights: one dot for an empty day, then a dot grid, a checkerboard, nearly solid and solid. */
+const DENSITY = [1, 4, 8, 14, 16] as const;
+/** A day's cell, `size` pixels wide: one dither tile of accent pixels at its level, or faint dots for a day with nothing. */
+const levelStyle = (level: number, size: number) => ditherStyle(level === 0 ? "var(--color-text-placeholder)" : "var(--chart-series-1)", DENSITY[level] ?? 16, size);
 
 const total = (day: ProjectActivityDay) => day.created + day.completed + day.updated;
 
@@ -53,8 +57,9 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
     }, [activity, locale]);
 
     const step = available ? Math.max(MIN_STEP, Math.min(MAX_STEP, Math.floor((available - LABEL_WIDTH) / weeks))) : MAX_STEP;
-    const gap = step >= 12 ? 3 : 2;
-    const cell = step - gap;
+    // Each cell holds one 4×4 dither tile. An even size keeps its pixels whole on high-density screens; the gap takes the rest.
+    const cell = Math.floor((step - 2) / 2) * 2;
+    const gap = step - cell;
 
     // The newest weeks are the ones that matter; on a narrow screen the map opens scrolled to them.
     useLayoutEffect(() => {
@@ -134,8 +139,8 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
                                     key={entry.date}
                                     data-index={index}
                                     aria-hidden="true"
-                                    className={cx("rounded-[2px] transition-[outline-color] duration-100", active?.index === index && "outline-2 outline-offset-1 outline-[var(--txt-primary)]")}
-                                    style={{ background: levelColor(activityLevel(total(entry), max)) }}
+                                    className={cx("transition-[outline-color] duration-100", active?.index === index && "outline-2 outline-offset-1 outline-[var(--txt-primary)]")}
+                                    style={levelStyle(activityLevel(total(entry), max), cell)}
                                 />
                             ))}
                         </div>
@@ -147,7 +152,7 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
                 <span className="flex items-center gap-1" aria-hidden="true">
                     {t("projectStats.less")}
                     {LEVELS.map((level) => (
-                        <span key={level} className="size-2.5 rounded-[2px]" style={{ background: levelColor(level) }} />
+                        <span key={level} className="size-2.5" style={levelStyle(level, 10)} />
                     ))}
                     {t("projectStats.more")}
                 </span>
