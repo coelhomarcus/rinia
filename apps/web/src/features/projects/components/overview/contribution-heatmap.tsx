@@ -7,7 +7,7 @@ import { ditherStyle } from "./dither";
 
 /** Cells grow to fill the width, between these steps (cell plus gap); below the smallest the map scrolls. */
 const MIN_STEP = 10;
-const MAX_STEP = 15;
+const MAX_STEP = 20;
 const LABEL_WIDTH = 28;
 const LEVELS = [0, 1, 2, 3, 4] as const;
 /** How many of a dither tile's 16 pixels each level lights: one dot for an empty day, then a dot grid, a checkerboard, nearly solid and solid. */
@@ -60,6 +60,11 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
     // Each cell holds one 4×4 dither tile. An even size keeps its pixels whole on high-density screens; the gap takes the rest.
     const cell = Math.floor((step - 2) / 2) * 2;
     const gap = step - cell;
+    // A whole-pixel step leaves up to a pixel per week unused; the columns spread over it so the map meets both edges.
+    const natural = weeks * step - gap;
+    const gridWidth = available ? Math.max(natural, Math.min(available - LABEL_WIDTH, natural + weeks)) : natural;
+    /** The distance from one week's column to the next, once spread. */
+    const pitch = weeks > 1 ? (gridWidth - cell) / (weeks - 1) : step;
 
     // The newest weeks are the ones that matter; on a narrow screen the map opens scrolled to them.
     useLayoutEffect(() => {
@@ -97,13 +102,13 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
     return (
         <div ref={wrapper} className="relative">
             <div ref={scroller} className="overflow-x-auto pb-1">
-                <div className="relative" style={{ width: LABEL_WIDTH + weeks * step }}>
+                <div className="relative" style={{ width: LABEL_WIDTH + gridWidth }}>
                     <div aria-hidden="true" className="mb-1 flex h-3">
                         {/* While the map scrolls, month names slide under the weekday column instead of beside it. */}
                         <div className="sticky left-0 z-[1] shrink-0 bg-surface-1" style={{ width: LABEL_WIDTH }} />
                         <div className="relative flex-1">
                             {months.map((month) => (
-                                <span key={`${month.week}-${month.label}`} className="absolute text-[11px] leading-3 text-tertiary" style={{ left: month.week * step }}>
+                                <span key={`${month.week}-${month.label}`} className="absolute text-[11px] leading-3 text-tertiary" style={{ left: month.week * pitch }}>
                                     {month.label}
                                 </span>
                             ))}
@@ -122,7 +127,7 @@ export function ContributionHeatmap({ activity }: { activity: ProjectActivityDay
                             tabIndex={0}
                             aria-label={`${t("projectStats.heatmapLabel")}: ${t("projectStats.heatmapSummary", { count: sum })}`}
                             className="grid rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent-strong focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-surface-1)]"
-                            style={{ gridTemplateRows: `repeat(7, ${cell}px)`, gridAutoColumns: `${cell}px`, gridAutoFlow: "column", gap }}
+                            style={{ width: gridWidth, gridTemplateRows: `repeat(7, ${cell}px)`, gridTemplateColumns: `repeat(${weeks}, ${cell}px)`, gridAutoFlow: "column", gap, justifyContent: "space-between" }}
                             onKeyDown={onKeyDown}
                             onBlur={() => setActive(null)}
                             onMouseLeave={() => setActive(null)}
