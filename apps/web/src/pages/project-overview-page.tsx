@@ -13,6 +13,7 @@ import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { useCreateDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
 import { ProjectIconControl } from "@/features/projects/components/project-appearance-controls";
+import { DitherBanner } from "@/features/projects/components/overview/dither-banner";
 import { ProjectActivity } from "@/features/projects/components/overview/project-activity";
 import { ProjectIcon, projectIconColor } from "@/features/projects/components/project-icon";
 import { ProjectWorkspaceHeader } from "@/features/projects/components/project-workspace-header";
@@ -48,7 +49,9 @@ export const ProjectOverviewPage = () => {
                 ) : isError || !project ? (
                     <ErrorMessage message={t("errors.requestFailed")} />
                 ) : (
-                    <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:px-10">
+                    <div className="relative">
+                    <DitherBanner color={projectIconColor(icon)} className="absolute inset-x-0 top-0 h-52" />
+                    <div className="relative mx-auto grid max-w-6xl gap-10 px-6 pt-36 pb-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:px-10">
                         <div className="min-w-0 lg:pl-12">
                             <div className="flex items-center gap-3">
                                 <ProjectIconControl
@@ -156,6 +159,7 @@ export const ProjectOverviewPage = () => {
                             </section>
                         </aside>
                     </div>
+                    </div>
                 )}
             </main>
         </div>
@@ -205,7 +209,7 @@ function ProjectDescription({ projectId, description, editable }: { projectId: s
 function OverviewSkeleton() {
     const { t } = useTranslation();
     return (
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:px-10" role="status" aria-label={t("common.loading")} aria-live="polite">
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 pt-36 pb-10 lg:grid-cols-[minmax(0,1fr)_14rem] lg:px-10" role="status" aria-label={t("common.loading")} aria-live="polite">
             <div className="space-y-4 lg:pl-12">
                 <div className="flex items-center gap-3"><Skeleton className="size-9 rounded-lg" /><Skeleton className="h-7 w-56" /></div>
                 <Skeleton className="h-5 w-80 max-w-full" />

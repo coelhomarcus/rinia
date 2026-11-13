@@ -2,7 +2,7 @@
 export const DITHER_PIXEL = 2;
 
 /** The 4×4 ordered-dither (Bayer) thresholds: at level `n` of 16, the pixels whose threshold is below `n` are lit. */
-const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+export const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
 /** Side of one repeating dither tile, in CSS pixels. */
 export const DITHER_TILE = 4 * DITHER_PIXEL;
