@@ -66,27 +66,32 @@ export function ChartTooltip({ x, y, width, height, title, rows, className }: { 
     );
 }
 
-/** Screen readers and anyone who prefers numbers get every value as a table. */
+/**
+ * Screen readers and anyone who prefers numbers get every value as a table. It is hidden by a wrapper: a table grows
+ * to fit its rows whatever height it is given, so `sr-only` on the table itself would still stretch the page.
+ */
 export function ChartTable({ caption, columns, rows }: { caption: string; columns: string[]; rows: Array<{ key: string; cells: Array<string | number> }> }) {
     return (
-        <table className="sr-only">
-            <caption>{caption}</caption>
-            <thead>
-                <tr>
-                    {columns.map((column) => (
-                        <th key={column} scope="col">
-                            {column}
-                        </th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => (
-                    <tr key={row.key}>
-                        {row.cells.map((cell, index) => (index === 0 ? <th key={index} scope="row">{cell}</th> : <td key={index}>{cell}</td>))}
+        <div className="sr-only">
+            <table>
+                <caption>{caption}</caption>
+                <thead>
+                    <tr>
+                        {columns.map((column) => (
+                            <th key={column} scope="col">
+                                {column}
+                            </th>
+                        ))}
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {rows.map((row) => (
+                        <tr key={row.key}>
+                            {row.cells.map((cell, index) => (index === 0 ? <th key={index} scope="row">{cell}</th> : <td key={index}>{cell}</td>))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     );
 }
