@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronRight, FileText, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { urls } from "@/lib/urls";
@@ -13,6 +13,7 @@ import { ModalDialog } from "@/components/overlay/modal-dialog";
 import { useCreateDocument, useDocuments } from "@/features/documents/hooks/use-documents";
 import { AddMemberForm, memberInitials } from "@/features/projects/components/members-panel";
 import { ProjectIconControl } from "@/features/projects/components/project-appearance-controls";
+import { DITHER_MASKS } from "@/features/projects/components/overview/dither";
 import { DitherBanner } from "@/features/projects/components/overview/dither-banner";
 import { ProjectActivity } from "@/features/projects/components/overview/project-activity";
 import { ProjectIcon, projectIconColor } from "@/features/projects/components/project-icon";
@@ -22,6 +23,9 @@ import { useProjectMembers } from "@/features/projects/hooks/use-project-members
 import { useProjectPermissions } from "@/features/projects/hooks/use-project-permissions";
 import { useUpdateProject } from "@/features/projects/hooks/use-projects";
 import { useTranslation } from "react-i18next";
+
+/** How many of a dither tile's 16 pixels a hovered resource row lights: sparse, so its title stays easy to read. */
+const RESOURCE_HOVER_LEVEL = 5;
 
 export const ProjectOverviewPage = () => {
     const { projectId, projectKey } = useRouteProject();
@@ -86,12 +90,12 @@ export const ProjectOverviewPage = () => {
                                 </div>
                                 {createDocument.isError && <div className="mt-3"><ErrorMessage message={t("documents.createFailed")} /></div>}
                                 {documents && documents.length > 0 ? (
-                                    <ul className="mt-3 -mx-2">
+                                    <ul className="mt-3 -mx-2" style={{ "--dither-mask": DITHER_MASKS[RESOURCE_HOVER_LEVEL], ...(projectIconColor(icon) ? { "--dither-color": projectIconColor(icon) } : {}) } as CSSProperties}>
                                         {documents.map((document) => (
                                             <li key={document.id}>
                                                 <Link
                                                     to={urls.document(projectKey, document)}
-                                                    className="flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] text-secondary hover:bg-layer-transparent-hover hover:text-primary"
+                                                    className="dither-hover group flex h-9 items-center gap-2.5 rounded-md px-2 text-[13px] text-secondary hover:text-primary focus-visible:text-primary"
                                                     data-document-context="true"
                                                     data-project-id={projectId}
                                                     data-document-id={document.id}
@@ -100,7 +104,8 @@ export const ProjectOverviewPage = () => {
                                                 >
                                                     {document.iconAppearance ? <ProjectIcon icon={document.iconAppearance} className="size-4 shrink-0" /> : <FileText className="size-4 shrink-0 text-tertiary" />}
                                                     <span className="min-w-0 flex-1 truncate">{document.title}</span>
-                                                    <span className="shrink-0 text-xs text-placeholder">
+                                                    {/* On hover the date sits on a patch of the row's plain tint, so the dither behind it never crosses the digits. */}
+                                                    <span className="shrink-0 rounded-md px-1.5 py-0.5 text-xs text-placeholder transition-colors duration-100 group-hover:bg-[color-mix(in_srgb,var(--dither-color,var(--chart-series-1))_7%,var(--bg-surface-1))] group-hover:text-secondary group-focus-visible:bg-[color-mix(in_srgb,var(--dither-color,var(--chart-series-1))_7%,var(--bg-surface-1))] group-focus-visible:text-secondary">
                                                         {new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(new Date(document.updatedAt))}
                                                     </span>
                                                 </Link>

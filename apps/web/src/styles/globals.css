@@ -279,6 +279,54 @@ html[data-theme*="dark"] .chart-accent {
     --chart-heat-4: color-mix(in srgb, var(--chart-accent) 48%, white);
 }
 
+/*
+ * A row hover of dithered pixels in --dither-color (the theme's chart colour by default) over a faint tint of the same
+ * colour. --dither-mask is one dither tile (see DITHER_MASKS). The pixels are sparse, gather at the right end and thin
+ * out to nothing toward the left, so the title at the start of the row sits on the plain tint and reads cleanly.
+ */
+.dither-hover {
+    position: relative;
+    isolation: isolate;
+}
+
+.dither-hover::before,
+.dither-hover::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+}
+
+.dither-hover::before {
+    background: color-mix(in srgb, var(--dither-color, var(--chart-series-1)) 7%, transparent);
+}
+
+.dither-hover::after {
+    background: var(--dither-color, var(--chart-series-1));
+    -webkit-mask-image: var(--dither-mask), linear-gradient(to left, #000, transparent 75%);
+    mask-image: var(--dither-mask), linear-gradient(to left, #000, transparent 75%);
+    -webkit-mask-size: 8px 8px, 100% 100%;
+    mask-size: 8px 8px, 100% 100%;
+    -webkit-mask-repeat: repeat, no-repeat;
+    mask-repeat: repeat, no-repeat;
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+}
+
+.dither-hover:hover::before,
+.dither-hover:focus-visible::before {
+    opacity: 1;
+}
+
+.dither-hover:hover::after,
+.dither-hover:focus-visible::after {
+    opacity: 0.6;
+}
+
 @layer base {
     html { color-scheme: light; background: var(--bg-canvas); }
     html[data-theme*="dark"] { color-scheme: dark; }
