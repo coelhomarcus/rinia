@@ -121,6 +121,17 @@ html[data-density="compact"] {
 }
 
 /*
+ * While the theme changes every element repaints at once. Without this each one would fade on its own
+ * transition and the page would pass through a mix of both themes. See applyTheme.
+ */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+    transition: none !important;
+}
+
+/*
  * Scrollbars stay out of the way: thin, and only drawn while the pointer is over the area they scroll.
  * Chrome and Firefox read the standard properties; Safari still reads the ::-webkit-scrollbar rules.
  */
