@@ -15,6 +15,7 @@ import { IssueActivity } from "./issue-activity";
 import { IssueDeleteDialog } from "./issue-delete-dialog";
 import { IssueDescription } from "./issue-description";
 import { IssueHeader } from "./issue-header";
+import { IssuePromptInstructionsDialog } from "./issue-prompt-instructions-dialog";
 import { IssueProperties } from "./issue-properties";
 import { IssuePropertyChips } from "./issue-property-chips";
 import { IssueRelations } from "./issue-relations";
@@ -52,6 +53,7 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
     const [relationsOpen, setRelationsOpen] = useState(false);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [instructionsOpen, setInstructionsOpen] = useState(false);
     const openProperty = useCallback((menu: PropertyMenuId | null = null) => {
         if (compact) setPropertiesOpen(true);
         setOpenMenu(canEdit ? menu : null);
@@ -90,6 +92,7 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
               }
             : undefined,
         onOpenHistory: () => setHistoryOpen(true),
+        onEditPromptInstructions: canEdit ? () => setInstructionsOpen(true) : undefined,
         onDelete: canEdit ? () => setDeleteOpen(true) : undefined,
         onShare: can("shares.manage") && hasGuests ? () => setShareOpen(true) : undefined,
     };
@@ -141,6 +144,7 @@ export function IssuePage({ issue }: { issue: IssueDetail }) {
             </div>
 
             <IssueDeleteDialog issue={issue} open={deleteOpen} onOpenChange={setDeleteOpen} />
+            {canEdit && <IssuePromptInstructionsDialog issue={issue} updater={updater} open={instructionsOpen} onOpenChange={setInstructionsOpen} />}
             {menuActions.onShare && <GuestShareDialog projectId={issue.projectId} base={`/issues/${issue.identifier}`} open={shareOpen} onOpenChange={setShareOpen} />}
 
             {compact && (

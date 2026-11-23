@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assignableProjectRoleValues } from "../permissions";
+import { promptInstructionsSchema } from "../prompt-instructions";
 import { emojiIconSchema, iconColorSchema, imageIconSchema } from "./appearance";
 
 const repositoryUrlSchema = z
@@ -131,6 +132,7 @@ export const updateProjectSchema = z.object({
     repositoryUrl: repositoryUrlSchema,
     icon: iconSchema,
     iconAppearance: projectIconAppearanceSchema.nullable().optional(),
+    promptInstructions: promptInstructionsSchema,
 }).superRefine((value, context) => {
     if (value.icon !== undefined && value.iconAppearance !== undefined) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["iconAppearance"], message: "Use either icon or iconAppearance, not both" });

@@ -33,6 +33,8 @@ export const issues = pgTable(
         parentIssueId: uuid("parent_issue_id"),
         estimate: integer("estimate"),
         dueDate: date("due_date", { mode: "string" }),
+        /** Replaces the project's prompt instructions for this issue alone. Null uses the project's. */
+        promptInstructions: text("prompt_instructions"),
         createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
         updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
         deletedAt: timestamp("deleted_at", { withTimezone: true }),

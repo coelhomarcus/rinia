@@ -12,6 +12,8 @@ export const projects = pgTable("projects", {
     icon: text("icon"),
     iconAppearance: jsonb("icon_appearance").$type<EntityIcon | null>(),
     pageContent: text("page_content").notNull().default(""),
+    /** The Instructions block of "Copy with prompt" for the project's issues. Null uses the default. */
+    promptInstructions: text("prompt_instructions"),
     createdBy: uuid("created_by")
         .notNull()
         .references(() => users.id),

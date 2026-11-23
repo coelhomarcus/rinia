@@ -1,5 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
-import { Copy, Ellipsis, GitBranch, History, Link2, ListTree, Sparkles, Trash2, UserPlus } from "lucide-react";
+import { Copy, Ellipsis, GitBranch, History, Link2, ListTree, ScrollText, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { overlayChrome } from "@/components/overlay/overlay-chrome";
@@ -15,7 +15,7 @@ export interface CopyActions {
 }
 
 /** The actions that change the issue are left out when the role cannot take them. */
-export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, isCopying, onAddRelation, onSetParent, onOpenHistory, onDelete, onShare }: CopyActions & { onAddRelation?: () => void; onSetParent?: () => void; onOpenHistory: () => void; onDelete?: () => void; onShare?: () => void }) {
+export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPrompt, isCopying, onAddRelation, onSetParent, onOpenHistory, onEditPromptInstructions, onDelete, onShare }: CopyActions & { onAddRelation?: () => void; onSetParent?: () => void; onOpenHistory: () => void; onEditPromptInstructions?: () => void; onDelete?: () => void; onShare?: () => void }) {
     const { t } = useTranslation();
     return (
         <Menu.Root>
@@ -29,6 +29,7 @@ export function IssueActionsMenu({ onCopyLink, onCopyId, onCopyBranch, onCopyPro
                         <Menu.Item className={menuItemClass} onClick={onCopyId}><Copy className="size-4 text-tertiary" />{t("issue.copyIdentifier")}</Menu.Item>
                         <Menu.Item className={menuItemClass} onClick={onCopyBranch}><GitBranch className="size-4 text-tertiary" />{t("issue.copyBranchName")}</Menu.Item>
                         <Menu.Item className={menuItemClass} disabled={isCopying} onClick={onCopyPrompt}><Sparkles className="size-4 text-tertiary" />{t("issue.copyWithPrompt")}</Menu.Item>
+                        {onEditPromptInstructions && <Menu.Item className={menuItemClass} onClick={onEditPromptInstructions}><ScrollText className="size-4 text-tertiary" />{t("issue.editPromptInstructions")}</Menu.Item>}
                         <Menu.Separator className="my-1 h-px bg-[var(--border-subtle)]" />
                         {onAddRelation && <Menu.Item className={menuItemClass} onClick={onAddRelation}><Link2 className="size-4 text-tertiary" />{t("issue.addRelation")}</Menu.Item>}
                         {onSetParent && <Menu.Item className={menuItemClass} onClick={onSetParent}><ListTree className="size-4 text-tertiary" />{t("issue.addParent")}</Menu.Item>}

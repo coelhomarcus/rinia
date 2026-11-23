@@ -95,7 +95,8 @@ async function findIssue(identifier: string) {
     const issue = await db.query.issues.findFirst({
         where: and(eq(issues.id, identifier), isNull(issues.deletedAt)),
         with: {
-            project: { columns: { id: true, name: true, issueKey: true } },
+            // The project's prompt instructions apply to the issue's "Copy with prompt" unless the issue sets its own.
+            project: { columns: { id: true, name: true, issueKey: true, promptInstructions: true } },
             assignee: { columns: { id: true, name: true, username: true, avatarUrl: true } },
             createdBy: { columns: { id: true, name: true, username: true, avatarUrl: true } },
             labels: LABELS_WITH,

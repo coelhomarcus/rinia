@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { promptInstructionsSchema } from "../prompt-instructions";
 
 export const tiptapNodeSchema = z.record(z.unknown());
 export const tiptapDocumentSchema = z.object({
@@ -56,6 +57,7 @@ export const updateIssueSchema = z
         parentIssueId: z.string().uuid().nullable().optional(),
         estimate: estimateSchema.nullable().optional(),
         dueDate: dueDateSchema.nullable().optional(),
+        promptInstructions: promptInstructionsSchema,
     })
     .strict()
     .superRefine((value, context) => {

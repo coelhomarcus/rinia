@@ -20,6 +20,7 @@ export interface IssueMenuActions {
     onAddRelation?: () => void;
     onSetParent?: () => void;
     onOpenHistory: () => void;
+    onEditPromptInstructions?: () => void;
     onDelete?: () => void;
     onShare?: () => void;
 }

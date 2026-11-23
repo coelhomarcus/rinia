@@ -11,12 +11,14 @@ export interface Project {
     icon: string | null;
     iconAppearance: EntityIcon | null;
     pageContent: string;
+    /** The Instructions block of "Copy with prompt" for the project's issues. Null uses the default. */
+    promptInstructions: string | null;
     createdBy: string;
     createdAt: string;
     updatedAt: string;
 }
 
-export type ProjectSummary = Omit<Project, "pageContent">;
+export type ProjectSummary = Omit<Project, "pageContent" | "promptInstructions">;
 export interface ProjectMemberPreview { id: string; name: string; avatarUrl: string | null }
 /** A project in the user's list, with their own role in it. */
 export type ProjectCardSummary = ProjectSummary & { memberCount: number; memberPreview: ProjectMemberPreview[]; owner: ProjectMemberPreview | null; role: ProjectRole };

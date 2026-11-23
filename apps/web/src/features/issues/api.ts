@@ -45,12 +45,14 @@ export interface Issue {
     estimate: number | null;
     /** `YYYY-MM-DD`, a calendar day with no time zone. */
     dueDate: string | null;
+    /** Replaces the project's prompt instructions for this issue. Null uses the project's. */
+    promptInstructions?: string | null;
     createdAt: string;
     updatedAt: string;
 }
 
 export type IssueDetail = Omit<Issue, "createdBy"> & {
-    project: { id: string; name: string; issueKey: string };
+    project: { id: string; name: string; issueKey: string; promptInstructions?: string | null };
     assignee: IssuePerson | null;
     createdBy: IssuePerson;
     categories: IssueLabel[];

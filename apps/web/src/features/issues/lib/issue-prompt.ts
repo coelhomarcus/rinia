@@ -1,5 +1,5 @@
 import type { ActionSource, TiptapDocument } from "@rinia/shared";
-import { absoluteFileReference, absoluteStoredFileUrls, isStoredFilePath, tiptapToMarkdown } from "@rinia/shared";
+import { absoluteFileReference, absoluteStoredFileUrls, isStoredFilePath, PROMPT_FILE_ACCESS, resolvePromptInstructions, tiptapToMarkdown } from "@rinia/shared";
 import i18n from "../../../i18n/i18n";
 import type { TranslationKey } from "../../../i18n/resources";
 import { translateStatusName } from "../../../i18n/status-label";
@@ -198,7 +198,9 @@ export function buildIssuePrompt(input: IssuePromptInput): string {
     }
 
     const taskId = issue.identifier.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
-    const instructions = documents.some(documentHasStoredFile) ? `${t("issue.promptInstructions")}\n\n${t("issue.promptFileAccess")}` : t("issue.promptInstructions");
+    // The issue's own instructions, else its project's, else the default. Written by people, so guarded like the rest.
+    const ownInstructions = guard(resolvePromptInstructions(issue.promptInstructions, issue.project.promptInstructions));
+    const instructions = documents.some(documentHasStoredFile) ? `${ownInstructions}\n\n${PROMPT_FILE_ACCESS}` : ownInstructions;
     return `<Instructions>\n${instructions}\n</Instructions>\n\n<Task id="${taskId}">\n${sections.join("\n\n")}\n</Task>`;
 }
 

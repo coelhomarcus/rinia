@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { updateProjectSchema } from "@rinia/shared";
+import { DEFAULT_PROMPT_INSTRUCTIONS, updateProjectSchema } from "@rinia/shared";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, type FieldError } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Alert } from "@/components/base/feedback/alert";
 import { ErrorMessage } from "@/components/feedback/error-message";
+import { PromptInstructionsField } from "@/features/issues/components/prompt-instructions-field";
 import { LoadingState } from "@/components/feedback/loading-state";
 import { SettingsControl, SettingsGroup, settingsFieldClass } from "@/components/settings/settings-layout";
 import { translateValidationMessage } from "@/i18n/validation";
@@ -28,6 +29,7 @@ export const ProjectDetailsPanel = ({ projectId, canManage }: { projectId: strin
                   issueKey: project.issueKey,
                   description: project.description ?? "",
                   repositoryUrl: project.repositoryUrl ?? "",
+                  promptInstructions: project.promptInstructions ?? "",
               }
             : undefined,
         resetOptions: { keepDirtyValues: true },
@@ -116,6 +118,26 @@ export const ProjectDetailsPanel = ({ projectId, canManage }: { projectId: strin
                                 placeholder={t("settings.descriptionPlaceholder")}
                                 className="-mx-4 block w-[calc(100%+2rem)] resize-none bg-transparent px-4 py-3.5 text-[13px] leading-5 text-primary outline-none placeholder:text-placeholder disabled:text-tertiary"
                             />
+                        )}
+                    />
+                </SettingsGroup>
+
+                <SettingsGroup title={t("issue.promptInstructionsTitle")} description={t("issue.promptInstructionsProjectHint")}>
+                    <Controller
+                        control={control}
+                        name="promptInstructions"
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <PromptInstructionsField
+                                    value={field.value ?? ""}
+                                    onChange={field.onChange}
+                                    fallback={DEFAULT_PROMPT_INSTRUCTIONS}
+                                    fallbackLabel={t("issue.promptInstructionsUsingDefault")}
+                                    disabled={disabled}
+                                    variant="bare"
+                                />
+                                {fieldState.error?.message && <p className="pb-2.5 text-xs text-danger-primary">{translateValidationMessage(fieldState.error.message, t)}</p>}
+                            </div>
                         )}
                     />
                 </SettingsGroup>
